@@ -22,7 +22,7 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local framework = {
-	compatabilityVersion = 2,
+	compatabilityVersion = 3,
 	scaleFactor = 0,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
@@ -59,14 +59,14 @@ local conflicts = 0
 --
 -- Parameters:
 --  - body: A component as specified in the "Basic Components" section of this file.
-function framework:InsertElement(body, preferredKey)
+function framework:InsertElement(body, preferredKey, deselectAction)
 	local key
 
 	-- Create element
 
 	local function nullFunction() end
 
-	local element = { body = body, primaryFrame = nil, tooltips = {}, baseResponders = {} }
+	local element = { body = body, primaryFrame = nil, tooltips = {}, baseResponders = {}, deselect = deselectAction or function() end}
 	for _,event in pairs(events) do
 		element.baseResponders[event] = { responders = {}, action = nullFunction }
 	end
@@ -1006,7 +1006,12 @@ end
 
 local mousePressEvent = events.mousePress
 function widget:MousePress(x, y, button)
-	if not CheckElementUnderMouse(x, y) then return false end
+	if not CheckElementUnderMouse(x, y) then
+		for _, element in pairs(elements) do
+			element.deselect()
+		end
+		return false
+	end
 	local a = FindResponder(mousePressEvent, x, y, button)
 	return a
 end
