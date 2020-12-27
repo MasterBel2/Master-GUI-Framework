@@ -22,7 +22,7 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local framework = {
-	compatabilityVersion = 4,
+	compatabilityVersion = 5,
 	scaleFactor = 0,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
@@ -131,6 +131,7 @@ local gl_Vertex = gl.Vertex
 
 local GL_LINE_LOOP = GL.LINE_LOOP
 local GL_POLYGON = GL.POLYGON
+local GL_QUADS = GL.QUADS
 
 ------------------------------------------------------------------------------------------------------------
 -- Helper Methods
@@ -155,7 +156,7 @@ local function newSinTheta(cornerRadius)
 	sinThetaCache[cornerRadius] = sinTheta
 	return sinTheta
 end
-local function DrawRoundedRect(width, height, cornerRadius, drawFunction, shouldSquareBottomLeft, shouldSquareBottomRight, shouldSquareTopRight, shouldSquareTopLeft)
+local function DrawRoundedRect(width, height, cornerRadius, drawFunction, shouldSquareBottomLeft, shouldSquareBottomRight, shouldSquareTopRight, shouldSquareTopLeft, ...)
 	local centerTopY = height - cornerRadius
 	local centerRightX = width - cornerRadius
 	
@@ -165,37 +166,37 @@ local function DrawRoundedRect(width, height, cornerRadius, drawFunction, should
 
 	-- Bottom left
 	if shouldSquareBottomLeft then
-		drawFunction(0, 0)
+		drawFunction(0, 0, ...)
 	else
 		for i = 1, cornerRadius do
-			drawFunction(cornerRadius - sinTheta[pastEnd-i], cornerRadius - sinTheta[i])
+			drawFunction(cornerRadius - sinTheta[pastEnd-i], cornerRadius - sinTheta[i], ...)
 		end
 	end
 
 	-- Bottom right
 	if shouldSquareBottomRight then
-		drawFunction(width, 0)
+		drawFunction(width, 0, ...)
 	else
 		for i = 1, cornerRadius do
-			drawFunction(centerRightX + sinTheta[i], cornerRadius - sinTheta[pastEnd-i])
+			drawFunction(centerRightX + sinTheta[i], cornerRadius - sinTheta[pastEnd-i], ...)
 		end
 	end
 
 	-- Top right
 	if shouldSquareTopRight then
-		drawFunction(width, height)
+		drawFunction(width, height, ...)
 	else
 		for i = 1, cornerRadius do
-			drawFunction(centerRightX + sinTheta[pastEnd-i], centerTopY + sinTheta[i])
+			drawFunction(centerRightX + sinTheta[pastEnd-i], centerTopY + sinTheta[i], ...)
 		end
 	end
 
 	-- Top left
 	if shouldSquareTopLeft then
-		drawFunction(0, height)
+		drawFunction(0, height, ...)
 	else
 		for i = 1, cornerRadius do
-			drawFunction(cornerRadius - sinTheta[i], centerTopY + sinTheta[pastEnd-i])
+			drawFunction(cornerRadius - sinTheta[i], centerTopY + sinTheta[pastEnd-i], ...)
 		end
 	end
 end
@@ -218,44 +219,52 @@ end
 
 -- Colors counterclockwise from bottom left
 function framework:Gradient(color1, color2, color3, color4)
-	local gradient = { color1 = color1, color2 = color2, color3 = color3, color4 = color4 }
+	local gradient = {}
+
+	local color2r; local color2g; local color2b; local color2a
+	local color3r; local color3g; local color3b; local color3a
+	local color4r; local color4g; local color4b; local color4a
+	local color1r; local color1g; local color1b; local color1a
+
+	function gradient:SetColors(newColor1, newColor2, newColor3, newColor4)
+		color1r = newColor1.r; color1g = newColor1.g; color1b = newColor1.b; color1a = newColor1.a
+		color2r = newColor2.r; color2g = newColor2.g; color2b = newColor2.b; color2a = newColor2.a
+		color3r = newColor3.r; color3g = newColor3.g; color3b = newColor3.b; color3a = newColor3.a
+		color4r = newColor4.r; color4g = newColor4.g; color4b = newColor4.b; color4a = newColor4.a
+	end
+	gradient:SetColors(color1, color2, color3, color4)
+
+	local function drawRectVertecies(x, y, width, height)
+		gl_Color(color1r, color1g, color1b, color1a)
+		gl_Vertex(x, y)
+		gl_Color(color2r, color2g, color2b, color2a)
+		gl_Vertex(x + width, y)
+		gl_Color(color3r, color3g, color3b, color3a)
+		gl_Vertex(x + width, y + height)
+		gl_Color(color4r, color4g, color4b, color4a)
+		gl_Vertex(x, y + height)
+	end
+
+	local function drawRoundedRectVertex(xOffset, yOffset, x, y, width, height)
+		local a = xOffset / width; local b = (width - xOffset) / width; local c = yOffset / height; local d = (height - yOffset) / height
+		local mult1 = a * c
+		local mult2 = b * c
+		local mult3 = b * d
+		local mult4 = a * d
+
+		gl_Color(
+			color1r * mult1 + color2r * mult2 + color3r * mult3 + color4r * mult4,
+			color1g * mult1 + color2g * mult2 + color3g * mult3 + color4g * mult4,
+			color1b * mult1 + color2b * mult2 + color3b * mult3 + color4b * mult4,
+			color1a * mult1 + color2a * mult2 + color3a * mult3 + color4a * mult4
+		)
+		gl_Vertex(x + xOffset, y + yOffset)
+	end
 
 	function gradient:Draw(rect, x, y)
 		local width = rect.width
 		local height = rect.height
 		local cornerRadius = rect.cornerRadius or 0
-
-		local color1 = self.color1; local color2 = self.color2; local color3 = self.color3; local color4 = self.color4; 
-		local color1r = color1.r; local color1g = color1.g; local color1b = color1.b; local color1a = color1.a
-		local color2r = color2.r; local color2g = color2.g; local color2b = color2.b; local color2a = color2.a
-		local color3r = color3.r; local color3g = color3.g; local color3b = color3.b; local color3a = color3.a
-		local color4r = color4.r; local color4g = color4.g; local color4b = color4.b; local color4a = color4.a
-
-		local function drawRoundedRectVertex(xOffset, yOffset)
-			local a = xOffset / width; local b = (width - xOffset) / width; local c = yOffset / height; local d = (height - yOffset) / height
-			local mult1 = a * c
-			local mult2 = b * c
-			local mult3 = b * d
-			local mult4 = a * d
-
-			gl_Color(
-				color1r * mult1 + color2r * mult2 + color3r * mult3 + color4r * mult4,
-				color1g * mult1 + color2g * mult2 + color3g * mult3 + color4g * mult4,
-				color1b * mult1 + color2b * mult2 + color3b * mult3 + color4b * mult4,
-				color1a * mult1 + color2a * mult2 + color3a * mult3 + color4a * mult4
-			)
-			gl_Vertex(x + xOffset, y + yOffset)
-		end
-		local function drawRectVertecies()
-			gl_Color(color1r, color1g, color1b, color1a)
-			gl_Vertex(x, y)
-			gl_Color(color2r, color2g, color2b, color2a)
-			gl_Vertex(x + width, y)
-			gl_Color(color3r, color3g, color3b, color3a)
-			gl_Vertex(x + width, y + height)
-			gl_Color(color4r, color4g, color4b, color4a)
-			gl_Vertex(x, y + height)
-		end
 
 		if cornerRadius > 0 then
 			local beyondLeft = x <= 0
@@ -263,9 +272,9 @@ function framework:Gradient(color1, color2, color3, color4)
 			local beyondRight = (x + width) >= viewportWidth
 			local beyondTop = (y + height) >= viewportHeight
 
-			gl_BeginEnd(GL_POLYGON, DrawRoundedRect, width, height, cornerRadius, drawRoundedRectVertex, belowBottom or beyondLeft, beyondRight or belowBottom, beyondRight or beyondTop, beyondLeft or beyondTop)
+			gl_BeginEnd(GL_POLYGON, DrawRoundedRect, width, height, cornerRadius, drawRoundedRectVertex, belowBottom or beyondLeft, beyondRight or belowBottom, beyondRight or beyondTop, beyondLeft or beyondTop, x, y, width, height)
 		else
-			gl_BeginEnd(GL_QUADS, drawRectVertecies)
+			gl_BeginEnd(GL_QUADS, drawRectVertecies, x, y, width, height)
 		end
 	end
 	return gradient
