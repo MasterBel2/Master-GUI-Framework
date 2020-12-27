@@ -657,20 +657,20 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 	end
 
 	function margin:Draw(x, y)
-		if margin.shouldRasterize then
-			if margin.shouldInvalidateRasterizer then
+		if self.shouldRasterize then
+			if self.shouldInvalidateRasterizer then
 				self.rasterizableRect.width = self.width
 				self.rasterizableRect.height = self.height
 				self.rasterizableRect.cornerRadius = self.cornerRadius
 				self.rasterizableRect.decorations = self.decorations
 				self.rasterizer.invalidated = self.shouldInvalidateRasterizer
-				margin.shouldInvalidateRasterizer = false
+				self.shouldInvalidateRasterizer = false
 			end
 			self.rasterizer:Draw(x, y)
 		else
-			local decorations = margin.decorations
+			local decorations = self.decorations
 			for i = 1, #decorations do
-				decorations[i]:Draw(margin, x, y)
+				decorations[i]:Draw(self, x, y)
 			end
 		end
 
