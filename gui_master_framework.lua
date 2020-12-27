@@ -199,9 +199,7 @@ local function DrawRoundedRect(width, height, cornerRadius, drawFunction, should
 	end
 end
 
-local function DrawRectVertices(rect, drawFunction)
-	local width = rect.width
-	local height = rect.height
+local function DrawRectVertices(width, height, drawFunction)
 	drawFunction(0, 0)
 	drawFunction(width, 0)
 	drawFunction(width, height)
@@ -326,12 +324,6 @@ function framework:Stroke(width, color, inside)
 	local cachedCornerRadius
 
 	local function strokePixel(xOffset, yOffset)
-		if firstX == nil then
-			firstX = xOffset
-			firstY = yOffset
-		else
-			gl_Vertex(cachedX + xOffset, cachedY + yOffset)
-		end
 		gl_Vertex(cachedX + xOffset, cachedY + yOffset)
 	end
 
@@ -343,7 +335,7 @@ function framework:Stroke(width, color, inside)
 		
 		-- Ceil and floor here prevent half-pixels
 		local halfStroke = strokeWidth / 2
-		if inside then 
+		if inside then
 			cachedX = floor(x + halfStroke)
 			cachedY = floor(y + halfStroke)
 			cachedWidth = ceil(rect.width - strokeWidth)
@@ -361,12 +353,8 @@ function framework:Stroke(width, color, inside)
 			gl_BeginEnd(GL_LINE_LOOP, DrawRoundedRect, cachedWidth, cachedHeight, cachedCornerRadius, strokePixel, 
 				x <= 0 or y <= 0, x + cachedWidth >= viewportWidth or y <= 0, x + cachedWidth >= viewportWidth or y + cachedHeight >= viewportHeight, x == 0 or y + cachedHeight >= viewportHeight)
 		else
-			gl_BeginEnd(GL_LINE_LOOP, DrawRoundedRect, cachedRect, strokePixel, true, true, true, true)
+			gl_BeginEnd(GL_LINE_LOOP, DrawRectVertices, cachedWidth, cachedHeight, strokePixel)
 		end
-		gl_Vertex(firstX + cachedX, firstY + cachedY)
-		firstX = nil
-		firstY = nil
-		-- Other cached values will be reset before they're next used.
 	end
 
 	return stroke
