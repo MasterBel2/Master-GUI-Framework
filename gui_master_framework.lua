@@ -22,7 +22,7 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local framework = {
-	compatabilityVersion = 3,
+	compatabilityVersion = 4,
 	scaleFactor = 0,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
@@ -493,19 +493,24 @@ end
 
 function framework:MousePressResponder(rect, downAction, moveAction, releaseAction)
 	local responder = self:Responder(rect, events.mousePress, nil)
-	local function action(x, y, button)
+
+	responder.downAction = downAction
+	responder.moveAction = moveAction
+	responder.releaseAction = releaseAction
+
+	function responder:action(x, y, button)
 		responder.button = button
 		dragListeners[button] = responder
-		return downAction(x, y, button)
+		return responder:downAction(x, y, button)
 	end
-	responder.action = action
 
 	function responder:MouseMove(x, y, dx, dy)
-		moveAction(x, y, dx, dy)
+		self:moveAction(x, y, dx, dy)
 	end
+	
 	function responder:MouseRelease(x, y)
-		dragListener[self.button] = nil
-		releaseAction(x, y)
+		-- The call site will remove as a drag listener
+		self:releaseAction(x, y)
 	end
 
 	return responder
@@ -873,9 +878,6 @@ function framework:Rasterizer(body)
 			local activeResponder = activeResponders[event]
 			local activeResponderResponders = activeResponder.responders
 			for _, responder in pairs(activeResponderCache[event].responders or emptyTable) do
-				if responder.action == nil then
-					Spring.Echo("nil action!")
-				end
 				insert(activeResponderResponders, responder)
 				responder.parent = activeResponder
 			end
@@ -973,7 +975,7 @@ local function CheckElementUnderMouse(x, y)
 end
 
 local function Event(responder, ...)
-	if responder.action(...) then
+	if responder:action(...) then
 		return true
 	else
 		local parent = responder.parent
@@ -1023,7 +1025,7 @@ function widget:MouseMove(x, y, dx, dy, button)
 	end
 end
 
-function widget:MouseRelease(x, y, button) 
+function widget:MouseRelease(x, y, button)
 	local dragListener = dragListeners[button]
 	if dragListener then
 		dragListener:MouseRelease(x, y)
