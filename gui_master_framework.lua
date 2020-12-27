@@ -145,11 +145,12 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local sinThetaCache = {}
+local halfPi = pi/2
 local function newSinTheta(cornerRadius)
-	local halfPi = pi/2/cornerRadius
+	local radians = halfPi/cornerRadius
 	local sinTheta = {}
 	for i = 1, cornerRadius do
-		insert(sinTheta, sin(halfPi * i) * cornerRadius)
+		insert(sinTheta, sin(radians * i) * cornerRadius)
 	end
 	sinThetaCache[cornerRadius] = sinTheta
 	return sinTheta
