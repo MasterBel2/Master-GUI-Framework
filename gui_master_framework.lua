@@ -85,7 +85,13 @@ function framework:InsertElement(body, preferredKey)
 	return key
 end
 
-function framework:RemoveElement(key) elements[key] = nil end
+function framework:RemoveElement(key) 
+	if key ~= nil then
+		elements[key] = nil 
+	else
+		Spring.Echo("[Master GUI Framework] Could not remove element: Key is nill!")
+	end
+end
 
 ------------------------------------------------------------------------------------------------------------
 -- Includes
