@@ -292,14 +292,14 @@ function framework:Color(r, g, b, a)
 	function color:Set()
 		gl_Color(self.r, self.g, self.b, self.a)
 	end
+
+	local function drawRoundedRectVertex(xOffset, yOffset, x, y)
+		gl_Vertex(x + xOffset, y + yOffset)
+	end
 	
 	function color:Draw(rect, x, y)
 		self:Set()
 		local cornerRadius = rect.cornerRadius or 0
-
-		local function drawRoundedRectVertex(xOffset, yOffset)
-			gl_Vertex(x + xOffset, y + yOffset)
-		end
 
 		if cornerRadius > 0 then
 			local width = rect.width
@@ -311,7 +311,7 @@ function framework:Color(r, g, b, a)
 			local beyondTop = (y + height) >= viewportHeight
 
 			gl_BeginEnd(GL_POLYGON, DrawRoundedRect, width, height, cornerRadius, drawRoundedRectVertex, 
-				belowBottom or beyondLeft, beyondRight or belowBottom, beyondRight or beyondTop, beyondLeft or beyondTop)
+				belowBottom or beyondLeft, beyondRight or belowBottom, beyondRight or beyondTop, beyondLeft or beyondTop, x, y)
 		else
 			DrawRect(rect, gl_Rect, x, y)
 		end
@@ -374,20 +374,20 @@ end
 function framework:Image(fileName, tintColor)
 	local image = { fileName = fileName, tintColor = tintColor or framework.color.white }
 
+	local function drawRoundedRectVertex(xOffset, yOffset, x, y, width, height)
+		gl_TexCoord(xOffset / width, yOffset / height)
+		gl_Vertex(x + xOffset, y + yOffset)
+	end
+
 	function image:Draw(rect, x, y)
 		self.tintColor:Set()
 		gl_Texture(self.fileName)
 
 		local width = rect.width
 		local height = rect.height
-
-		local function drawRoundedRectVertex(xOffset, yOffset)
-			gl_TexCoord(xOffset / width, yOffset / height)
-			gl_Vertex(x + xOffset, y + yOffset)
-		end
 		
 		if rect.cornerRadius > 0 then
-			gl_BeginEnd(GL_POLYGON, DrawRoundedRect, width, height, rect.cornerRadius, drawRoundedRectVertex)
+			gl_BeginEnd(GL_POLYGON, DrawRoundedRect, width, height, rect.cornerRadius, drawRoundedRectVertex, false, false, false, false, x, y, width, height)
 		else
 			DrawRect(rect, gl_TexRect, x, y)
 		end
