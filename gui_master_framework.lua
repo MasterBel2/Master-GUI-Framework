@@ -844,16 +844,17 @@ end
 -- NOTE: Translation is NOT COMPATIBLE WITH RESPONDERS
 local emptyTable = {}
 function framework:Rasterizer(body)
-	local rasterizer = { body = body, invalidated = true, width = 0, height = 0,
-		activeResponderCache = {}
-	}
+	local rasterizer = { body = body, invalidated = true, width = 0, height = 0 }
+	
+	local activeResponderCache = {}
+	local drawList
 
-	for _, event in pairs(events) do 
-		rasterizer.activeResponderCache[event] = { responders = {} }
+	for _, event in pairs(events) do
+		activeResponderCache[event] = { responders = {} }
 	end
 
 	function rasterizer:Layout(availableWidth, availableHeight)
-		if rasterizer.invalidated then
+		if self.invalidated then
 			local body = self.body
 			body:Layout(availableWidth, availableHeight)
 			self.width = body.width
@@ -861,15 +862,13 @@ function framework:Rasterizer(body)
 		end
 	end
 
-	local function draw(body, x, y)
-		body:Draw(x, y)
+	local function draw(body, ...)
+		body:Draw(...)
 	end
 
 	function rasterizer:Draw(x, y)
-		local activeResponderCache = self.activeResponderCache
 
-		if self.invalidated or not self.drawList then
-
+		if self.invalidated or not drawList or viewportDidChange then
 			for _, event in pairs(events) do 
 				activeResponderCache[event].responders = {}
 			end
@@ -878,21 +877,21 @@ function framework:Rasterizer(body)
 			activeResponders = activeResponderCache
 
 			self.invalidated = false
-			gl_DeleteList(self.drawList)
-			self.drawList = gl_CreateList(draw, rasterizer.body, x, y)
+			gl_DeleteList(drawList)
+			drawList = gl_CreateList(draw, rasterizer.body, x, y)
 
 			activeResponders = previousResponders
 		end
 		-- self.body:Draw(x, y) -- For debugging purposes.
 		for _, event in pairs(events) do
-			local activeResponder = activeResponders[event]
-			local activeResponderResponders = activeResponder.responders
-			for _, responder in pairs(activeResponderCache[event].responders or emptyTable) do
-				insert(activeResponderResponders, responder)
-				responder.parent = activeResponder
+			local parentResponder = activeResponders[event]
+			local childrenOfParentResponder = parentResponder.responders
+			for _, responder in pairs(activeResponderCache[event].responders) do
+				insert(childrenOfParentResponder, responder)
+				responder.parent = parentResponder
 			end
 		end
-		gl_CallList(self.drawList)
+		gl_CallList(drawList)
 	end
 
 	return rasterizer
