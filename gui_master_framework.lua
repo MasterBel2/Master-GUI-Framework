@@ -473,18 +473,43 @@ framework.color = {
 
 -- Auto-sizing text
 function framework:Text(string, color, constantWidth, constantHeight, font)
-	local text = { width = 0, height = 0, string = string, color = color or framework.color.white, constantWidth = constantWidth, font = font or framework.defaultFont }
+	local text = { width = 0, height = 0, descender = 0, color = color or framework.color.white, constantWidth = constantWidth, constantHeight = constantHeight }
 
-	function text:Layout(availableHeight, availableWidth)
-		local font = self.font; local fontSize = font.size; local glFont = font.glFont
-		local string = self.string
-		self.width = constantWidth or (glFont:GetTextWidth(self.string) * fontSize)
-		self.height = constantHeight or (glFont:GetTextHeight(self.string) * fontSize)
+	local fontSize
+
+	local function layout()
+		text.width = text.constantWidth or (font.glFont:GetTextWidth(string) * fontSize)
+		if text.constantHeight then
+			text.height = text.constantHeight
+			text.descender = 0
+		else
+			local height, descender = font.glFont:GetTextHeight(string)
+			text.height = height * fontSize
+			-- self.descender = descender * fontSize
+			-- Spring.Echo(self.descender)
+		end
 	end
 
+	function text:SetFont(newFont)
+		font = newFont or framework.defaultFont
+		fontSize = font.size
+		layout()
+	end
+
+	function text:SetString(newString)
+		if string ~= newString then
+			string = newString
+			layout()
+		end
+	end
+
+	text:SetFont(font)
+	text:SetString(string)
+
+	function text:Layout(availableHeight, availableWidth) end
 	function text:Draw(x, y)
 		self.color:Set()
-		gl_Text(self.string, x, y, self.font.size, "")
+		gl_Text(string, x, ceil(y + 0.5), fontSize, "")
 	end
 
 	return text
