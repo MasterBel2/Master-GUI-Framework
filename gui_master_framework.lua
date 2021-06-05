@@ -647,43 +647,49 @@ function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, y
 end
 
 function framework:MarginAroundRect(rect, left, top, right, bottom, decorations, cornerRadius, shouldRasterize)
-	local margin = { width = 0, height = 0, rect = rect, left = left, top = top, right = right, bottom = bottom, decorations = decorations or {}, cornerRadius = cornerRadius or 0, 
-		shouldRasterize = shouldRasterize or false, shouldInvalidateRasterizer = true
+	local margin = { width = 0, height = 0, rect = rect, decorations = decorations or {}, cornerRadius = cornerRadius or 0, 
+		shouldInvalidateRasterizer = true
 	}
+
+	local rasterizableRect
+	local rasterizer
+
 	if shouldRasterize then
-		margin.rasterizableRect = framework:Rect(0, 0, cornerRadius, decorations)
-		margin.rasterizer = framework:Rasterizer(margin.rasterizableRect)
+		rasterizableRect = framework:Rect(0, 0, cornerRadius, decorations)
+		rasterizer = framework:Rasterizer(rasterizableRect)
+
+		function margin:Draw(x, y)
+			if self.shouldInvalidateRasterizer then
+				rasterizableRect.width = self.width
+				rasterizableRect.height = self.height
+				rasterizableRect.cornerRadius = self.cornerRadius
+				rasterizableRect.decorations = self.decorations
+				rasterizer.invalidated = self.shouldInvalidateRasterizer
+				self.shouldInvalidateRasterizer = false
+			end
+			rasterizer:Draw(x, y)
+
+			self.rect:Draw(x + left, y + bottom)
+		end
+	else
+		function margin:Draw(x, y)
+			local decorations = self.decorations
+			for i = 1, #decorations do
+				decorations[i]:Draw(self, x, y)
+			end
+	
+			self.rect:Draw(x + left, y + bottom)
+		end
 	end
 	
 	function margin:Layout(availableWidth, availableHeight)
-		local horizontal = self.left + self.right -- May be more performant to do left right top bottom – not sure though
-		local vertical = self.top + self.bottom
+		local horizontal = left + right -- May be more performant to do left right top bottom – not sure though
+		local vertical = top + bottom
 		local rect = self.rect
 
 		rect:Layout(availableWidth - horizontal, availableHeight - vertical)
 		self.width = rect.width + horizontal
 		self.height = rect.height + vertical
-	end
-
-	function margin:Draw(x, y)
-		if self.shouldRasterize then
-			if self.shouldInvalidateRasterizer then
-				self.rasterizableRect.width = self.width
-				self.rasterizableRect.height = self.height
-				self.rasterizableRect.cornerRadius = self.cornerRadius
-				self.rasterizableRect.decorations = self.decorations
-				self.rasterizer.invalidated = self.shouldInvalidateRasterizer
-				self.shouldInvalidateRasterizer = false
-			end
-			self.rasterizer:Draw(x, y)
-		else
-			local decorations = self.decorations
-			for i = 1, #decorations do
-				decorations[i]:Draw(self, x, y)
-			end
-		end
-
-		self.rect:Draw(x + self.left, y + self.bottom)
 	end
 
 	return margin
