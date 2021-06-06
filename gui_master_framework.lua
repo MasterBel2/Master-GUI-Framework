@@ -209,8 +209,8 @@ local function DrawRectVertices(width, height, drawFunction)
 end
 
 
-local function DrawRect(rect, drawFunction, x, y)
-	drawFunction(x, y, x + rect.width, y + rect.height)
+local function DrawRect(drawFunction, x, y, width, height)
+	drawFunction(x, y, x + width, y + height)
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -261,9 +261,7 @@ function framework:Gradient(color1, color2, color3, color4)
 		gl_Vertex(x + xOffset, y + yOffset)
 	end
 
-	function gradient:Draw(rect, x, y)
-		local width = rect.width
-		local height = rect.height
+	function gradient:Draw(rect, x, y, width, height)
 		local cornerRadius = rect.cornerRadius or 0
 
 		if cornerRadius > 0 then
@@ -297,14 +295,11 @@ function framework:Color(r, g, b, a)
 		gl_Vertex(x + xOffset, y + yOffset)
 	end
 	
-	function color:Draw(rect, x, y)
+	function color:Draw(rect, x, y, width, height)
 		self:Set()
 		local cornerRadius = rect.cornerRadius or 0
 
 		if cornerRadius > 0 then
-			local width = rect.width
-			local height = rect.height
-
 			local beyondLeft = x <= 0
 			local belowBottom = y <= 0
 			local beyondRight = (x + width) >= viewportWidth
@@ -313,7 +308,7 @@ function framework:Color(r, g, b, a)
 			gl_BeginEnd(GL_POLYGON, DrawRoundedRect, width, height, cornerRadius, drawRoundedRectVertex, 
 				belowBottom or beyondLeft, beyondRight or belowBottom, beyondRight or beyondTop, beyondLeft or beyondTop, x, y)
 		else
-			DrawRect(rect, gl_Rect, x, y)
+			DrawRect(gl_Rect, x, y, width, height)
 		end
 	end
 
@@ -337,7 +332,7 @@ function framework:Stroke(width, color, inside)
 		gl_Vertex(cachedX + xOffset, cachedY + yOffset)
 	end
 
-	function stroke:Draw(rect, x, y)
+	function stroke:Draw(rect, x, y, width, height)
 		local strokeWidth = self.width
 
 		color:Set()
@@ -348,14 +343,14 @@ function framework:Stroke(width, color, inside)
 		if inside then
 			cachedX = floor(x + halfStroke)
 			cachedY = floor(y + halfStroke)
-			cachedWidth = ceil(rect.width - strokeWidth)
-			cachedHeight = ceil(rect.height - strokeWidth)
+			cachedWidth = ceil(width - strokeWidth)
+			cachedHeight = ceil(height - strokeWidth)
 			cachedCornerRadius = ceil(max(0, (rect.cornerRadius or 0) - halfStroke))
 		else
 			cachedX = floor(x - halfStroke)
 			cachedY = floor(y - halfStroke)
-			cachedWidth = ceil(rect.width + strokeWidth)
-			cachedHeight = ceil(rect.height + strokeWidth)
+			cachedWidth = ceil(width + strokeWidth)
+			cachedHeight = ceil(height + strokeWidth)
 			cachedCornerRadius = ceil(max(0, (rect.cornerRadius or 0) + halfStroke))
 		end
 
@@ -379,17 +374,14 @@ function framework:Image(fileName, tintColor)
 		gl_Vertex(x + xOffset, y + yOffset)
 	end
 
-	function image:Draw(rect, x, y)
+	function image:Draw(rect, x, y, width, height)
 		self.tintColor:Set()
 		gl_Texture(self.fileName)
-
-		local width = rect.width
-		local height = rect.height
 		
 		if rect.cornerRadius > 0 then
 			gl_BeginEnd(GL_POLYGON, DrawRoundedRect, width, height, rect.cornerRadius, drawRoundedRectVertex, false, false, false, false, x, y, width, height)
 		else
-			DrawRect(rect, gl_TexRect, x, y)
+			DrawRect(gl_TexRect, x, y, width, height)
 		end
 		gl_Texture(false)
 	end
@@ -403,19 +395,33 @@ end
 
 local nextID = 0
 function framework:PrimaryFrame(body)
-	local primaryFrame = { body = body, width = 0, height = 0, cachedX = 0, cachedY = 0 }
+	local primaryFrame = { body = body }
+
+	local cachedX, cachedY
+	local width, height
+
+	function primaryFrame:Geometry()
+		return cachedX, cachedY, width, height
+	end
+
+	function primaryFrame:CachedPosition()
+		return cachedX, cachedY
+	end
+
+	function primaryFrame:Size()
+		return width, height
+	end
 
 	function primaryFrame:Layout(availableWidth, availableHeight)
-		self.body:Layout(availableWidth, availableHeight)
-		self.width = body.width
-		self.height = body.height
+		width, height = self.body:Layout(availableWidth, availableHeight)
+		return width, height
 	end
 
 	function primaryFrame:Draw(x, y)
 		self.body:Draw(x, y)
 		activeElement.primaryFrame = self
-		self.cachedX = x
-		self.cachedY = y
+		cachedX = x
+		cachedY = y
 	end
 
 	return primaryFrame
@@ -423,16 +429,23 @@ end
 
 -- A component of fixed size.
 function framework:Rect(width, height, cornerRadius, decorations)
-	local rect = { width = width, height = height, cornerRadius = cornerRadius or 0, decorations = decorations or {} }
+	local rect = { cornerRadius = cornerRadius or 0, decorations = decorations or {} }
+
+	function rect:SetSize(newWidth, newHeight)
+		width = newWidth
+		height = newHeight
+	end
 
 	function rect:Draw(x, y)
 		local decorations = self.decorations
 		for i = 1, #decorations do
-			decorations[i]:Draw(self, x, y)
+			decorations[i]:Draw(self, x, y, width, height)
 		end
 	end
 
-	function rect:Layout() end
+	function rect:Layout() 
+		return width, height 
+	end
 
 	return rect
 end
@@ -473,18 +486,20 @@ framework.color = {
 
 -- Auto-sizing text
 function framework:Text(string, color, constantWidth, constantHeight, font)
-	local text = { width = 0, height = 0, descender = 0, color = color or framework.color.white, constantWidth = constantWidth, constantHeight = constantHeight }
+	local text = { descender = 0, color = color or framework.color.white, constantWidth = constantWidth, constantHeight = constantHeight }
 
 	local fontSize
 
+	local width, height
+
 	local function layout()
-		text.width = text.constantWidth or (font.glFont:GetTextWidth(string) * fontSize)
+		width = text.constantWidth or (font.glFont:GetTextWidth(string) * fontSize)
 		if text.constantHeight then
-			text.height = text.constantHeight
+			height = text.constantHeight
 			text.descender = 0
 		else
-			local height, descender = font.glFont:GetTextHeight(string)
-			text.height = height * fontSize
+			local unscaledHeight, descender = font.glFont:GetTextHeight(string)
+			height = unscaledHeight * fontSize
 			-- self.descender = descender * fontSize
 			-- Spring.Echo(self.descender)
 		end
@@ -506,7 +521,9 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 	text:SetFont(font)
 	text:SetString(string)
 
-	function text:Layout(availableHeight, availableWidth) end
+	function text:Layout(availableHeight, availableWidth)
+		return width, height
+	end
 	function text:Draw(x, y)
 		self.color:Set()
 		gl_Text(string, x, ceil(y + 0.5), fontSize, "")
@@ -557,16 +574,29 @@ for _, event in pairs(events) do
 	activeResponders[event] = {}
 end
 function framework:Responder(rect, event, action)
-	local responder = { rect = rect, action = action, width = 0, height = 0, cachedX = 0, cachedY = 0, responders = {} }
+	local responder = { rect = rect, action = action, responders = {} }
 	local id = responderID -- immutable, and will be captured by the functions. Don't need to store it in the table
 	-- Event is similarly immutable, so we don't need to store that in the table either.
 	responderID = responderID + 1
 
+	local width, height
+	local cachedX, cachedY
+
 	function responder:Layout(...)
-		local rect = self.rect
-		rect:Layout(...)
-		self.width = rect.width
-		self.height = rect.height
+		width, height = self.rect:Layout(...)
+		return width, height
+	end
+
+	function responder:Size()
+		return width, height
+	end
+
+	function responder:CachedPosition()
+		return cachedX, cachedY
+	end
+
+	function responder:Geometry()
+		return cachedX, cachedY, width, height
 	end
 
 	function responder:Draw(x, y)
@@ -582,8 +612,8 @@ function framework:Responder(rect, event, action)
 
 		-- Spring.Echo(x .. ", " .. y .. ", " .. self.width .. ", " .. self.height)
 		
-		self.cachedX = x
-		self.cachedY = y
+		cachedX = x
+		cachedY = y
 	end
 
 	return responder
@@ -592,15 +622,30 @@ end
 local tooltipID = 0
 local activeTooltip
 function framework:Tooltip(rect, description)
-	local tooltip = { rect = rect, description = description, width = 0, height = 0, cachedX = 0, cachedY = 0, tooltips = {} }
+	local tooltip = { rect = rect, description = description, tooltips = {} }
 	local id = tooltipID -- like for responder, this is immutable so doesn't need to be stored in the table
 	tooltipID = tooltipID + 1
 
-	function tooltip:Layout(...)
-		rect:Layout(...)
-		self.width = rect.width
-		self.height = rect.height
+	local width, height
+	local cachedX, cachedY
+
+	function tooltip:Size()
+		return width, height
 	end
+
+	function tooltip:CachedPosition()
+		return cachedX, cachedY
+	end
+
+	function tooltip:Geometry()
+		return cachedX, cachedY, width, height
+	end
+
+	function tooltip:Layout(...)
+		width, height = self.rect:Layout(...)
+		return width, height
+	end
+	
 	function tooltip:Draw(x, y)
 		local previousActiveTooltip = activeTooltip
 		local parent = self.parent
@@ -615,8 +660,9 @@ function framework:Tooltip(rect, description)
 
 		self.rect:Draw(x, y)
 		activeTooltip = previousActiveTooltip
-		self.cachedX = x
-		self.cachedY = y
+		
+		cachedX = x
+		cachedY = y
 	end
 	return tooltip
 end
@@ -630,22 +676,21 @@ framework.yAnchor = { bottom = 0, center = 0.5, top = 1 }
 
 -- Positions a rect relative to another rect, with no impact on the layout of the original rect.
 function framework:RectAnchor(rectToAnchorTo, anchoredRect, xAnchor, yAnchor)
-	local rectAnchor = { rectToAnchorTo = rectToAnchorTo, anchoredRect = anchoredRect, xAnchor = xAnchor, yAnchor = yAnchor }
+	local rectAnchor = { rectToAnchorTo = rectToAnchorTo, anchoredRect = anchoredRect, xAnchor = xAnchor, yAnchor = yAnchor, type = "RectAnchor" }
+
+	local rectToAnchorToWidth,rectToAnchorToHeight,anchoredRectWidth,anchoredRectHeight
 
 	function rectAnchor:Layout(availableWidth, availableHeight)
-		local rectToAnchorTo = self.rectToAnchorTo
-		rectToAnchorTo:Layout(availableWidth, availableHeight)
-		self.anchoredRect:Layout(availableWidth, availableHeight)
-
-		self.width = rectToAnchorTo.width
-		self.height = rectToAnchorTo.height
+		anchoredRectWidth, anchoredRectHeight = self.anchoredRect:Layout(availableWidth, availableHeight)
+		rectToAnchorToWidth, rectToAnchorToHeight = self.rectToAnchorTo:Layout(availableWidth, availableHeight)
+		return rectToAnchorToWidth, rectToAnchorToHeight
 	end
 
 	function rectAnchor:Draw(x, y)
 		local rectToAnchorTo = self.rectToAnchorTo
 		local anchoredRect = self.anchoredRect
 		rectToAnchorTo:Draw(x, y)
-		anchoredRect:Draw(x + (rectToAnchorTo.width - anchoredRect.width) * self.xAnchor, y + (rectToAnchorTo.height - anchoredRect.height) * self.yAnchor)
+		anchoredRect:Draw(x + (rectToAnchorToWidth - anchoredRectWidth) * self.xAnchor, y + (rectToAnchorToHeight - anchoredRectHeight) * self.yAnchor)
 	end
 	return rectAnchor
 end
@@ -654,30 +699,27 @@ function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, y
 	local anchor = { rectToAnchorTo = rectToAnchorTo, anchoredRect = anchoredRect, xOffset = xOffset, yOffset = yOffset }
 
 	function anchor:Layout(availableWidth, availableHeight)
-		local rectToAnchorTo = self.rectToAnchorTo
-		rectToAnchorTo:Layout(availableWidth, availableHeight)
-		self.anchoredRect:Layout(availableWidth, availableHeight)
-		
-		self.width = rectToAnchorTo.width
-		self.height = rectToAnchorTo.height
+		rectToAnchorToWidth, rectToAnchorToHeight = self.rectToAnchorTo:Layout(availableWidth, availableHeight)
+		anchoredRectWidth, anchoredRectHeight = self.anchoredRect:Layout(availableWidth, availableHeight)
+		return rectToAnchorToWidth, rectToAnchorToHeight
 	end
 
 	function anchor:Draw(x, y)
-		local rectToAnchorTo = self.rectToAnchorTo
-		local anchoredRect = self.anchoredRect
-		rectToAnchorTo:Draw(x, y)
-		anchoredRect:Draw(x + self.xOffset, y + self.yOffset)
+		self.rectToAnchorTo:Draw(x, y)
+		self.anchoredRect:Draw(x + self.xOffset, y + self.yOffset)
 	end
 	return anchor
 end
 
 function framework:MarginAroundRect(rect, left, top, right, bottom, decorations, cornerRadius, shouldRasterize)
-	local margin = { width = 0, height = 0, rect = rect, decorations = decorations or {}, cornerRadius = cornerRadius or 0, 
-		shouldInvalidateRasterizer = true
+	local margin = { rect = rect, decorations = decorations or {}, cornerRadius = cornerRadius or 0, 
+		shouldInvalidateRasterizer = true, type = "MarginAroundRect"
 	}
 
 	local rasterizableRect
 	local rasterizer
+
+	local width, height
 
 	if shouldRasterize then
 		rasterizableRect = framework:Rect(0, 0, cornerRadius, decorations)
@@ -685,8 +727,7 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 
 		function margin:Draw(x, y)
 			if self.shouldInvalidateRasterizer then
-				rasterizableRect.width = self.width
-				rasterizableRect.height = self.height
+				rasterizableRect:SetSize(width, height)
 				rasterizableRect.cornerRadius = self.cornerRadius
 				rasterizableRect.decorations = self.decorations
 				rasterizer.invalidated = self.shouldInvalidateRasterizer
@@ -700,7 +741,7 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 		function margin:Draw(x, y)
 			local decorations = self.decorations
 			for i = 1, #decorations do
-				decorations[i]:Draw(self, x, y)
+				decorations[i]:Draw(self, x, y, width, height)
 			end
 	
 			self.rect:Draw(x + left, y + bottom)
@@ -710,28 +751,32 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 	function margin:Layout(availableWidth, availableHeight)
 		local horizontal = left + right -- May be more performant to do left right top bottom – not sure though
 		local vertical = top + bottom
-		local rect = self.rect
 
-		rect:Layout(availableWidth - horizontal, availableHeight - vertical)
-		self.width = rect.width + horizontal
-		self.height = rect.height + vertical
+		local rectWidth, rectHeight = self.rect:Layout(availableWidth - horizontal, availableHeight - vertical)
+		width = rectWidth + horizontal
+		height = rectHeight + vertical
+		return width, height
 	end
 
 	return margin
 end
 
 function framework:FrameOfReference(xAnchor, yAnchor, body)
-	local frame = { xAnchor = xAnchor, yAnchor = yAnchor, body = body, width = 0, height = 0, availableWidth = 0, availableHeight = 0 }
+	local frame = { xAnchor = xAnchor, yAnchor = yAnchor, body = body, type = "FrameOfReference" }
+
+	local width, height
+	local rectWidth, rectHeight
 
 	function frame:Layout(availableWidth, availableHeight)
-		self.body:Layout(availableWidth, availableHeight)
-		self.width = availableWidth
-		self.height = availableHeight
+		rectWidth, rectHeight = self.body:Layout(availableWidth, availableHeight)
+		width = availableWidth
+		height = availableHeight
+
+		return availableWidth, availableHeight
 	end
 
 	function frame:Draw(x, y)
-		local body = self.body
-		body:Draw(x + (self.width - body.width) * self.xAnchor, y + (self.height - body.height) * self.yAnchor)
+		self.body:Draw(x + (width - rectWidth) * self.xAnchor, y + (height - rectHeight) * self.yAnchor)
 	end
 
 	return frame
@@ -742,126 +787,134 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 function framework:VerticalStack(contents, spacing, xAnchor)
-	local verticalStack = { members = contents, height = 0, width = 0, xAnchor = xAnchor, spacing = spacing}
+	local verticalStack = { members = contents, xAnchor = xAnchor, spacing = spacing, type = "VerticalStack" }
+
+	local maxWidth
 
 	function verticalStack:Layout(availableWidth, availableHeight)
-		local elapsedDistance = 0
-		local maxWidth = 0
-		local spacing = self.spacing
+
 		local members = self.members
 		local memberCount = #members
+
+		if memberCount == 0 then
+			return 0, 0
+		end
+
+		local elapsedDistance = 0
+	 	maxWidth = 0
+		local spacing = self.spacing
 		
 		for i = 1, memberCount do 
 			local member = members[i]
-			member:Layout(availableWidth, availableHeight - elapsedDistance)
+			local memberWidth, memberHeight = member:Layout(availableWidth, availableHeight - elapsedDistance)
 			member.vStackCachedY = elapsedDistance
-			elapsedDistance = elapsedDistance + member.height + spacing
-			maxWidth = max(maxWidth, member.width)
+			member.vStackCachedWidth = memberWidth
+			elapsedDistance = elapsedDistance + memberHeight + spacing
+			maxWidth = max(maxWidth, memberWidth)
 		end
 
-		local xAnchor = self.xAnchor
-
-		for i = 1, memberCount do 
-			local member = members[i]
-			member.vStackCachedX = (maxWidth - member.width) * xAnchor
-		end
-
-		self.width = maxWidth
-
-		if memberCount == 0 then 
-			self.height = elapsedDistance 
-		else
-			self.height = elapsedDistance - spacing
-		end
+		return maxWidth, elapsedDistance - spacing
 	end
 
 	function verticalStack:Draw(x, y)
 		local members = self.members
+		local xAnchor = self.xAnchor
+
 		for i = 1, #members do 
 			local member = members[i]
-			member:Draw(x + member.vStackCachedX, y + member.vStackCachedY)
+			member:Draw(x + (maxWidth - member.vStackCachedWidth) * xAnchor, y + member.vStackCachedY)
 		end
 	end
+
 	return verticalStack
 end
 
 function framework:StackInPlace(contents, xAnchor, yAnchor)
-	local stackInPlace = { members = contents, height = 0, width = 0, xAnchor = xAnchor, yAnchor = yAnchor }
+	local stackInPlace = { members = contents, xAnchor = xAnchor, yAnchor = yAnchor, type = "StackInPlace" }
+
+	local maxWidth
+	local maxHeight
 
 	function stackInPlace:Layout(availableWidth, availableHeight)
-		local maxWidth = 0
-		local maxHeight = 0
+		maxWidth = 0
+		maxHeight = 0
+
 		local members = self.members
 		local memberCount = #members
 
 		for i = 1, memberCount do 
 			local member = members[i]
-			member:Layout(availableWidth, availableHeight)
-			maxWidth = max(maxWidth, member.width)
-			maxHeight = max(maxHeight, member.height)
+			local memberWidth, memberHeight = member:Layout(availableWidth, availableHeight)
+
+			maxWidth = max(maxWidth, memberWidth)
+			maxHeight = max(maxHeight, memberHeight)
+
+			member.stackInPlaceCachedWidth = memberWidth
+			member.stackInPlaceCachedHeight = memberHeight
 		end
 
-		local xAnchor = self.xAnchor
-		local yAnchor = self.yAnchor
-
-		for i = 1, memberCount do 
-			local member = members[i]
-			member.stackInPlaceCachedX = (maxWidth - member.width) * xAnchor
-			member.stackInPlaceCachedY = (maxHeight - member.height) * yAnchor
-		end
-
-		self.width = maxWidth
-		self.height = maxHeight
+		return maxWidth, maxHeight
 	end
 
 	function stackInPlace:Draw(x, y)
 		local members = self.members
+		local xAnchor = self.xAnchor
+		local yAnchor = self.yAnchor
+
 		for i = 1, #members do 
 			local member = members[i]
-			member:Draw(x + member.stackInPlaceCachedX, y + member.stackInPlaceCachedY)
+			member:Draw(x + (maxWidth - member.stackInPlaceCachedWidth) * xAnchor, y + (maxHeight - member.stackInPlaceCachedHeight) * yAnchor)
 		end
 	end
 	return stackInPlace
 end
 
 function framework:HorizontalStack(members, spacing, yAnchor)
-	local horizontalStack = { yAnchor = yAnchor or 0.5, spacing = spacing or 0, members = members, height = 0, width = 0 }
+	local horizontalStack = { yAnchor = yAnchor or 0.5, spacing = spacing or 0, type = "HorizontalStack" }
+
+	horizontalStack.members = {}
+	for _, member in pairs(members) do
+		if member ~= nil then 
+			insert(horizontalStack.members, member)
+		end
+	end
+
+	local maxHeight
 
 	function horizontalStack:Layout(availableWidth, availableHeight)
-		local elapsedDistance = 0
-		local maxHeight = 0
-		local spacing = self.spacing
+
 		local members = self.members
 		local memberCount = #members
 
-		for i = 1, memberCount do 
-			local member = members[i]
-			member:Layout(availableWidth - elapsedDistance, availableHeight)
-			member.hStackCachedX = elapsedDistance	
-			elapsedDistance = elapsedDistance + member.width + spacing
-			maxHeight = max(member.height, maxHeight)
+		if memberCount == 0 then
+			return 0, 0
 		end
 
-		local yAnchor = self.yAnchor
+		local elapsedDistance = 0
+		maxHeight = 0
+
+		local spacing = self.spacing
+
 		for i = 1, memberCount do
 			local member = members[i]
-			member.hStackCachedY = (maxHeight - member.height) * yAnchor
-		end
-
-		if memberCount == 0 then
-			self.width = elapsedDistance 
-		else
-			self.width = elapsedDistance - spacing
+			local memberWidth, memberHeight = member:Layout(availableWidth - elapsedDistance, availableHeight)
+			member.hStackCachedX = elapsedDistance
+			member.hStackCachedHeight = memberHeight
+			elapsedDistance = elapsedDistance + memberWidth + spacing
+			maxHeight = max(memberHeight, maxHeight)
 		end
 		
-		self.height = maxHeight
+
+		return elapsedDistance - spacing, maxHeight
 	end
 
 	function horizontalStack:Draw(x, y)
 		local members = self.members
+		local yAnchor = self.yAnchor
+
 		for i = 1, #members do
 			local member = members[i]
-			member:Draw(x + member.hStackCachedX, y + member.hStackCachedY)
+			member:Draw(x + member.hStackCachedX, y + (maxHeight - member.hStackCachedHeight) * yAnchor)
 		end
 	end
 	
@@ -875,10 +928,12 @@ end
 -- NOTE: Translation is NOT COMPATIBLE WITH RESPONDERS
 local emptyTable = {}
 function framework:Rasterizer(body)
-	local rasterizer = { body = body, invalidated = true, width = 0, height = 0 }
+	local rasterizer = { body = body, invalidated = true, type = "Rasterizer" }
 	
 	local activeResponderCache = {}
 	local drawList
+
+	local width, height
 
 	for _, event in pairs(events) do
 		activeResponderCache[event] = { responders = {} }
@@ -886,11 +941,9 @@ function framework:Rasterizer(body)
 
 	function rasterizer:Layout(availableWidth, availableHeight)
 		if self.invalidated then
-			local body = self.body
-			body:Layout(availableWidth, availableHeight)
-			self.width = body.width
-			self.height = body.height
+			width, height = self.body:Layout(availableWidth, availableHeight)
 		end
+		return width, height 
 	end
 
 	local function draw(body, ...)
@@ -968,7 +1021,8 @@ end
 
 local function FindTooltip(x, y, tooltips)
 	for _,tooltip in pairs(tooltips) do
-		if PointIsInRect(x, y, tooltip.cachedX, tooltip.cachedY, tooltip.width, tooltip.height) then
+		local tooltipX, tooltipY, tooltipWidth, tooltipHeight = tooltip:Geometry()
+		if PointIsInRect(x, y, tooltipX, tooltipY, tooltipWidth, tooltipHeight) then
 			local child = FindTooltip(x, y, tooltip.tooltips)
 			return child or tooltip
 		end
@@ -1003,7 +1057,8 @@ local function CheckElementUnderMouse(x, y)
 		for _, element in pairs(elements) do
 			local primaryFrame = element.primaryFrame
 			if primaryFrame ~= nil then -- Check for pre-initialised elements.
-				if PointIsInRect(x, y, primaryFrame.cachedX, primaryFrame.cachedY, primaryFrame.width, primaryFrame.height) then 
+				local frameX, frameY, frameWidth, frameHeight = primaryFrame:Geometry()
+				if PointIsInRect(x, y, frameX, frameY, frameWidth, frameHeight) then 
 					elementBelowMouse = element
 					return true
 				end
@@ -1029,7 +1084,8 @@ end
 
 local function SearchDownResponderTree(responder, x, y, ...)
 	for _,responder in pairs(responder.responders) do
-		if PointIsInRect(x, y, responder.cachedX, responder.cachedY, responder.width, responder.height) then
+		local responderX, responderY, responderWidth, responderHeight = responder:Geometry()
+		if PointIsInRect(x, y, responderX, responderY, responderWidth, responderHeight) then
 			if SearchDownResponderTree(responder, x, y, ...) then
 				return true
 			else
