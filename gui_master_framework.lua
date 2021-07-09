@@ -12,7 +12,7 @@ function widget:GetInfo()
 		author = "MasterBel2",
 		date = "October 2020",
 		license = "GNU GPL, v2 or later",
-		layer = 0,
+		layer = -2,
 		enabled = true,
 	}
 end
