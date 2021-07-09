@@ -35,6 +35,15 @@ WG.MasterFramework[framework.compatabilityVersion] = framework
 -- Internal Access
 ------------------------------------------------------------------------------------------------------------
 
+local function Log(string)
+	Spring.Echo("[MasterFramework " .. framework.compatabilityVersion .. "] " .. string)
+end
+
+local drawCalls = {}
+function LogDrawCall(caller)
+	drawCalls[caller] = (drawCalls[caller] or 0) + 1
+end
+
 local hasCheckedElementBelowMouse = false
 
 local events = framework.events
@@ -78,7 +87,7 @@ function framework:InsertElement(body, preferredKey, deselectAction)
 	else
 		conflicts = conflicts + 1
 		key = preferredKey..conflicts
-		Spring.Echo("Key " .. preferredKey .. " has already been taken! Assigning key " .. key .. " instead.")
+		Log("Key " .. preferredKey .. " has already been taken! Assigning key " .. key .. " instead.")
 	end
 
 	elements[key] = element
@@ -89,7 +98,7 @@ function framework:RemoveElement(key)
 	if key ~= nil then
 		elements[key] = nil 
 	else
-		Spring.Echo("[Master GUI Framework] Could not remove element: Key is nill!")
+		Log("Could not remove element: Key is nill!")
 	end
 end
 
@@ -133,6 +142,22 @@ local GL_LINE_LOOP = GL.LINE_LOOP
 local GL_POLYGON = GL.POLYGON
 local GL_QUADS = GL.QUADS
 
+local Spring_GetTimer = Spring.GetTimer
+local Spring_DiffTimers = Spring.DiffTimers
+
+local profileName
+local startTimer
+
+local function startProfile(_profileName)
+	profileName = _profileName
+	startTimer = Spring_GetTimer()
+end
+	
+
+local function endProfile()
+	Log("Profiled " .. profileName .. ": " .. Spring_DiffTimers(Spring_GetTimer(), startTimer) * 1000 .. " microseconds")
+end
+
 ------------------------------------------------------------------------------------------------------------
 -- Helper Methods
 ------------------------------------------------------------------------------------------------------------
@@ -157,6 +182,7 @@ local function newSinTheta(cornerRadius)
 	return sinTheta
 end
 local function DrawRoundedRect(width, height, cornerRadius, drawFunction, shouldSquareBottomLeft, shouldSquareBottomRight, shouldSquareTopRight, shouldSquareTopLeft, ...)
+	LogDrawCall("DrawRoundedRect")
 	local centerTopY = height - cornerRadius
 	local centerRightX = width - cornerRadius
 	
@@ -202,6 +228,7 @@ local function DrawRoundedRect(width, height, cornerRadius, drawFunction, should
 end
 
 local function DrawRectVertices(width, height, drawFunction)
+	LogDrawCall("DrawRectVertices")
 	drawFunction(0, 0)
 	drawFunction(width, 0)
 	drawFunction(width, height)
@@ -210,6 +237,7 @@ end
 
 
 local function DrawRect(drawFunction, x, y, width, height)
+	LogDrawCall("DrawRect")
 	drawFunction(x, y, x + width, y + height)
 end
 
@@ -262,6 +290,7 @@ function framework:Gradient(color1, color2, color3, color4)
 	end
 
 	function gradient:Draw(rect, x, y, width, height)
+		LogDrawCall("Gradient")
 		local cornerRadius = rect.cornerRadius or 0
 
 		if cornerRadius > 0 then
@@ -288,6 +317,7 @@ function framework:Color(r, g, b, a)
 	local color = { r = r, g = g, b = b, a = a }
 
 	function color:Set()
+		LogDrawCall("Color (Set)")
 		gl_Color(self.r, self.g, self.b, self.a)
 	end
 
@@ -296,6 +326,7 @@ function framework:Color(r, g, b, a)
 	end
 	
 	function color:Draw(rect, x, y, width, height)
+		LogDrawCall("Color")
 		self:Set()
 		local cornerRadius = rect.cornerRadius or 0
 
@@ -333,6 +364,7 @@ function framework:Stroke(width, color, inside)
 	end
 
 	function stroke:Draw(rect, x, y, width, height)
+		LogDrawCall("Stroke")
 		local strokeWidth = self.width
 
 		color:Set()
@@ -375,6 +407,7 @@ function framework:Image(fileName, tintColor)
 	end
 
 	function image:Draw(rect, x, y, width, height)
+		LogDrawCall("Image")
 		self.tintColor:Set()
 		gl_Texture(self.fileName)
 		
@@ -419,6 +452,7 @@ function framework:PrimaryFrame(body)
 
 	function primaryFrame:Draw(x, y)
 		self.body:Draw(x, y)
+		LogDrawCall("PrimaryFrame")
 		activeElement.primaryFrame = self
 		cachedX = x
 		cachedY = y
@@ -437,6 +471,7 @@ function framework:Rect(width, height, cornerRadius, decorations)
 	end
 
 	function rect:Draw(x, y)
+		LogDrawCall("Rect")
 		local decorations = self.decorations
 		for i = 1, #decorations do
 			decorations[i]:Draw(self, x, y, width, height)
@@ -459,6 +494,8 @@ local fonts = {}
 function framework:Font(fileName, size, outline, outlineStrength)
 	local key = fileName.."s"..(size or "default").."o"..(outline or "default").."os"..(outlineStrength or "default")
 	local font = fonts[key]
+
+	LogDrawCall("Font (Load)")
 
 	if font == nil then
 		font = {
@@ -527,12 +564,14 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 	function text:Draw(x, y)
 		self.color:Set()
 		gl_Text(string, x, ceil(y + 0.5), fontSize, "")
+		LogDrawCall("Text (Grouped)")
 	end
 
 	return text
 end
 
 function framework:DeleteFont(font)
+	LogDrawCall("Font (Delete)")
 	fonts[font.key] = nil
 	gl_DeleteFont(font.glFont)
 end
@@ -600,6 +639,7 @@ function framework:Responder(rect, event, action)
 	end
 
 	function responder:Draw(x, y)
+		LogDrawCall("Responder")
 		-- Parent keep track of the order of responders, and use that to decide who gets the interactions first
 		local previousActiveResponder = activeResponders[event]
 		insert(previousActiveResponder.responders, 1, self)
@@ -647,6 +687,7 @@ function framework:Tooltip(rect, description)
 	end
 	
 	function tooltip:Draw(x, y)
+		LogDrawCall("Tooltip")
 		local previousActiveTooltip = activeTooltip
 		local parent = self.parent
 		if previousActiveTooltip ~= parent then
@@ -687,6 +728,7 @@ function framework:RectAnchor(rectToAnchorTo, anchoredRect, xAnchor, yAnchor)
 	end
 
 	function rectAnchor:Draw(x, y)
+		LogDrawCall("RectAnchor")
 		local rectToAnchorTo = self.rectToAnchorTo
 		local anchoredRect = self.anchoredRect
 		rectToAnchorTo:Draw(x, y)
@@ -707,6 +749,7 @@ function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, y
 	function anchor:Draw(x, y)
 		self.rectToAnchorTo:Draw(x, y)
 		self.anchoredRect:Draw(x + self.xOffset, y + self.yOffset)
+		LogDrawCall("ConstantOffsetAnchor")
 	end
 	return anchor
 end
@@ -776,6 +819,7 @@ function framework:FrameOfReference(xAnchor, yAnchor, body)
 	end
 
 	function frame:Draw(x, y)
+        LogDrawCall("FrameOfReference")
 		self.body:Draw(x + (width - rectWidth) * self.xAnchor, y + (height - rectHeight) * self.yAnchor)
 	end
 
@@ -951,6 +995,7 @@ function framework:Rasterizer(body)
 	end
 
 	function rasterizer:Draw(x, y)
+		LogDrawCall("Rasterizer")
 
 		if self.invalidated or not drawList or viewportDidChange then
 			for _, event in pairs(events) do 
@@ -1001,10 +1046,24 @@ function widget:DrawScreen()
 		for _,responder in pairs(activeResponders) do
 			responder.responders = {}
 		end
-		element.body:Layout(viewportWidth, viewportHeight)
-		element.body:Draw(0, 0)
+		local elementBody = element.body
+		-- startProfile("Layout")
+		-- for i = 0,500 do
+			elementBody:Layout(viewportWidth, viewportHeight)
+		-- end
+		-- endProfile()
+		-- startProfile("Draw")
+		-- for i = 0,500 do
+			elementBody:Draw(0, 0)
+		-- end
+		-- endProfile()
 	end
 	viewportDidChange = false
+	Spring.Echo("####")
+	for caller, callCount in pairs(drawCalls) do
+		Log(caller .. ": " .. callCount)
+	end
+	drawCalls = {}
 end
 
 function widget:ViewResize(viewSizeX, viewSizeY)
@@ -1141,9 +1200,16 @@ function widget:MouseWheel(up, value)
 end
 
 local mouseOverEvent = events.mouseOver
+local isAbove
 function widget:IsAbove(x, y)
 	local isAbove = CheckElementUnderMouse(x, y)
 	if isAbove then FindResponder(mouseOverEvent, x, y) end
+	-- startProfile("IsAbove")
+	local isAbove
+	-- for i=0,1000 do
+		isAbove = CheckElementUnderMouse(x, y)
+	-- end
+	-- endProfile()
 	return isAbove
 end
 
