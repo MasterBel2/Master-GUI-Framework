@@ -1080,10 +1080,15 @@ end
 
 -- NOTE: Translation is NOT COMPATIBLE WITH RESPONDERS
 local emptyTable = {}
-	local rasterizer = { invalidated = true, type = "Rasterizer" }
+local recalculatingRasterizer = false
+
 function framework:Rasterizer(providedBody)
+
 	local textGroup = framework:TextGroup(providedBody)
 	
+	-- debug
+	local framesCalculatedInARow = 0
+
 	-- Caching
 	local activeResponderCache = {}
 	local drawList
@@ -1112,30 +1117,53 @@ function framework:Rasterizer(providedBody)
 
 	function rasterizer:Draw(x, y)
 		LogDrawCall("Rasterizer")
+		if recalculatingRasterizer then
+			-- Display lists cannot be nested, so we'll skip using one while we're creating one.
+			_body:Draw(x, y)
+			return
+		elseif self.invalidated or not drawList or viewportDidChange then
+			-- Log("Recalculating rasterizer " .. self._readOnly_elementID)
+			recalculatingRasterizer = true
+			if framesCalculatedInARow > 0 then
+				Log("Recalculated " .. (self.name or "unnamed") .. " " .. framesCalculatedInARow .. " frame(s) in a row")
+			end
+			LogDrawCall("Rasterizer (Recompile)")
 
-		if self.invalidated or not drawList or viewportDidChange then
-			for _, event in pairs(events) do 
-				activeResponderCache[event].responders = {}
+			-- Cache responders that won't be drawn
+			for _, event in pairs(events) do
+				-- activeResponderCache[event].responders = {}
+				clear(activeResponderCache[event].responders)
 			end
 
 			local previousResponders = activeResponders
 			activeResponders = activeResponderCache
 
-			self.invalidated = false
 			gl_DeleteList(drawList)
 			drawList = gl_CreateList(draw, _body, x, y)
 
+			-- Reset  things
 			activeResponders = previousResponders
+			
+			self.invalidated = false
+			recalculatingRasterizer = false
+			framesCalculatedInARow = framesCalculatedInARow + 1
+		else
+			framesCalculatedInARow = 0
 		end
-		-- body:Draw(x, y) -- For debugging purposes.
+
 		for _, event in pairs(events) do
 			local parentResponder = activeResponders[event]
 			local childrenOfParentResponder = parentResponder.responders
-			for _, responder in pairs(activeResponderCache[event].responders) do
-				insert(childrenOfParentResponder, responder)
-				responder.parent = parentResponder
+			
+			local cachedResponders = activeResponderCache[event].responders
+
+			for index = 1, #cachedResponders do
+				local cachedResponder = cachedResponders[index]
+				insert(childrenOfParentResponder, cachedResponder)
+				cachedResponder.parent = parentResponder
 			end
 		end
+
 		gl_CallList(drawList)
 	end
 
