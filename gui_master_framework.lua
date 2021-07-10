@@ -22,7 +22,7 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local framework = {
-	compatabilityVersion = 6,
+	compatabilityVersion = 7,
 	scaleFactor = 0,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
@@ -666,6 +666,31 @@ end
 
 -- NOTE: Rasterizers are compatible with Responders IF AND ONLY IF the rasterizer DOES NOT APPLY TRANSLATION
 
+-- In order to receive enter actions and leave actions, the responder must return true to hover actions.
+function framework:MouseOverResponder(rect, hoverAction, enterAction, leaveAction)
+	local watcher = self:IsAboveWatcher()
+
+	local responder = self:Responder(rect, events.mouseOver, hoverAction)
+
+	responder.MouseEnter = enterAction
+	responder.MouseLeave = leaveAction
+
+	return responder
+end
+
+function framework:MouseOverChangeResponder(rect, changeAction)
+	return self:MouseOverResponder(
+		rect, 
+		function() return true end,
+		function() 
+			changeAction(true) 
+		end,
+		function() 
+			changeAction(false) 
+		end
+	)
+end
+
 function framework:MousePressResponder(rect, downAction, moveAction, releaseAction)
 	local responder = self:Responder(rect, events.mousePress, nil)
 
@@ -1141,7 +1166,7 @@ function widget:DrawScreen()
 		activeTooltip = element
 		activeResponders = element.baseResponders
 		for _,responder in pairs(activeResponders) do
-			responder.responders = {}
+			clear(responder.responders)
 		end
 		local elementBody = element.body
 		-- startProfile("Layout")
@@ -1227,29 +1252,28 @@ end
 
 local function Event(responder, ...)
 	if responder:action(...) then
-		return true
+		return responder
 	else
 		local parent = responder.parent
 		if parent ~= nil then
 			return Event(parent, ...)
-		else
-			return false
 		end
 	end
 end
 
 local function SearchDownResponderTree(responder, x, y, ...)
-	for _,responder in pairs(responder.responders) do
-		local responderX, responderY, responderWidth, responderHeight = responder:Geometry()
+	for _,childResponder in pairs(responder.responders) do
+		local responderX, responderY, responderWidth, responderHeight = childResponder:Geometry()
 		if PointIsInRect(x, y, responderX, responderY, responderWidth, responderHeight) then
-			if SearchDownResponderTree(responder, x, y, ...) then
-				return true
+			local favouredResponder = SearchDownResponderTree(childResponder, x, y, ...)
+			if favouredResponder then
+				return favouredResponder
 			else
-				return Event(responder, x, y, ...)
+				return Event(childResponder, x, y, ...)
 			end
 		end
 	end
-	return false
+	return nil
 end
 
 local function FindResponder(event, x, y, ...)
@@ -1296,18 +1320,91 @@ function widget:MouseWheel(up, value)
 	end
 end
 
+local watcherID = 0
+-- Tracks which responders the mouse cursor is above along the entire responder chain, and notifies them
+-- when the cursor enters and leaves their bounds.
+function framework:IsAboveWatcher()
+	local object = { id = watcherID }
+	local lastResponderBelow
+
+	watcherID = watcherID + 1
+
+	local nestedWatcher
+
+	-- Updates the last responder below, and the nested watcher.
+	function object:Update(x, y, responderUnderMouse)
+		if lastResponderBelow then
+			if (not responderUnderMouse) or (responderUnderMouse.id ~= lastResponderBelow.id) then
+				lastResponderBelow:MouseLeave()
+				nestedWatcher:Reset()
+				nestedWatcher = nil
+			end
+		end
+
+		if responderUnderMouse then
+			if (not lastResponderBelow) or (lastResponderBelow.id ~= responderUnderMouse.id) then
+				responderUnderMouse:MouseEnter()
+				nestedWatcher = framework:IsAboveWatcher()
+			end
+			nestedWatcher:Bubble(x, y, responderUnderMouse)
+		end
+
+		lastResponderBelow = responderUnderMouse
+	end
+
+	-- Recursively searches for another responder that might handle the event, and triggers the events.
+	function object:Bubble(x, y, responder)
+		-- Spring.Echo("Watcher " .. self.id .. " is bubbling!")
+		if responder and responder.parent then
+			local responderUnderMouse = Event(responder.parent, x, y)
+			-- if responderUnderMouse then
+			-- 	Spring.Echo("Watcher " .. self.id .. " bubbled to responder " .. responderUnderMouse.id)
+			-- else
+			-- 	Spring.Echo("Watcher " .. self.id .. " could not find a responder to bubble to!")
+			-- end
+			self:Update(x, y, responderUnderMouse)
+		else 
+			-- Spring.Echo("Watcher " .. self.id .. " found no responder")
+			self:Reset()
+		end
+	end
+
+	-- Locates the most deeply nested responder, and begins watching it.
+	function object:Search(x, y, responder)
+		self:Update(x, y, SearchDownResponderTree(responder, x, y))
+	end
+
+	-- Informs the watcher there is no responder to watch.
+	function object:Reset()
+		self:Update(nil, nil, nil)
+	end
+
+	return object
+end
+
+local isAboveThing = framework:IsAboveWatcher()
+
 local mouseOverEvent = events.mouseOver
 local isAbove
+local isAboveChecked = false
 function widget:IsAbove(x, y)
-	local isAbove = CheckElementUnderMouse(x, y)
-	if isAbove then FindResponder(mouseOverEvent, x, y) end
+	if isAboveChecked then return end
 	-- startProfile("IsAbove")
 	local isAbove
 	-- for i=0,1000 do
 		isAbove = CheckElementUnderMouse(x, y)
+		if isAbove then
+			isAboveThing:Search(x, y, elementBelowMouse.baseResponders[events.mouseOver])
+		else
+			isAboveThing:Reset()
+		end
 	-- end
 	-- endProfile()
+	isAboveChecked = true
 	return isAbove
+end
+function widget:Update()
+	isAboveChecked = false
 end
 
 -- Tweak mode 
