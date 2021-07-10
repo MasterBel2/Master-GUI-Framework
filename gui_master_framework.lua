@@ -22,7 +22,7 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local framework = {
-	compatabilityVersion = 5,
+	compatabilityVersion = 6,
 	scaleFactor = 0,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
@@ -107,6 +107,7 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local insert = table.insert
+local remove = table.remove
 
 local ceil = math.ceil
 local cos = math.cos
@@ -148,6 +149,10 @@ local Spring_DiffTimers = Spring.DiffTimers
 local profileName
 local startTimer
 
+------------------------------------------------------------------------------------------------------------
+-- Profiling
+------------------------------------------------------------------------------------------------------------
+
 local function startProfile(_profileName)
 	profileName = _profileName
 	startTimer = Spring_GetTimer()
@@ -156,6 +161,16 @@ end
 
 local function endProfile()
 	Log("Profiled " .. profileName .. ": " .. Spring_DiffTimers(Spring_GetTimer(), startTimer) * 1000 .. " microseconds")
+end
+
+------------------------------------------------------------------------------------------------------------
+-- Helpers
+------------------------------------------------------------------------------------------------------------
+
+local function clear(array)
+	for index = 1, #array do
+		remove(array)
+	end
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -428,10 +443,18 @@ end
 
 local nextID = 0
 function framework:PrimaryFrame(body)
-	local primaryFrame = { body = body }
+	local primaryFrame = {}
 
 	local cachedX, cachedY
 	local width, height
+
+	local _body
+
+	function primaryFrame:SetBody()
+		_body = framework:TextGroup(body)
+	end
+
+	primaryFrame:SetBody(body)
 
 	function primaryFrame:Geometry()
 		return cachedX, cachedY, width, height
@@ -446,13 +469,13 @@ function framework:PrimaryFrame(body)
 	end
 
 	function primaryFrame:Layout(availableWidth, availableHeight)
-		width, height = self.body:Layout(availableWidth, availableHeight)
+		width, height = _body:Layout(availableWidth, availableHeight)
 		return width, height
 	end
 
 	function primaryFrame:Draw(x, y)
-		self.body:Draw(x, y)
 		LogDrawCall("PrimaryFrame")
+		_body:Draw(x, y)
 		activeElement.primaryFrame = self
 		cachedX = x
 		cachedY = y
@@ -521,15 +544,65 @@ framework.color = {
 	blue = framework:Color(0, 1, 0, 1)
 }
 
+local activeTextGroup
+function framework:TextGroup(body)
+	local textGroup = {}
+	local elements = {}
+
+	function textGroup:SetBody(newBody)
+		body = newBody
+	end
+
+	function textGroup:AddElement(newElement)
+		local fontKey = newElement._readOnly_font.key
+		local fontGroup = elements[fontKey] or {}
+		insert(fontGroup, newElement)
+		elements[fontKey] = fontGroup
+	end
+
+	function textGroup:Layout(...)
+		return body:Layout(...)
+	end
+
+	function textGroup:Draw(...)
+		for fontKey, textElements in pairs(elements) do
+			if #textElements == 0 then
+				elements[fontKey] = nil
+			else
+				clear(textElements)
+			end
+		end
+		
+		local previousTextGroup = activeTextGroup
+		activeTextGroup = self
+		body:Draw(...)
+		activeTextgroup = previousTextGroup
+
+		for _, textElements in pairs(elements) do
+			local textElement = textElements[1]
+			if not textElement then break end
+
+			local glFont = textElement._readOnly_font.glFont
+			glFont:Begin()
+			for index = 1, #textElements do
+				textElements[index]:DrawForReal(glFont)
+			end
+			glFont:End()
+		end
+	end
+	return textGroup
+end
+
 -- Auto-sizing text
+-- FIXME: Text currently has an issue where it'll jump up and down. Not sure why this is happening. A pixel rounding issue maybe.
 function framework:Text(string, color, constantWidth, constantHeight, font)
-	local text = { descender = 0, color = color or framework.color.white, constantWidth = constantWidth, constantHeight = constantHeight }
+	local text = { _readOnly_font = font, descender = 0, color = color or framework.color.white, constantWidth = constantWidth, constantHeight = constantHeight }
 
 	local fontSize
 
 	local width, height
 
-	local function layout()
+	local function layout(font)
 		width = text.constantWidth or (font.glFont:GetTextWidth(string) * fontSize)
 		if text.constantHeight then
 			height = text.constantHeight
@@ -538,33 +611,44 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 			local unscaledHeight, descender = font.glFont:GetTextHeight(string)
 			height = unscaledHeight * fontSize
 			-- self.descender = descender * fontSize
-			-- Spring.Echo(self.descender)
 		end
 	end
 
 	function text:SetFont(newFont)
-		font = newFont or framework.defaultFont
+		local font = newFont or framework.defaultFont
 		fontSize = font.size
-		layout()
+		self._readOnly_font = font
+		layout(font)
 	end
 
 	function text:SetString(newString)
 		if string ~= newString then
 			string = newString
-			layout()
+			layout(self._readOnly_font)
 		end
 	end
 
 	text:SetFont(font)
 	text:SetString(string)
 
+	local cachedX, cachedY
+
 	function text:Layout(availableHeight, availableWidth)
 		return width, height
 	end
+
 	function text:Draw(x, y)
-		self.color:Set()
-		gl_Text(string, x, ceil(y + 0.5), fontSize, "")
+		cachedX = x
+		cachedY = y
+
 		LogDrawCall("Text (Grouped)")
+		activeTextGroup:AddElement(self)
+	end
+
+	function text:DrawForReal(glFont)
+		local color = self.color
+		glFont:SetTextColor(color.r, color.g, color.b, color.a)
+		glFont:Print(string, cachedX, ceil(cachedY + 0.5), fontSize, "x")
 	end
 
 	return text
@@ -971,21 +1055,28 @@ end
 
 -- NOTE: Translation is NOT COMPATIBLE WITH RESPONDERS
 local emptyTable = {}
-function framework:Rasterizer(body)
-	local rasterizer = { body = body, invalidated = true, type = "Rasterizer" }
+	local rasterizer = { invalidated = true, type = "Rasterizer" }
+function framework:Rasterizer(providedBody)
+	local textGroup = framework:TextGroup(providedBody)
 	
+	-- Caching
 	local activeResponderCache = {}
 	local drawList
-
+	local _body = textGroup
 	local width, height
 
 	for _, event in pairs(events) do
 		activeResponderCache[event] = { responders = {} }
 	end
 
+	function rasterizer:SetBody(newBody)
+		textGroup:SetBody(newBody)
+		invalidated = true
+	end
+
 	function rasterizer:Layout(availableWidth, availableHeight)
 		if self.invalidated then
-			width, height = self.body:Layout(availableWidth, availableHeight)
+			width, height = _body:Layout(availableWidth, availableHeight)
 		end
 		return width, height 
 	end
@@ -1007,11 +1098,11 @@ function framework:Rasterizer(body)
 
 			self.invalidated = false
 			gl_DeleteList(drawList)
-			drawList = gl_CreateList(draw, rasterizer.body, x, y)
+			drawList = gl_CreateList(draw, _body, x, y)
 
 			activeResponders = previousResponders
 		end
-		-- self.body:Draw(x, y) -- For debugging purposes.
+		-- body:Draw(x, y) -- For debugging purposes.
 		for _, event in pairs(events) do
 			local parentResponder = activeResponders[event]
 			local childrenOfParentResponder = parentResponder.responders
@@ -1026,6 +1117,12 @@ function framework:Rasterizer(body)
 	return rasterizer
 end
 
+
+function clear(array)
+	for index = 1, #array do
+		remove(array)
+	end
+end
 ------------------------------------------------------------------------------------------------------------
 -- System events
 ------------------------------------------------------------------------------------------------------------
