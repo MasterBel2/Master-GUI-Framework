@@ -1023,11 +1023,10 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 end
 
 function framework:HorizontalStack(members, spacing, yAnchor)
-	local horizontalStack = { yAnchor = yAnchor or 0.5, spacing = spacing or 0, type = "HorizontalStack" }
+	local horizontalStack = { members = {}, yAnchor = yAnchor or 0.5, spacing = spacing or 0, type = "HorizontalStack" }
 
-	horizontalStack.members = {}
 	for _, member in pairs(members) do
-		if member ~= nil then 
+		if member ~= nil then
 			insert(horizontalStack.members, member)
 		end
 	end
