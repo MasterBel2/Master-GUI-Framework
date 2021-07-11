@@ -49,7 +49,6 @@ local hasCheckedElementBelowMouse = false
 local events = framework.events
 
 local elements = {}
-local elementsByLayer
 local elementCount = 0
 
 local keyElement
@@ -62,6 +61,7 @@ local activeElement
 -- mouse release
 local dragListeners = {}
 
+-- TODO: Conflicts Per Name!
 local conflicts = 0
 
 -- Adds an element to be drawn.
@@ -75,7 +75,14 @@ function framework:InsertElement(body, preferredKey, deselectAction)
 
 	local function nullFunction() end
 
-	local element = { body = body, primaryFrame = nil, tooltips = {}, baseResponders = {}, deselect = deselectAction or function() end}
+	local element = { 
+		body = body, 
+		primaryFrame = nil, 
+		tooltips = {}, 
+		baseResponders = {}, 
+		deselect = deselectAction or function() end
+	}
+
 	for _,event in pairs(events) do
 		element.baseResponders[event] = { responders = {}, action = nullFunction }
 	end
@@ -513,7 +520,6 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local fonts = {}
-
 function framework:Font(fileName, size, outline, outlineStrength)
 	local key = fileName.."s"..(size or "default").."o"..(outline or "default").."os"..(outlineStrength or "default")
 	local font = fonts[key]
@@ -596,10 +602,14 @@ end
 -- Auto-sizing text
 -- FIXME: Text currently has an issue where it'll jump up and down. Not sure why this is happening. A pixel rounding issue maybe.
 function framework:Text(string, color, constantWidth, constantHeight, font)
-	local text = { _readOnly_font = font, descender = 0, color = color or framework.color.white, constantWidth = constantWidth, constantHeight = constantHeight }
+	local text = { 
+		_readOnly_font = font, 
+		descender = 0, color = color or framework.color.white, 
+		constantWidth = constantWidth, constantHeight = constantHeight,
+		type = "Text"
+	}
 
 	local fontSize
-
 	local width, height
 
 	local function layout(font)
@@ -721,45 +731,35 @@ local activeResponders = {}
 for _, event in pairs(events) do
 	activeResponders[event] = {}
 end
+
 function framework:Responder(rect, event, action)
-	local responder = { rect = rect, action = action, responders = {} }
-	local id = responderID -- immutable, and will be captured by the functions. Don't need to store it in the table
-	-- Event is similarly immutable, so we don't need to store that in the table either.
+	local responder = { rect = rect, action = action, responders = {}, id = responderID }
 	responderID = responderID + 1
 
 	local width, height
 	local cachedX, cachedY
+
+	function responder:Size() return width, height end
+	function responder:CachedPosition() return cachedX, cachedY end
+	function responder:Geometry() return cachedX, cachedY, width, height end
 
 	function responder:Layout(...)
 		width, height = self.rect:Layout(...)
 		return width, height
 	end
 
-	function responder:Size()
-		return width, height
-	end
-
-	function responder:CachedPosition()
-		return cachedX, cachedY
-	end
-
-	function responder:Geometry()
-		return cachedX, cachedY, width, height
-	end
-
 	function responder:Draw(x, y)
 		LogDrawCall("Responder")
-		-- Parent keep track of the order of responders, and use that to decide who gets the interactions first
+
+		-- Parent keeps track of the order of responders, and use that to decide who gets the interactions first
 		local previousActiveResponder = activeResponders[event]
 		insert(previousActiveResponder.responders, 1, self)
 		self.parent = previousActiveResponder
 
 		activeResponders[event] = self
-		self.responders = {}
+		clear(self.responders)
 		self.rect:Draw(x, y)
 		activeResponders[event] = previousActiveResponder
-
-		-- Spring.Echo(x .. ", " .. y .. ", " .. self.width .. ", " .. self.height)
 		
 		cachedX = x
 		cachedY = y
@@ -856,9 +856,9 @@ function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, y
 	end
 
 	function anchor:Draw(x, y)
-		self.rectToAnchorTo:Draw(x, y)
-		self.anchoredRect:Draw(x + self.xOffset, y + self.yOffset)
 		LogDrawCall("ConstantOffsetAnchor")
+        self.rectToAnchorTo:Draw(x, y)
+        self.anchoredRect:Draw(x + self.xOffset, y + self.yOffset)
 	end
 	return anchor
 end
