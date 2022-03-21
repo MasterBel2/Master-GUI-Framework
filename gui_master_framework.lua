@@ -22,8 +22,9 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local framework = {
-	compatabilityVersion = 7,
+	debug = true,
 	scaleFactor = 0,
+	compatabilityVersion = 8,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
 
@@ -129,6 +130,7 @@ local viewportWidth = 0
 local viewportHeight = 0
 
 local gl_BeginEnd = gl.BeginEnd
+local gl_Blending = gl.Blending
 local gl_CallList = gl.CallList
 local gl_Color = gl.Color
 local gl_CreateList = gl.CreateList
@@ -149,6 +151,9 @@ local gl_Vertex = gl.Vertex
 local GL_LINE_LOOP = GL.LINE_LOOP
 local GL_POLYGON = GL.POLYGON
 local GL_QUADS = GL.QUADS
+
+local GL_ONE_MINUS_SRC_ALPHA = GL.ONE_MINUS_SRC_ALPHA
+local GL_SRC_ALPHA = GL.SRC_ALPHA
 
 local Spring_GetTimer = Spring.GetTimer
 local Spring_DiffTimers = Spring.DiffTimers
@@ -442,6 +447,20 @@ function framework:Image(fileName, tintColor)
 	end
 
 	return image
+end
+
+function framework:Blending(srcMode, dstMode, decorations)
+	local blending = {}
+
+	function blending:Draw(...)
+		gl_Blending(srcMode, dstMode)
+		for i=1, #decorations do
+			decorations[i]:Draw(...)
+		end
+		gl_Blending(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
+	end
+
+	return blending
 end
 
 ------------------------------------------------------------------------------------------------------------
