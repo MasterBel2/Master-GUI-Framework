@@ -460,7 +460,7 @@ function framework:Image(fileName, tintColor)
 	local image = { fileName = fileName, tintColor = tintColor or framework.color.white }
 
 	local function drawRoundedRectVertex(xOffset, yOffset, x, y, width, height)
-		gl_TexCoord(xOffset / width, yOffset / height)
+		gl_TexCoord(xOffset / width, 1 - (yOffset / height))
 		gl_Vertex(x + xOffset, y + yOffset)
 	end
 
