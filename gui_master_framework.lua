@@ -23,8 +23,7 @@ end
 
 local framework = {
 	debug = true,
-	scaleFactor = 0,
-	compatabilityVersion = 8,
+	compatabilityVersion = 9,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
 
@@ -121,6 +120,7 @@ local ceil = math.ceil
 local cos = math.cos
 local floor = math.floor
 local max = math.max
+local min = math.min
 local pi = math.pi
 local sin = math.sin
 local sqrt = math.sqrt
@@ -128,6 +128,24 @@ local sqrt = math.sqrt
 -- Set in widget:Initialize
 local viewportWidth = 0
 local viewportHeight = 0
+local viewportDidChange
+local relativeScaleFactor = 1
+local combinedScaleFactor = 1
+
+local function updateScreenEnvironment(newWidth, newHeight, newScale)
+	viewportWidth = newWidth
+	viewportHeight = newHeight
+
+	relativeScaleFactor = newScale
+	combinedScaleFactor = min(viewportWidth / 1920, viewportHeight / 1080) * relativeScaleFactor
+	
+	viewportDidChange = 1
+end
+
+function framework:SetScale(newScale)
+	relativeScaleFactor = newScale
+	updateScreenEnvironment(viewportWidth, viewportHeight, newScale)
+end
 
 local gl_BeginEnd = gl.BeginEnd
 local gl_Blending = gl.Blending
@@ -191,6 +209,19 @@ end
 
 local function PointIsInRect(x, y, rectX, rectY, rectWidth, rectHeight)
 	return x >= rectX and y >= rectY and x <= rectX + rectWidth and y <= rectY + rectHeight
+end
+
+------------------------------------------------------------------------------------------------------------
+-- Scaling
+-- 
+-- Handled on the minor dimension, with a base of 1080p. E.g. on a 3840x1920 display, scale the same as on a
+-- 1920x1080 display.
+------------------------------------------------------------------------------------------------------------
+
+function framework:Dimension(unscaled)
+	return function()
+		return unscaled * combinedScaleFactor
+	end
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -318,7 +349,7 @@ function framework:Gradient(color1, color2, color3, color4)
 
 	function gradient:Draw(rect, x, y, width, height)
 		LogDrawCall("Gradient")
-		local cornerRadius = rect.cornerRadius or 0
+		local cornerRadius = rect.cornerRadius() or 0
 
 		if cornerRadius > 0 then
 			local beyondLeft = x <= 0
@@ -355,7 +386,7 @@ function framework:Color(r, g, b, a)
 	function color:Draw(rect, x, y, width, height)
 		LogDrawCall("Color")
 		self:Set()
-		local cornerRadius = rect.cornerRadius or 0
+		local cornerRadius = rect.cornerRadius() or 0
 
 		if cornerRadius > 0 then
 			local beyondLeft = x <= 0
@@ -404,13 +435,13 @@ function framework:Stroke(width, color, inside)
 			cachedY = floor(y + halfStroke)
 			cachedWidth = ceil(width - strokeWidth)
 			cachedHeight = ceil(height - strokeWidth)
-			cachedCornerRadius = ceil(max(0, (rect.cornerRadius or 0) - halfStroke))
+			cachedCornerRadius = ceil(max(0, (rect.cornerRadius() or 0) - halfStroke))
 		else
 			cachedX = floor(x - halfStroke)
 			cachedY = floor(y - halfStroke)
 			cachedWidth = ceil(width + strokeWidth)
 			cachedHeight = ceil(height + strokeWidth)
-			cachedCornerRadius = ceil(max(0, (rect.cornerRadius or 0) + halfStroke))
+			cachedCornerRadius = ceil(max(0, (rect.cornerRadius() or 0) + halfStroke))
 		end
 
 		if cachedCornerRadius > 0 then
@@ -438,8 +469,8 @@ function framework:Image(fileName, tintColor)
 		self.tintColor:Set()
 		gl_Texture(self.fileName)
 		
-		if rect.cornerRadius > 0 then
-			gl_BeginEnd(GL_POLYGON, DrawRoundedRect, width, height, rect.cornerRadius, drawRoundedRectVertex, false, false, false, false, x, y, width, height)
+		if rect.cornerRadius() > 0 then
+			gl_BeginEnd(GL_POLYGON, DrawRoundedRect, width, height, rect.cornerRadius(), drawRoundedRectVertex, false, false, false, false, x, y, width, height)
 		else
 			DrawRect(gl_TexRect, x, y, width, height)
 		end
@@ -523,12 +554,13 @@ function framework:Rect(width, height, cornerRadius, decorations)
 		LogDrawCall("Rect")
 		local decorations = self.decorations
 		for i = 1, #decorations do
-			decorations[i]:Draw(self, x, y, width, height)
+			-- if not decorations[i].Draw then
+			decorations[i]:Draw(self, x, y, width(), height())
 		end
 	end
 
 	function rect:Layout() 
-		return width, height 
+		return width(), height() 
 	end
 
 	return rect
@@ -537,6 +569,8 @@ end
 ------------------------------------------------------------------------------------------------------------
 -- Text
 ------------------------------------------------------------------------------------------------------------
+
+-- TODO: Fonts, text, & Scaling!
 
 local fonts = {}
 function framework:Font(fileName, size, outline, outlineStrength)
@@ -897,7 +931,7 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 		rasterizer = framework:Rasterizer(rasterizableRect)
 
 		function margin:Draw(x, y)
-			if self.shouldInvalidateRasterizer then
+			if self.shouldInvalidateRasterizer or viewportDidChange then
 				rasterizableRect:SetSize(width, height)
 				rasterizableRect.cornerRadius = self.cornerRadius
 				rasterizableRect.decorations = self.decorations
@@ -906,7 +940,7 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 			end
 			rasterizer:Draw(x, y)
 
-			self.rect:Draw(x + left, y + bottom)
+			self.rect:Draw(x + left(), y + bottom())
 		end
 	else
 		function margin:Draw(x, y)
@@ -915,13 +949,13 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 				decorations[i]:Draw(self, x, y, width, height)
 			end
 	
-			self.rect:Draw(x + left, y + bottom)
+			self.rect:Draw(x + left(), y + bottom())
 		end
 	end
 	
 	function margin:Layout(availableWidth, availableHeight)
-		local horizontal = left + right -- May be more performant to do left right top bottom – not sure though
-		local vertical = top + bottom
+		local horizontal = left() + right() -- May be more performant to do left right top bottom – not sure though
+		local vertical = top() + bottom()
 
 		local rectWidth, rectHeight = self.rect:Layout(availableWidth - horizontal, availableHeight - vertical)
 		width = rectWidth + horizontal
@@ -974,7 +1008,7 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 
 		local elapsedDistance = 0
 	 	maxWidth = 0
-		local spacing = self.spacing
+		local spacing = self.spacing()
 		
 		for i = 1, memberCount do 
 			local member = members[i]
@@ -1064,7 +1098,7 @@ function framework:HorizontalStack(members, spacing, yAnchor)
 		local elapsedDistance = 0
 		maxHeight = 0
 
-		local spacing = self.spacing
+		local spacing = self.spacing()
 
 		for i = 1, memberCount do
 			local member = members[i]
@@ -1199,9 +1233,9 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 function widget:Initialize()
-	local viewSizeX,viewSizeY = Spring.GetViewGeometry()
-	viewportWidth = viewSizeX
-	viewportHeight = viewSizeY
+	local viewSizeX, viewSizeY = Spring.GetViewGeometry()
+	
+	updateScreenEnvironment(viewSizeX, viewSizeY, relativeScaleFactor)
 end
 
 function widget:DrawScreen()
@@ -1236,9 +1270,7 @@ end
 
 function widget:ViewResize(viewSizeX, viewSizeY)
 	if viewportWidth ~= viewSizeX or viewportHeight ~= viewSizeY then
-		viewportWidth = viewSizeX
-		viewportHeight = viewSizeY
-		viewportDidChange = true
+		updateScreenEnvironment(viewSizeX, viewSizeY, relativeScaleFactor)
 	end
 end
 
