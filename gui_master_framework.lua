@@ -24,7 +24,7 @@ end
 local framework = {
 	debug = true,
 	drawDebug = false,
-	compatabilityVersion = 9,
+	compatabilityVersion = 10,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
 
@@ -150,21 +150,6 @@ local viewportDidChange
 local relativeScaleFactor = 1
 local combinedScaleFactor = 1
 
-local function updateScreenEnvironment(newWidth, newHeight, newScale)
-	viewportWidth = newWidth
-	viewportHeight = newHeight
-
-	relativeScaleFactor = newScale
-	combinedScaleFactor = min(viewportWidth / 1920, viewportHeight / 1080) * relativeScaleFactor
-	
-	viewportDidChange = 1
-end
-
-function framework:SetScale(newScale)
-	relativeScaleFactor = newScale
-	updateScreenEnvironment(viewportWidth, viewportHeight, newScale)
-end
-
 local gl_BeginEnd = gl.BeginEnd
 local gl_Blending = gl.Blending
 local gl_CallList = gl.CallList
@@ -198,6 +183,12 @@ local profileName
 local startTimer
 
 ------------------------------------------------------------------------------------------------------------
+-- Caches
+------------------------------------------------------------------------------------------------------------
+
+local fonts = {}
+
+------------------------------------------------------------------------------------------------------------
 -- Profiling
 ------------------------------------------------------------------------------------------------------------
 
@@ -221,6 +212,10 @@ local function clear(array)
 	end
 end
 
+local function round(number)
+	return ceil(number - 0.5)
+end
+
 ------------------------------------------------------------------------------------------------------------
 -- Helper Methods
 ------------------------------------------------------------------------------------------------------------
@@ -240,6 +235,24 @@ function framework:Dimension(unscaled)
 	return function()
 		return unscaled * combinedScaleFactor
 	end
+end
+
+local function updateScreenEnvironment(newWidth, newHeight, newScale)
+	viewportWidth = newWidth
+	viewportHeight = newHeight
+
+	relativeScaleFactor = newScale
+	combinedScaleFactor = min(viewportWidth / 1920, viewportHeight / 1080) * relativeScaleFactor
+	
+	viewportDidChange = 1
+
+	for _, font in pairs(fonts) do
+		font:Scale(combinedScaleFactor)
+	end
+end
+
+function framework:SetScale(newScale)
+	updateScreenEnvironment(viewportWidth, viewportHeight, newScale)
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -590,22 +603,36 @@ end
 
 -- TODO: Fonts, text, & Scaling!
 
-local fonts = {}
-function framework:Font(fileName, size, outline, outlineStrength)
-	local key = fileName.."s"..(size or "default").."o"..(outline or "default").."os"..(outlineStrength or "default")
+framework.color = {
+	white = framework:Color(1, 1, 1, 1),
+	red = framework:Color(1, 0, 0, 1),
+	green = framework:Color(0, 1, 0, 1),
+	blue = framework:Color(0, 1, 0, 1),
+	black = framework:Color(0, 0, 0, 1)
+}
+
+function framework:Font(fileName, size, outlineWidth, outlineWeight)
+	local key = fileName.."s"..(size or "default").."o"..(outlineWidth or "default").."os"..(outlineWeight or "default")
 	local font = fonts[key]
 
 	LogDrawCall("Font (Load)")
 
 	if font == nil then
 		font = {
-			glFont = gl_LoadFont(fileName, size, outline, outlineStrength),
 			key = key,
 			fileName = fileName,
 			size = size,
-			outline = outline,
-			outlineStrength = outlineStrength
+			outlineWidth = outlineWidth,
+			outlineWeight = outlineWeight
 		}
+
+		function font:Scale(newScale)
+			if self.glFont then gl_DeleteFont(self.glFont) end
+			self.glFont = gl_LoadFont(fileName, round(size * newScale), round((outlineWidth or 0) * newScale), outlineWeight)
+			self.scale = newScale
+		end
+
+		font:Scale(combinedScaleFactor)
 
 		fonts[key] = font
 	end
@@ -613,13 +640,7 @@ function framework:Font(fileName, size, outline, outlineStrength)
 	return font
 end
 
-framework.defaultFont = framework:Font("LuaUI/Fonts/FreeSansBold.otf", 12)
-framework.color = {
-	white = framework:Color(1, 1, 1, 1),
-	red = framework:Color(1, 0, 0, 1),
-	green = framework:Color(0, 1, 0, 1),
-	blue = framework:Color(0, 1, 0, 1)
-}
+framework.defaultFont = framework:Font("FreeSansBold.otf", 12)
 
 local activeTextGroup
 function framework:TextGroup(body)
@@ -667,30 +688,34 @@ function framework:TextGroup(body)
 			glFont:End()
 		end
 	end
+
 	return textGroup
 end
 
 -- Auto-sizing text
 -- FIXME: Text currently has an issue where it'll jump up and down. Not sure why this is happening. A pixel rounding issue maybe.
 function framework:Text(string, color, constantWidth, constantHeight, font)
-	local text = { 
-		_readOnly_font = font, 
+	font = font or framework.defaultFont
+	local text = {
+		_readOnly_font = font,
 		descender = 0, color = color or framework.color.white, 
 		constantWidth = constantWidth, constantHeight = constantHeight,
 		type = "Text"
 	}
 
+	local fontScale
 	local fontSize
 	local width, height
 
 	local function layout(font)
-		width = text.constantWidth or (font.glFont:GetTextWidth(string) * fontSize)
+
+		width = text.constantWidth or (font.glFont:GetTextWidth(string) * fontSize * font.scale)
 		if text.constantHeight then
 			height = text.constantHeight
 			text.descender = 0
 		else
 			local unscaledHeight, descender = font.glFont:GetTextHeight(string)
-			height = unscaledHeight * fontSize
+			height = unscaledHeight * fontSize * font.scale
 			-- self.descender = descender * fontSize
 		end
 	end
@@ -706,6 +731,7 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 		if string ~= newString then
 			string = newString
 			layout(self._readOnly_font)
+			return true
 		end
 	end
 
@@ -715,6 +741,9 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 	local cachedX, cachedY
 
 	function text:Layout(availableHeight, availableWidth)
+		if self._readOnly_font.scale ~= fontScale then
+			layout(self._readOnly_font)
+		end
 		return width, height
 	end
 
@@ -729,7 +758,8 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 	function text:DrawForReal(glFont)
 		local color = self.color
 		glFont:SetTextColor(color.r, color.g, color.b, color.a)
-		glFont:Print(string, cachedX, ceil(cachedY + 0.5), fontSize, "x")
+
+		glFont:Print(string, cachedX, ceil(cachedY + 0.5), font.size * combinedScaleFactor, "o")
 	end
 
 	return text
