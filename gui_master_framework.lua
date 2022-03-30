@@ -1165,6 +1165,7 @@ local emptyTable = {}
 local recalculatingRasterizer = false
 
 function framework:Rasterizer(providedBody)
+	local rasterizer = { invalidated = true, type = "Rasterizer" }
 
 	local textGroup = framework:TextGroup(providedBody)
 	
@@ -1187,7 +1188,7 @@ function framework:Rasterizer(providedBody)
 	end
 
 	function rasterizer:Layout(availableWidth, availableHeight)
-		if self.invalidated then
+		if self.invalidated or not drawList or viewportDidChange then
 			width, height = _body:Layout(availableWidth, availableHeight)
 		end
 		return width, height 
