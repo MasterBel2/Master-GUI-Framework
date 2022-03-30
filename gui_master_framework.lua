@@ -23,6 +23,7 @@ end
 
 local framework = {
 	debug = true,
+	drawDebug = false,
 	compatabilityVersion = 9,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
@@ -36,12 +37,27 @@ WG.MasterFramework[framework.compatabilityVersion] = framework
 ------------------------------------------------------------------------------------------------------------
 
 local function Log(string)
-	Spring.Echo("[MasterFramework " .. framework.compatabilityVersion .. "] " .. string)
+	if debug or drawDebug then
+		Spring.Echo("[MasterFramework " .. framework.compatabilityVersion .. "] " .. string)
+	end
 end
 
 local drawCalls = {}
 function LogDrawCall(caller)
-	drawCalls[caller] = (drawCalls[caller] or 0) + 1
+	if drawDebug then
+		drawCalls[caller] = (drawCalls[caller] or 0) + 1
+	end
+end
+
+-- Logs a formatted error. Provide details as strings, they will be appeneded with the separator " - "
+local function Error(...)
+	local errorString = "Error in MasterFramework " .. framework.compatabilityVersion
+
+	for i,v in ipairs({...}) do
+		errorString = errorString .. " - " .. v
+	end
+
+	Spring.Echo(errorString)
 end
 
 local hasCheckedElementBelowMouse = false
@@ -91,6 +107,7 @@ function framework:InsertElement(body, preferredKey, deselectAction)
 
 	if elements[preferredKey] == nil then
 		key = preferredKey
+		Log("Creating element with preferred key: " .. preferredKey)
 	else
 		conflicts = conflicts + 1
 		key = preferredKey..conflicts
@@ -103,6 +120,7 @@ end
 
 function framework:RemoveElement(key) 
 	if key ~= nil then
+		Log("Removed " .. key)
 		elements[key] = nil 
 	else
 		Log("Could not remove element: Key is nill!")
@@ -992,6 +1010,18 @@ end
 -- Grouping
 ------------------------------------------------------------------------------------------------------------
 
+local function debugDescription(table, name, indentation)
+    indentation = indentation or 0
+    Spring.Echo(string.rep("| ", indentation) .. "Table: " .. tostring(name))
+    for key, value in pairs(table) do
+        if type(value) == "table" then
+            debugDescription(value, key, indentation + 1)
+        else
+            Spring.Echo(string.rep("| ", indentation + 1) .. tostring(key) .. ": " .. tostring(value))
+        end
+    end
+end
+
 function framework:VerticalStack(contents, spacing, xAnchor)
 	local verticalStack = { members = contents, xAnchor = xAnchor, spacing = spacing, type = "VerticalStack" }
 
@@ -1169,7 +1199,7 @@ function framework:Rasterizer(providedBody)
 
 	function rasterizer:Draw(x, y)
 		LogDrawCall("Rasterizer")
-		if recalculatingRasterizer then
+		if recalculatingRasterizer or framework.drawDebug then
 			-- Display lists cannot be nested, so we'll skip using one while we're creating one.
 			_body:Draw(x, y)
 			return
@@ -1251,21 +1281,30 @@ function widget:DrawScreen()
 		local elementBody = element.body
 		-- startProfile("Layout")
 		-- for i = 0,500 do
-			elementBody:Layout(viewportWidth, viewportHeight)
+			local success, _error = pcall(elementBody.Layout, elementBody, viewportWidth, viewportHeight)
+			if not success then
+				Error("widget:DrawScreen", "Element: " .. key, "elementBody:Layout", _error)
+			end
 		-- end
 		-- endProfile()
 		-- startProfile("Draw")
 		-- for i = 0,500 do
-			elementBody:Draw(0, 0)
+		local success, _error = pcall(elementBody.Draw, elementBody, 0, 0)
+		if not success then
+			Error("widget:DrawScreen", "Element: " .. key, "elementBody:Draw", _error)
+		end
+				
 		-- end
 		-- endProfile()
 	end
 	viewportDidChange = false
-	Spring.Echo("####")
-	for caller, callCount in pairs(drawCalls) do
-		Log(caller .. ": " .. callCount)
+	if drawDebug then
+		Log("####")
+		for caller, callCount in pairs(drawCalls) do
+			Log(caller .. ": " .. callCount)
+		end
+		drawCalls = {}
 	end
-	drawCalls = {}
 end
 
 function widget:ViewResize(viewSizeX, viewSizeY)
@@ -1279,8 +1318,18 @@ end
 ------------------------------------------------------------------------------------------------------------
 
 local function FindTooltip(x, y, tooltips)
-	for _,tooltip in pairs(tooltips) do
-		local tooltipX, tooltipY, tooltipWidth, tooltipHeight = tooltip:Geometry()
+	for key,tooltip in pairs(tooltips) do
+		local success, tooltipX, tooltipY, tooltipWidth, tooltipHeight = pcall(tooltip.Geometry, tooltip)
+		if not success then
+			-- tooltipX stores the error message in case of failure
+			Error("FindTooltip", "tooltip:Geometry", "Element: " .. key, tooltipX) 
+			break
+		end
+		if not tooltipX and tooltipY and tooltipWidth and tooltipHeight then
+			Error("FindTooltip", "Element: " .. key, "Tooltip:Geometry is incomplete: " .. (tooltipX or "nil") .. ", " .. (tooltipY or "nil") .. ", " .. (tooltipWidth or "nil") .. ", " .. (tooltipHeight or "nil"))
+			break
+		end
+
 		if PointIsInRect(x, y, tooltipX, tooltipY, tooltipWidth, tooltipHeight) then
 			local child = FindTooltip(x, y, tooltip.tooltips)
 			return child or tooltip
@@ -1313,11 +1362,20 @@ function widget:KeyRelease(key, mods, label, unicode) end
 
 local function CheckElementUnderMouse(x, y)
 	if not hasCheckedElementBelowMouse then
-		for _, element in pairs(elements) do
+		for key, element in pairs(elements) do
 			local primaryFrame = element.primaryFrame
 			if primaryFrame ~= nil then -- Check for pre-initialised elements.
-				local frameX, frameY, frameWidth, frameHeight = primaryFrame:Geometry()
-				if PointIsInRect(x, y, frameX, frameY, frameWidth, frameHeight) then 
+				local success, frameX, frameY, frameWidth, frameHeight = pcall(primaryFrame.Geometry, primaryFrame)
+				if not success then
+					-- frameX contains the error if this fails
+					Error("CheckUnderMouse", "Element: " .. key, "PrimaryFrame:Geometry", frameX)
+					break
+				end
+				if not (frameX and frameY and frameWidth and frameHeight) then
+					Error("CheckUnderMouse", "Element: " .. key, "PrimaryFrame:Geometry is incomplete: " .. (frameX or "nil") .. ", " .. (frameY or "nil") .. ", " .. (frameWidth or "nil") .. ", " .. (frameHeight or "nil"))
+					break
+				end
+				if PointIsInRect(x, y, frameX, frameY, frameWidth, frameHeight) then
 					elementBelowMouse = element
 					return true
 				end
@@ -1329,7 +1387,12 @@ local function CheckElementUnderMouse(x, y)
 end
 
 local function Event(responder, ...)
-	if responder:action(...) then
+	local success, result = pcall(responder.action, responder, ...)
+	if not success then
+		-- in case of failure, result stores the error message
+		Error("Event", "responder:action", result)
+		return nil
+	elseif result then
 		return responder
 	else
 		local parent = responder.parent
@@ -1341,7 +1404,17 @@ end
 
 local function SearchDownResponderTree(responder, x, y, ...)
 	for _,childResponder in pairs(responder.responders) do
-		local responderX, responderY, responderWidth, responderHeight = childResponder:Geometry()
+		local success, responderX, responderY, responderWidth, responderHeight = pcall(childResponder.Geometry, childResponder)
+		if not success then
+			-- responderX contains the error if this fails
+			Error("Element: " .. key, "childResponder:Geometry", responderX)
+			break
+		end
+		if not (responderX and responderY and responderWidth and responderHeight) then
+			Error("Element: " .. key, "childResponder:Geometry is incomplete: " .. (responderX or "nil") .. ", " .. (responderY or "nil") .. ", " .. (responderWidth or "nil") .. ", " .. (responderHeight or "nil"))
+			break
+		end
+
 		if PointIsInRect(x, y, responderX, responderY, responderWidth, responderHeight) then
 			local favouredResponder = SearchDownResponderTree(childResponder, x, y, ...)
 			if favouredResponder then
@@ -1363,8 +1436,11 @@ end
 local mousePressEvent = events.mousePress
 function widget:MousePress(x, y, button)
 	if not CheckElementUnderMouse(x, y) then
-		for _, element in pairs(elements) do
-			element.deselect()
+		for key, element in pairs(elements) do
+			local success, errorMessage = pcall(element.deselect)
+			if not success then
+				Error("widget:MousePress", "Element: " .. key, "element.deslect", errorMessage)
+			end
 		end
 		return false
 	end
@@ -1375,14 +1451,20 @@ end
 function widget:MouseMove(x, y, dx, dy, button)
 	local dragListener = dragListeners[button]
 	if dragListener ~= nil then
-		dragListener:MouseMove(x, y, dx, dy)
+		local success, errorMessage = pcall(dragListener.MouseMove, dragListener, x, y, dx, dy)
+		if not success then
+			Error("widget:MouseMove", "dragListener:MouseMove", errorMessage)
+		end
 	end
 end
 
 function widget:MouseRelease(x, y, button)
 	local dragListener = dragListeners[button]
 	if dragListener then
-		dragListener:MouseRelease(x, y)
+		local success, errorMessage = pcall(dragListener.MouseRelease, dragListener, x, y)
+		if not success then
+			Error("widget:MouseRelease", "dragListener:MouseRelease", errorMessage)
+		end
 		dragListeners[button] = nil
 	end
 	return false
@@ -1394,7 +1476,7 @@ function widget:MouseWheel(up, value)
 		local frame = elementBelowMouse.primaryFrame
 		return FindResponder(mouseWheelEvent, frame.cachedX, frame.cachedY)
 	else
-		return false 
+		return false
 	end
 end
 
@@ -1410,10 +1492,13 @@ function framework:IsAboveWatcher()
 	local nestedWatcher
 
 	-- Updates the last responder below, and the nested watcher.
-	function object:Update(x, y, responderUnderMouse)
+	function object:Update(responderUnderMouse, x, y)
 		if lastResponderBelow then
 			if (not responderUnderMouse) or (responderUnderMouse.id ~= lastResponderBelow.id) then
-				lastResponderBelow:MouseLeave()
+				local success, errorMessage = pcall(lastResponderBelow.MouseLeave, lastResponderBelow)
+				if not success then
+					Error("IsAboveWatcher:Update", "lastResponderBelow:MouseLeave", errorMessage)
+				end
 				nestedWatcher:Reset()
 				nestedWatcher = nil
 			end
@@ -1421,35 +1506,31 @@ function framework:IsAboveWatcher()
 
 		if responderUnderMouse then
 			if (not lastResponderBelow) or (lastResponderBelow.id ~= responderUnderMouse.id) then
-				responderUnderMouse:MouseEnter()
+				local success, errorMessage = pcall(responderUnderMouse.MouseEnter, responderUnderMouse)
+				if not success then
+					Error("IsAboveWatcher:Update", "responderUnderMouse:MouseEnter", errorMessage)
+				end
 				nestedWatcher = framework:IsAboveWatcher()
 			end
-			nestedWatcher:Bubble(x, y, responderUnderMouse)
+			nestedWatcher:Bubble(responderUnderMouse, x, y)
 		end
 
 		lastResponderBelow = responderUnderMouse
 	end
 
 	-- Recursively searches for another responder that might handle the event, and triggers the events.
-	function object:Bubble(x, y, responder)
-		-- Spring.Echo("Watcher " .. self.id .. " is bubbling!")
+	function object:Bubble(responder, x, y)
 		if responder and responder.parent then
 			local responderUnderMouse = Event(responder.parent, x, y)
-			-- if responderUnderMouse then
-			-- 	Spring.Echo("Watcher " .. self.id .. " bubbled to responder " .. responderUnderMouse.id)
-			-- else
-			-- 	Spring.Echo("Watcher " .. self.id .. " could not find a responder to bubble to!")
-			-- end
-			self:Update(x, y, responderUnderMouse)
+			self:Update(responderUnderMouse, x, y)
 		else 
-			-- Spring.Echo("Watcher " .. self.id .. " found no responder")
 			self:Reset()
 		end
 	end
 
 	-- Locates the most deeply nested responder, and begins watching it.
-	function object:Search(x, y, responder)
-		self:Update(x, y, SearchDownResponderTree(responder, x, y))
+	function object:Search(responder, x, y)
+		self:Update(SearchDownResponderTree(responder, x, y), x, y)
 	end
 
 	-- Informs the watcher there is no responder to watch.
@@ -1472,7 +1553,7 @@ function widget:IsAbove(x, y)
 	-- for i=0,1000 do
 		isAbove = CheckElementUnderMouse(x, y)
 		if isAbove then
-			isAboveThing:Search(x, y, elementBelowMouse.baseResponders[events.mouseOver])
+			isAboveThing:Search(elementBelowMouse.baseResponders[events.mouseOver], x, y)
 		else
 			isAboveThing:Reset()
 		end
