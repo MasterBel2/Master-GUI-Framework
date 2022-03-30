@@ -24,7 +24,7 @@ end
 local framework = {
 	debug = true,
 	drawDebug = false,
-	compatabilityVersion = 12,
+	compatabilityVersion = 13,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
 
@@ -249,6 +249,12 @@ local function updateScreenEnvironment(newWidth, newHeight, newScale)
 	for _, font in pairs(fonts) do
 		font:Scale(combinedScaleFactor)
 	end
+
+	framework.viewportWidth = viewportWidth
+	framework.viewportHeight = viewportHeight
+	framework.relativeScaleFactor = relativeScaleFactor
+	framework.combinedScaleFactor = combinedScaleFactor
+	framework.viewportDidChange = viewportDidChange
 end
 
 function framework:SetScale(newScale)
