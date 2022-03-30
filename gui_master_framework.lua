@@ -24,7 +24,7 @@ end
 local framework = {
 	debug = true,
 	drawDebug = false,
-	compatabilityVersion = 10,
+	compatabilityVersion = 11,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
 
@@ -1070,8 +1070,8 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 	 	maxWidth = 0
 		local spacing = self.spacing()
 		
-		for i = 1, memberCount do 
-			local member = members[i]
+		for i = 1, memberCount do
+			local member = members[memberCount - (i - 1)]
 			local memberWidth, memberHeight = member:Layout(availableWidth, availableHeight - elapsedDistance)
 			member.vStackCachedY = elapsedDistance
 			member.vStackCachedWidth = memberWidth
@@ -1135,14 +1135,14 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 	return stackInPlace
 end
 
-function framework:HorizontalStack(members, spacing, yAnchor)
-	local horizontalStack = { members = {}, yAnchor = yAnchor or 0.5, spacing = spacing or 0, type = "HorizontalStack" }
+function framework:HorizontalStack(_members, spacing, yAnchor)
+	local horizontalStack = { members = _members, yAnchor = yAnchor or 0.5, spacing = spacing, type = "HorizontalStack" }
 
-	for _, member in pairs(members) do
-		if member ~= nil then
-			insert(horizontalStack.members, member)
-		end
-	end
+	-- for _, member in pairs(members) do
+	-- 	if member ~= nil then
+	-- 		insert(horizontalStack.members, member)
+	-- 	end
+	-- end
 
 	local maxHeight
 
