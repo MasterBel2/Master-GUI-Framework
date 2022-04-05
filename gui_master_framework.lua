@@ -721,8 +721,8 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 			text.descender = 0
 		else
 			local unscaledHeight, descender = font.glFont:GetTextHeight(string)
-			height = unscaledHeight * fontSize * font.scale
-			-- self.descender = descender * fontSize
+			height = (unscaledHeight - descender) * fontSize * font.scale
+			text.descender = descender * fontSize * font.scale
 		end
 	end
 
@@ -755,7 +755,7 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 
 	function text:Draw(x, y)
 		cachedX = x
-		cachedY = y
+		cachedY = y - self.descender
 
 		LogDrawCall("Text (Grouped)")
 		activeTextGroup:AddElement(self)
