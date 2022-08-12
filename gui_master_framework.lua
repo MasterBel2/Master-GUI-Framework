@@ -233,7 +233,7 @@ end
 
 function framework:Dimension(unscaled)
 	return function()
-		return unscaled * combinedScaleFactor
+		return floor(unscaled * combinedScaleFactor)
 	end
 end
 
@@ -715,14 +715,14 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 
 	local function layout(font)
 
-		width = text.constantWidth or (font.glFont:GetTextWidth(string) * fontSize * font.scale)
+		width = text.constantWidth or floor(font.glFont:GetTextWidth(string) * fontSize * font.scale)
 		if text.constantHeight then
 			height = text.constantHeight
 			text.descender = 0
 		else
 			local unscaledHeight, descender = font.glFont:GetTextHeight(string)
-			height = (unscaledHeight - descender) * fontSize * font.scale
-			text.descender = descender * fontSize * font.scale
+			height = (unscaledHeight - descender) * floor(fontSize * font.scale)
+			text.descender = descender * floor(fontSize * font.scale)
 		end
 	end
 
@@ -765,7 +765,7 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 		local color = self.color
 		glFont:SetTextColor(color.r, color.g, color.b, color.a)
 
-		glFont:Print(string, cachedX, ceil(cachedY + 0.5), font.size * combinedScaleFactor, "o")
+		glFont:Print(string, cachedX, cachedY, floor(font.size * combinedScaleFactor), "o")
 	end
 
 	return text
@@ -974,7 +974,7 @@ function framework:RectAnchor(rectToAnchorTo, anchoredRect, xAnchor, yAnchor)
 		local rectToAnchorTo = self.rectToAnchorTo
 		local anchoredRect = self.anchoredRect
 		rectToAnchorTo:Draw(x, y)
-		anchoredRect:Draw(x + (rectToAnchorToWidth - anchoredRectWidth) * self.xAnchor, y + (rectToAnchorToHeight - anchoredRectHeight) * self.yAnchor)
+		anchoredRect:Draw(x + floor((rectToAnchorToWidth - anchoredRectWidth) * self.xAnchor), y + floor((rectToAnchorToHeight - anchoredRectHeight) * self.yAnchor))
 	end
 	return rectAnchor
 end
@@ -1062,7 +1062,7 @@ function framework:FrameOfReference(xAnchor, yAnchor, body)
 
 	function frame:Draw(x, y)
         LogDrawCall("FrameOfReference")
-		self.body:Draw(x + (width - rectWidth) * self.xAnchor, y + (height - rectHeight) * self.yAnchor)
+		self.body:Draw(x + floor((width - rectWidth) * self.xAnchor), y + floor((height - rectHeight) * self.yAnchor))
 	end
 
 	return frame
@@ -1120,7 +1120,7 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 
 		for i = 1, #members do 
 			local member = members[i]
-			member:Draw(x + (maxWidth - member.vStackCachedWidth) * xAnchor, y + member.vStackCachedY)
+			member:Draw(x + floor((maxWidth - member.vStackCachedWidth) * xAnchor), y + member.vStackCachedY)
 		end
 	end
 
@@ -1159,9 +1159,9 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 		local xAnchor = self.xAnchor
 		local yAnchor = self.yAnchor
 
-		for i = 1, #members do 
+		for i = 1, #members do
 			local member = members[i]
-			member:Draw(x + (maxWidth - member.stackInPlaceCachedWidth) * xAnchor, y + (maxHeight - member.stackInPlaceCachedHeight) * yAnchor)
+			member:Draw(x + floor((maxWidth - member.stackInPlaceCachedWidth) * xAnchor), y + floor((maxHeight - member.stackInPlaceCachedHeight) * yAnchor))
 		end
 	end
 	return stackInPlace
@@ -1211,7 +1211,7 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 
 		for i = 1, #members do
 			local member = members[i]
-			member:Draw(x + member.hStackCachedX, y + (maxHeight - member.hStackCachedHeight) * yAnchor)
+			member:Draw(x + member.hStackCachedX, y + floor((maxHeight - member.hStackCachedHeight) * yAnchor))
 		end
 	end
 	
