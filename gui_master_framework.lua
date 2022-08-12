@@ -559,7 +559,11 @@ function framework:PrimaryFrame(body)
 	end
 
 	function primaryFrame:Size()
-		return width, height
+		if (not width) or (not height) then
+			return self:Layout(viewportWidth, viewportHeight)
+		else
+			return width, height
+		end
 	end
 
 	function primaryFrame:Layout(availableWidth, availableHeight)
@@ -568,7 +572,6 @@ function framework:PrimaryFrame(body)
 	end
 
 	function primaryFrame:Draw(x, y)
-		LogDrawCall("PrimaryFrame")
 		_body:Draw(x, y)
 		activeElement.primaryFrame = self
 		cachedX = x
