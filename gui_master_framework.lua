@@ -270,8 +270,8 @@ local halfPi = pi/2
 local function newSinTheta(cornerRadius)
 	local radians = halfPi/cornerRadius
 	local sinTheta = {}
-	for i = 1, cornerRadius do
-		insert(sinTheta, sin(radians * i) * cornerRadius)
+	for i = 0, cornerRadius do
+		sinTheta[i] = sin(radians * i) * cornerRadius
 	end
 	sinThetaCache[cornerRadius] = sinTheta
 	return sinTheta
@@ -283,13 +283,13 @@ local function DrawRoundedRect(width, height, cornerRadius, drawFunction, should
 	
 	local sinTheta = sinThetaCache[cornerRadius] or newSinTheta(cornerRadius)
 	
-	local pastEnd = cornerRadius + 1
+	local pastEnd = cornerRadius
 
 	-- Bottom left
 	if shouldSquareBottomLeft then
 		drawFunction(0, 0, ...)
 	else
-		for i = 1, cornerRadius do
+		for i = 0, cornerRadius do
 			drawFunction(cornerRadius - sinTheta[pastEnd-i], cornerRadius - sinTheta[i], ...)
 		end
 	end
@@ -298,7 +298,7 @@ local function DrawRoundedRect(width, height, cornerRadius, drawFunction, should
 	if shouldSquareBottomRight then
 		drawFunction(width, 0, ...)
 	else
-		for i = 1, cornerRadius do
+		for i = 0, cornerRadius do
 			drawFunction(centerRightX + sinTheta[i], cornerRadius - sinTheta[pastEnd-i], ...)
 		end
 	end
@@ -307,7 +307,7 @@ local function DrawRoundedRect(width, height, cornerRadius, drawFunction, should
 	if shouldSquareTopRight then
 		drawFunction(width, height, ...)
 	else
-		for i = 1, cornerRadius do
+		for i = 0, cornerRadius do
 			drawFunction(centerRightX + sinTheta[pastEnd-i], centerTopY + sinTheta[i], ...)
 		end
 	end
@@ -316,7 +316,7 @@ local function DrawRoundedRect(width, height, cornerRadius, drawFunction, should
 	if shouldSquareTopLeft then
 		drawFunction(0, height, ...)
 	else
-		for i = 1, cornerRadius do
+		for i = 0, cornerRadius do
 			drawFunction(cornerRadius - sinTheta[i], centerTopY + sinTheta[pastEnd-i], ...)
 		end
 	end
