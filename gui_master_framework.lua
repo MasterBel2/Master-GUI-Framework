@@ -1000,7 +1000,7 @@ function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, y
 end
 
 function framework:MarginAroundRect(rect, left, top, right, bottom, decorations, cornerRadius, shouldRasterize)
-	local margin = { rect = rect, decorations = decorations or {}, cornerRadius = cornerRadius or 0, 
+	local margin = { rect = rect, decorations = decorations or {}, cornerRadius = cornerRadius or framework:Dimension(0), 
 		shouldInvalidateRasterizer = true, type = "MarginAroundRect"
 	}
 
