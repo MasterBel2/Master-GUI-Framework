@@ -1350,6 +1350,7 @@ function widget:DrawScreen()
 			local success, _error = pcall(elementBody.Layout, elementBody, viewportWidth, viewportHeight)
 			if not success then
 				Error("widget:DrawScreen", "Element: " .. key, "elementBody:Layout", _error)
+				framework:RemoveElement(key)
 			end
 		-- end
 		-- endProfile()
@@ -1358,6 +1359,7 @@ function widget:DrawScreen()
 		local success, _error = pcall(elementBody.Draw, elementBody, 0, 0)
 		if not success then
 			Error("widget:DrawScreen", "Element: " .. key, "elementBody:Draw", _error)
+			framework:RemoveElement(key)
 		end
 				
 		-- end
