@@ -17,15 +17,26 @@ function widget:GetInfo()
 	}
 end
 
+local count = 0
 ------------------------------------------------------------------------------------------------------------
 -- Global Access
 ------------------------------------------------------------------------------------------------------------
 
 local framework = {
-	debug = true,
+	debug = false,
 	drawDebug = false,
-	compatabilityVersion = 13,
-	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" } -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
+	compatabilityVersion = 14,
+
+	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
+	layerRequest = {
+		directlyBelow = function(target) return { mode = "below", target = target } end,
+		directlyAbove = function(target) return { mode = "above", target = target } end,
+		top = function() return { mode = "top" } end,
+		bottom = function() return { mode = "bottom" } end,
+		anywhere = function() return { mode = "anywhere" } end,
+	},
+
+	stats = {},
 }
 
 if not WG.MasterFramework then WG.MasterFramework = {} end
@@ -36,15 +47,41 @@ WG.MasterFramework[framework.compatabilityVersion] = framework
 -- Internal Access
 ------------------------------------------------------------------------------------------------------------
 
+local hasCheckedElementBelowMouse = false
+
+local events = framework.events
+
+local elements = {}
+local elementOrder = {}
+
+local keyElement
+local elementBelowMouse
+
+local activeElement
+
+-- A drag listener must assign itself to the index of the button that was pressed, and must implement the 
+-- functions MouseRelease(x, y) and MouseMove(x, y, dx, dy). Listeners will be removed automatically on 
+-- mouse release
+local dragListeners = {}
+
+-- TODO: Conflicts Per Name!
+local conflicts = {}
+
+------------------------------------------------------------------------------------------------------------
+-- Debug
+------------------------------------------------------------------------------------------------------------
+
+local drawCalls = {}
+
 local function Log(string)
-	if debug or drawDebug then
+	if framework.debug or framework.drawDebug then
 		Spring.Echo("[MasterFramework " .. framework.compatabilityVersion .. "] " .. string)
 	end
 end
 
-local drawCalls = {}
+
 function LogDrawCall(caller)
-	if drawDebug then
+	if framework.drawDebug then
 		drawCalls[caller] = (drawCalls[caller] or 0) + 1
 	end
 end
@@ -60,36 +97,85 @@ local function Error(...)
 	Spring.Echo(errorString)
 end
 
-local hasCheckedElementBelowMouse = false
+------------------------------------------------------------------------------------------------------------
+-- Other Helpers
+------------------------------------------------------------------------------------------------------------
 
-local events = framework.events
+local function nullFunction() end
 
-local elements = {}
-local elementCount = 0
+local function UniqueKey(preferredKey)
+	if elements[preferredKey] == nil then
+		Log("Creating element with preferred key: " .. preferredKey)
+		return preferredKey
+	else
+		conflicts[preferredKey] = (conflicts[preferredKey] or 0) + 1
+		local key = UniqueKey(preferredKey .. "_" .. conflicts[preferredKey])
+		Log("Key " .. preferredKey .. " has already been taken! Assigning key " .. key .. " instead.")
+		return key
+	end
+end
 
-local keyElement
-local elementBelowMouse
+------------------------------------------------------------------------------------------------------------
+-- Layers
+------------------------------------------------------------------------------------------------------------
 
-local activeElement
+-- Returns the index of the layer that 
+local function WantedLayer(layerRequest)
+	if layerRequest.mode == "top" then
+		return 1
+	elseif layerRequest.mode == "bottom" then
+		return #elementOrder + 1
+	elseif layerRequest.mode == "below" then
+		for i, key in ipairs(elementOrder) do
+			if key == layerRequest.target then
+				return i + 1
+			end
+		end
+		error("Could not find element \"" .. layerRequest.target .. "\" to place below!")
+	elseif layerRequest.mode == "above" then
+		for i, key in ipairs(elementOrder) do
+			if key == layerRequest.target then
+				return i
+			end
+		end
+		error("Could not find element \"" .. layerRequest.target .. "\" to place above!")
+	elseif layerRequest.mode == "anywhere" then -- If it doesn't matter, we'll just place just above the elements that are supposed to be below everything else.
+		for i, key in ipairs(elementOrder) do
+			if elements[key].layerRequest.mode == "bottom" then
+				return i
+			end
+		end
+		return #elementOrder + 1
+	else
+		error("Unrecognised layer mode \"" .. tostring(layerRequest.mode) .. "\"!")
+	end
+end
 
--- A drag listener must assign itself to the index of the button that was pressed, and must implement the 
--- functions MouseRelease(x, y) and MouseMove(x, y, dx, dy). Listeners will be removed automatically on 
--- mouse release
-local dragListeners = {}
+local function removeOrderForElement(key)
+	for index, elementKey in ipairs(elementOrder) do
+		if key == elementKey then
+			table.remove(elementOrder, index)
+			return
+		end
+	end
+end
 
--- TODO: Conflicts Per Name!
-local conflicts = 0
+function framework:MoveElement(key, layerRequest)
+	removeOrderForElement(key)
+	table.insert(elementOrder, WantedLayer(layerRequest))
+	element.layerRequest = layerRequest
+end
+
+------------------------------------------------------------------------------------------------------------
+-- Add/Remove Elements
+------------------------------------------------------------------------------------------------------------
 
 -- Adds an element to be drawn.
 --
 -- Parameters:
 --  - body: A component as specified in the "Basic Components" section of this file.
-function framework:InsertElement(body, preferredKey, deselectAction)
-	local key
-
+function framework:InsertElement(body, preferredKey, layerRequest, deselectAction)
 	-- Create element
-
-	local function nullFunction() end
 
 	local element = { 
 		body = body, 
@@ -105,23 +191,23 @@ function framework:InsertElement(body, preferredKey, deselectAction)
 
 	-- Create key
 
-	if elements[preferredKey] == nil then
-		key = preferredKey
-		Log("Creating element with preferred key: " .. preferredKey)
-	else
-		conflicts = conflicts + 1
-		key = preferredKey..conflicts
-		Log("Key " .. preferredKey .. " has already been taken! Assigning key " .. key .. " instead.")
-	end
+	local key = UniqueKey(preferredKey)
 
+	element.key = key 
 	elements[key] = element
+
+	local wantedLayer = WantedLayer(layerRequest)
+	table.insert(elementOrder, wantedLayer, key)
+	element.layerRequest = layerRequest
+
 	return key
 end
 
 function framework:RemoveElement(key) 
 	if key ~= nil then
 		Log("Removed " .. key)
-		elements[key] = nil 
+		elements[key] = nil
+		removeOrderForElement(key)
 	else
 		Log("Could not remove element: Key is nill!")
 	end
@@ -178,6 +264,7 @@ local GL_SRC_ALPHA = GL.SRC_ALPHA
 
 local Spring_GetTimer = Spring.GetTimer
 local Spring_DiffTimers = Spring.DiffTimers
+local Spring_GetTimerMicros = Spring.GetTimerMicros
 
 local profileName
 local startTimer
@@ -194,12 +281,16 @@ local fonts = {}
 
 local function startProfile(_profileName)
 	profileName = _profileName
-	startTimer = Spring_GetTimer()
+	startTimer = Spring_GetTimerMicros()
+	-- startTimer = Spring_GetTimer()
 end
 	
 
 local function endProfile()
-	Log("Profiled " .. profileName .. ": " .. Spring_DiffTimers(Spring_GetTimer(), startTimer) * 1000 .. " microseconds")
+	-- local time = Spring_DiffTimers(Spring_GetTimer(), startTimer, nil)
+	local time = Spring_DiffTimers(Spring_GetTimerMicros(), startTimer, nil, true)
+	framework.stats[profileName] = time
+	-- Log("Profiled " .. profileName .. ": " .. Spring_DiffTimers(Spring_GetTimer(), startTimer) * 1000 .. " microseconds")
 end
 
 ------------------------------------------------------------------------------------------------------------
@@ -278,8 +369,10 @@ local function newSinTheta(cornerRadius)
 	sinThetaCache[cornerRadius] = sinTheta
 	return sinTheta
 end
+local x
 local function DrawRoundedRect(width, height, cornerRadius, drawFunction, shouldSquareBottomLeft, shouldSquareBottomRight, shouldSquareTopRight, shouldSquareTopLeft, ...)
 	LogDrawCall("DrawRoundedRect")
+
 	local centerTopY = height - cornerRadius
 	local centerRightX = width - cornerRadius
 	
@@ -409,6 +502,7 @@ function framework:HorizontalGradient(color1, color2) return framework:Gradient(
 -- Colors from bottom to top
 function framework:VerticalGradient(color1, color2) return framework:Gradient(color1, color1, color2, color2) end
 
+local done2
 -- Draws a color in a rect.
 function framework:Color(r, g, b, a)
 	local color = { r = r, g = g, b = b, a = a }
@@ -438,18 +532,19 @@ function framework:Color(r, g, b, a)
 		else
 			DrawRect(gl_Rect, x, y, width, height)
 		end
+		done2 = true
 	end
 
 	return color
 end
+
+local done
 
 -- Draws a border around an object. NOTE: DOES NOT CURRENTLY WORK PROPERLY
 function framework:Stroke(width, color, inside)
 	local stroke = { width = width, color = color, inside = inside or false }
 
 	-- Only used for the draw function, so we don't need to worry about this being used by multiple strokes.
-	local firstX
-	local firstY
 	local cachedX 
 	local cachedY
 	local cachedWidth
@@ -464,24 +559,24 @@ function framework:Stroke(width, color, inside)
 		LogDrawCall("Stroke")
 		local strokeWidth = self.width
 
-		color:Set()
+		self.color:Set()
 		gl_LineWidth(strokeWidth)
 		
 		-- Ceil and floor here prevent half-pixels
 		local halfStroke = strokeWidth / 2
-		if inside then
-			cachedX = floor(x + halfStroke)
-			cachedY = floor(y + halfStroke)
-			cachedWidth = ceil(width - strokeWidth)
-			cachedHeight = ceil(height - strokeWidth)
-			cachedCornerRadius = ceil(max(0, (rect.cornerRadius() or 0) - halfStroke))
-		else
-			cachedX = floor(x - halfStroke)
-			cachedY = floor(y - halfStroke)
-			cachedWidth = ceil(width + strokeWidth)
-			cachedHeight = ceil(height + strokeWidth)
-			cachedCornerRadius = ceil(max(0, (rect.cornerRadius() or 0) + halfStroke))
-		end
+		-- if inside then
+		-- 	cachedX = floor(x + halfStroke)
+		-- 	cachedY = floor(y + halfStroke)
+		-- 	cachedWidth = ceil(width - strokeWidth)
+		-- 	cachedHeight = ceil(height - strokeWidth)
+		-- 	cachedCornerRadius = ceil(max(0, (rect.cornerRadius() or 0) - halfStroke))
+		-- else
+			cachedX = x + halfStroke
+			cachedY = y + halfStroke
+			cachedWidth = width - strokeWidth
+			cachedHeight = height - strokeWidth
+			cachedCornerRadius = rect.cornerRadius()
+		-- end
 
 		if cachedCornerRadius > 0 then
 			gl_BeginEnd(GL_LINE_LOOP, DrawRoundedRect, cachedWidth, cachedHeight, cachedCornerRadius, strokePixel, 
@@ -489,6 +584,7 @@ function framework:Stroke(width, color, inside)
 		else
 			gl_BeginEnd(GL_LINE_LOOP, DrawRectVertices, cachedWidth, cachedHeight, strokePixel)
 		end
+		done = true
 	end
 
 	return stroke
@@ -585,7 +681,7 @@ end
 
 -- A component of fixed size.
 function framework:Rect(width, height, cornerRadius, decorations)
-	local rect = { cornerRadius = cornerRadius or 0, decorations = decorations or {} }
+	local rect = { cornerRadius = cornerRadius or framework:Dimension(0), decorations = decorations or {} }
 
 	function rect:SetSize(newWidth, newHeight)
 		width = newWidth
@@ -596,7 +692,6 @@ function framework:Rect(width, height, cornerRadius, decorations)
 		LogDrawCall("Rect")
 		local decorations = self.decorations
 		for i = 1, #decorations do
-			-- if not decorations[i].Draw then
 			decorations[i]:Draw(self, x, y, width(), height())
 		end
 	end
@@ -669,8 +764,8 @@ function framework:TextGroup(body)
 		elements[fontKey] = fontGroup
 	end
 
-	function textGroup:Layout(...)
-		return body:Layout(...)
+	function textGroup:Layout(availableWidth, availableHeight)
+		return body:Layout(availableWidth, availableHeight)
 	end
 
 	function textGroup:Draw(...)
@@ -705,43 +800,57 @@ end
 
 -- Auto-sizing text
 -- FIXME: Text currently has an issue where it'll jump up and down. Not sure why this is happening. A pixel rounding issue maybe.
-function framework:Text(string, color, constantWidth, constantHeight, font)
+function framework:Text(string, color, constantWidth, constantHeight, font, watch)
 	font = font or framework.defaultFont
 	local text = {
-		_readOnly_font = font,
-		descender = 0, color = color or framework.color.white, 
+		color = color or framework.color.white, 
 		constantWidth = constantWidth, constantHeight = constantHeight,
 		type = "Text"
 	}
 
 	local fontScale
 	local fontSize
-	local width, height
+	local width, height, descender, ascender
+
+	local prevDescender, prevHeight = 0, 0
 
 	local function layout(font)
-
-		width = text.constantWidth or floor(font.glFont:GetTextWidth(string) * fontSize * font.scale)
+		width = text.constantWidth or font.glFont:GetTextWidth(string) * fontSize * fontScale
 		if text.constantHeight then
 			height = text.constantHeight
-			text.descender = 0
 		else
-			local unscaledHeight, descender = font.glFont:GetTextHeight(string)
-			height = (unscaledHeight - descender) * floor(fontSize * font.scale)
-			text.descender = descender * floor(fontSize * font.scale)
+			local unscaledHeight, unscaledDescender, lines = font.glFont:GetTextHeight(string)
+			-- height = unscaledHeight * fontSize * fontScale
+			-- height = unscaledHeight * fontSize * fontScale -- height doesn't include the ascender, which will lead to weird layout things
+			descender = unscaledDescender * fontSize * fontScale
+			-- ascender = fontSize * fontScale - (height - descender)
+			height = lines * fontSize * fontScale
+
+			-- Spring.Echo("String: " .. string .. ", prevHeight: " .. prevHeight .. ", height: " .. height .. ", prevDescender: " .. prevDescender .. ", descender: " .. descender .. ", fontSize: " .. fontSize .. ", fontScale: " .. fontScale)
+
+			
+			-- if watch and (height ~= prevHeight or descender ~= prevDescender) then
+			-- 	Spring.Echo("Height changed! String: " .. string .. ", prevHeight: " .. prevHeight .. ", height: " .. height .. ", prevDescender: " .. prevDescender .. ", descender: " .. descender .. ", fontSize: " .. fontSize .. ", fontScale: " .. fontScale)
+			-- 	prevHeight = height
+			-- 	prevDescender = descender
+			-- end
+
+			-- Spring.Echo("height: " .. unscaledHeight .. ", descender: " .. unscaledDescender)
 		end
 	end
 
 	function text:SetFont(newFont)
 		local font = newFont or framework.defaultFont
 		fontSize = font.size
-		self._readOnly_font = font
+		fontScale = font.scale
+		self._readOnly_font = font -- So TextGroup can group drawing by font
 		layout(font)
 	end
 
 	function text:SetString(newString)
 		if string ~= newString then
 			string = newString
-			layout(self._readOnly_font)
+			layout(font)
 			return true
 		end
 	end
@@ -752,15 +861,17 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 	local cachedX, cachedY
 
 	function text:Layout(availableHeight, availableWidth)
-		if self._readOnly_font.scale ~= fontScale then
-			layout(self._readOnly_font)
+		if fontScale ~= font.scale then
+			fontScale = font.scale
+			layout(font)
 		end
+		-- return width, height - descender + ascender
 		return width, height
 	end
 
 	function text:Draw(x, y)
 		cachedX = x
-		cachedY = y - self.descender
+		cachedY = y
 
 		LogDrawCall("Text (Grouped)")
 		activeTextGroup:AddElement(self)
@@ -770,7 +881,9 @@ function framework:Text(string, color, constantWidth, constantHeight, font)
 		local color = self.color
 		glFont:SetTextColor(color.r, color.g, color.b, color.a)
 
-		glFont:Print(string, cachedX, cachedY, floor(font.size * combinedScaleFactor), "o")
+		-- height - 1 is because it appeared to be drawing 1 pixel too high - for the default font, at least. I haven't checked with any other font size yet.
+		-- I don't know what to do about text that's supposed to be centred vertically in a cell, because this method of drawing means the descender pushes the text up a bunch.
+		glFont:Print(string, cachedX, cachedY + height - 1, fontSize * fontScale, "ao")
 	end
 
 	return text
@@ -788,9 +901,8 @@ end
 
 -- NOTE: Rasterizers are compatible with Responders IF AND ONLY IF the rasterizer DOES NOT APPLY TRANSLATION
 
--- In order to receive enter actions and leave actions, the responder must return true to hover actions.
+-- In order to receive enter and actions, the responder must return true to hover actions.
 function framework:MouseOverResponder(rect, hoverAction, enterAction, leaveAction)
-	local watcher = self:IsAboveWatcher()
 
 	local responder = self:Responder(rect, events.mouseOver, hoverAction)
 
@@ -805,7 +917,7 @@ function framework:MouseOverChangeResponder(rect, changeAction)
 		rect, 
 		function() return true end,
 		function() 
-			changeAction(true) 
+			changeAction(true)
 		end,
 		function() 
 			changeAction(false) 
@@ -877,6 +989,7 @@ function framework:Responder(rect, event, action)
 		cachedY = y
 	end
 
+	
 	return responder
 end
 
@@ -1011,13 +1124,15 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 
 	local width, height
 
+	local function getWidth() return width end
+	local function getHeight() return height end
+
 	if shouldRasterize then
-		rasterizableRect = framework:Rect(0, 0, cornerRadius, decorations)
+		rasterizableRect = framework:Rect(getWidth, getHeight, cornerRadius, decorations)
 		rasterizer = framework:Rasterizer(rasterizableRect)
 
 		function margin:Draw(x, y)
 			if self.shouldInvalidateRasterizer or viewportDidChange then
-				rasterizableRect:SetSize(width, height)
 				rasterizableRect.cornerRadius = self.cornerRadius
 				rasterizableRect.decorations = self.decorations
 				rasterizer.invalidated = self.shouldInvalidateRasterizer
@@ -1098,7 +1213,7 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 
 		local members = self.members
 		local memberCount = #members
-
+		
 		if memberCount == 0 then
 			return 0, 0
 		end
@@ -1139,6 +1254,7 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 	local maxHeight
 
 	function stackInPlace:Layout(availableWidth, availableHeight)
+
 		maxWidth = 0
 		maxHeight = 0
 
@@ -1206,7 +1322,6 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 			maxHeight = max(memberHeight, maxHeight)
 		end
 		
-
 		return elapsedDistance - spacing, maxHeight
 	end
 
@@ -1337,9 +1452,14 @@ function widget:Initialize()
 end
 
 function widget:DrawScreen()
+	-- startProfile("DrawScreen")
 	hasCheckedElementBelowMouse = false
 	elementBelowMouse = nil
-	for key,element in pairs(elements) do
+	local index = #elementOrder
+	while 0 < index do
+		local key = elementOrder[index]
+		index = index - 1
+		local element = elements[key]
 		activeElement = element
 		activeTooltip = element
 		activeResponders = element.baseResponders
@@ -1349,20 +1469,24 @@ function widget:DrawScreen()
 		local elementBody = element.body
 		-- startProfile("Layout")
 		-- for i = 0,500 do
-			local success, _error = pcall(elementBody.Layout, elementBody, viewportWidth, viewportHeight)
-			if not success then
-				Error("widget:DrawScreen", "Element: " .. key, "elementBody:Layout", _error)
-				framework:RemoveElement(key)
-			end
+		startProfile(key..":Layout()")
+		local success, _error = pcall(elementBody.Layout, elementBody, viewportWidth, viewportHeight)
+		if not success then
+			Error("widget:DrawScreen", "Element: " .. key, "elementBody:Layout", _error)
+			framework:RemoveElement(key)
+		end
+		endProfile()
 		-- end
 		-- endProfile()
 		-- startProfile("Draw")
 		-- for i = 0,500 do
+		startProfile(key..":Draw()")
 		local success, _error = pcall(elementBody.Draw, elementBody, 0, 0)
 		if not success then
 			Error("widget:DrawScreen", "Element: " .. key, "elementBody:Draw", _error)
 			framework:RemoveElement(key)
 		end
+		endProfile()
 				
 		-- end
 		-- endProfile()
@@ -1375,6 +1499,7 @@ function widget:DrawScreen()
 		end
 		drawCalls = {}
 	end
+	-- endProfile()
 end
 
 function widget:ViewResize(viewSizeX, viewSizeY)
@@ -1430,9 +1555,11 @@ function widget:KeyRelease(key, mods, label, unicode) end
 -- Mouse Events
 ------------------------------------------------------------------------------------------------------------
 
+-- Finds the topmost element whose PrimaryFrame contains the given point.
 local function CheckElementUnderMouse(x, y)
 	if not hasCheckedElementBelowMouse then
-		for key, element in pairs(elements) do
+		for _, key in ipairs(elementOrder) do
+			local element = elements[key]
 			local primaryFrame = element.primaryFrame
 			if primaryFrame ~= nil then -- Check for pre-initialised elements.
 				local success, frameX, frameY, frameWidth, frameHeight = pcall(primaryFrame.Geometry, primaryFrame)
@@ -1456,6 +1583,7 @@ local function CheckElementUnderMouse(x, y)
 	return elementBelowMouse ~= nil
 end
 
+-- Attempts to call an action on a responder, then recursively calls Event on the parent (if one exists) in the case of failure. 
 local function Event(responder, ...)
 	local success, result = pcall(responder.action, responder, ...)
 	if not success then
@@ -1472,6 +1600,7 @@ local function Event(responder, ...)
 	end
 end
 
+-- Calls an action on the top-most responder containing the specified point, failingover to its parent responder. Returns the responder that calls the action.
 local function SearchDownResponderTree(responder, x, y, ...)
 	for _,childResponder in pairs(responder.responders) do
 		local success, responderX, responderY, responderWidth, responderHeight = pcall(childResponder.Geometry, childResponder)
@@ -1497,16 +1626,19 @@ local function SearchDownResponderTree(responder, x, y, ...)
 	return nil
 end
 
+-- Calls the base responder for a given event on the current element below mouse. 
 local function FindResponder(event, x, y, ...)
 	return SearchDownResponderTree(elementBelowMouse.baseResponders[event], x, y, ...)
 end
 
 -- Normal mode
 
+-- Alias for performance reasons; do not modify
 local mousePressEvent = events.mousePress
 function widget:MousePress(x, y, button)
 	if not CheckElementUnderMouse(x, y) then
-		for key, element in pairs(elements) do
+		for _, key in ipairs(elementOrder) do
+			local element = elements[key]
 			local success, errorMessage = pcall(element.deselect)
 			if not success then
 				Error("widget:MousePress", "Element: " .. key, "element.deslect", errorMessage)
@@ -1514,8 +1646,7 @@ function widget:MousePress(x, y, button)
 		end
 		return false
 	end
-	local a = FindResponder(mousePressEvent, x, y, button)
-	return a
+	return FindResponder(mousePressEvent, x, y, button)
 end
 
 function widget:MouseMove(x, y, dx, dy, button)
@@ -1563,6 +1694,7 @@ function framework:IsAboveWatcher()
 
 	-- Updates the last responder below, and the nested watcher.
 	function object:Update(responderUnderMouse, x, y)
+
 		if lastResponderBelow then
 			if (not responderUnderMouse) or (responderUnderMouse.id ~= lastResponderBelow.id) then
 				local success, errorMessage = pcall(lastResponderBelow.MouseLeave, lastResponderBelow)
@@ -1593,7 +1725,7 @@ function framework:IsAboveWatcher()
 		if responder and responder.parent then
 			local responderUnderMouse = Event(responder.parent, x, y)
 			self:Update(responderUnderMouse, x, y)
-		else 
+		else
 			self:Reset()
 		end
 	end
@@ -1605,6 +1737,12 @@ function framework:IsAboveWatcher()
 
 	-- Informs the watcher there is no responder to watch.
 	function object:Reset()
+		if lastResponderBelow then
+			local success, errorMessage = pcall(lastResponderBelow.MouseLeave, lastResponderBelow)
+			if not success then
+				Error("IsAboveWatcher:Reset", "lastResponderBelow:MouseLeave", errorMessage)
+			end
+		end
 		self:Update(nil, nil, nil)
 	end
 
@@ -1623,7 +1761,7 @@ function widget:IsAbove(x, y)
 	-- for i=0,1000 do
 		isAbove = CheckElementUnderMouse(x, y)
 		if isAbove then
-			isAboveThing:Search(elementBelowMouse.baseResponders[events.mouseOver], x, y)
+			isAboveThing:Search(elementBelowMouse.baseResponders[mouseOverEvent], x, y)
 		else
 			isAboveThing:Reset()
 		end
@@ -1633,6 +1771,8 @@ function widget:IsAbove(x, y)
 	return isAbove
 end
 function widget:Update()
+	-- widget:IsAbove seems to be called multiple times a frame. To mitigate this, we'll call it once per function we *know* is called once per frame - in this case, Update().
+	-- (It might be slightly more optimal (re performance) to call it in DrawScreen, but putting it in Update allows us to keep it right here where it's easy to read.)
 	isAboveChecked = false
 end
 
