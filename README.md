@@ -1,6 +1,8 @@
 # Master-GUI-Framework
 A GUI framework for the Spring Engine.
 
+This readme is outdated, but still vaguely correct.
+
 ## Overview:
 
 This framework provides a group of basic UI components that can be combined to build a complex UI. An interface element simply has to implement a `Layout()` and `Draw(x, y)` function, and have an entry for `.width` and `.height` in the table. For a basic example, see `framework:Rect()`.
