@@ -23,19 +23,49 @@ local count = 0
 ------------------------------------------------------------------------------------------------------------
 
 local framework = {
-	debug = false,
-	drawDebug = false,
+	debug = false, -- if true, debug messages will be echoed.
+	drawDebug = false, -- if true, various draw-related debug features will be enabled.
 	compatabilityVersion = 14,
 
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
+	
+	-- A set of functions used to generate a layerRequest. 
+	-- 
+	-- These requests are not a guarantee for the element's lifetime; they only guarantee the placement of the element.
+	-- Use `framework:MoveElement()` to update its placement. 
 	layerRequest = {
+
+		-- The new element will be placed directly above the specified element, such that if they overlap, the new element will be obscured.
+		-- Parameter target: the key (returned by `InsertElement()`) of the element.
+		--
+		-- Returns a valid layer request.
 		directlyBelow = function(target) return { mode = "below", target = target } end,
+
+		-- The new element will be placed directly above the specified element, such that if they overlap, the new element will not be obscured.
+		-- Parameter target: the key (returned by `InsertElement()`) of the element. 
+		--
+		-- Returns a valid layer request.
 		directlyAbove = function(target) return { mode = "above", target = target } end,
+
+		-- The element will be placed above all other elements, such that if it overlaps any other element, it will not be obscured.
+		--
+		-- Returns a valid layer request.
 		top = function() return { mode = "top" } end,
+
+		-- The element will be placed below all other elements, such that if it overlaps any other element, it will be obscured.
+		--
+		-- Returns a valid layer request.
 		bottom = function() return { mode = "bottom" } end,
+
+		-- The element will be placed just above the elements that are supposed to be below everything else. 
+		--
+		-- Returns a valid layer request.
 		anywhere = function() return { mode = "anywhere" } end,
 	},
 
+	-- Stores the result of a profiling run. Key: profile name, value: profile duration.
+	-- These values are not used internally and by default are never wiped. Do with them as you wish.
+	-- See `startProfile(), endProfile()` for more information about profiling.
 	stats = {},
 }
 
@@ -80,7 +110,7 @@ local function Log(string)
 end
 
 
-function LogDrawCall(caller)
+local function LogDrawCall(caller)
 	if framework.drawDebug then
 		drawCalls[caller] = (drawCalls[caller] or 0) + 1
 	end
@@ -160,6 +190,10 @@ local function removeOrderForElement(key)
 	end
 end
 
+-- 
+-- Parameters:
+--  - key: The key (returned by `framework:InsertElement()`) of the element to be placed.
+--  - layerRequest: see `framework.layerRequest`
 function framework:MoveElement(key, layerRequest)
 	removeOrderForElement(key)
 	table.insert(elementOrder, WantedLayer(layerRequest))
@@ -173,7 +207,13 @@ end
 -- Adds an element to be drawn.
 --
 -- Parameters:
---  - body: A component as specified in the "Basic Components" section of this file.
+--  - body: A component as specified in the "Basic Components" section of this file. This component must either be or contain a `framework:PrimaryFrame`.
+--  - preferredKey: A string that will be used to generate an identifying string for this element. 
+--                  To avoid collisions, the key may be modified. The key actually used will be returned by this function. 
+--  - layerRequest: allows arrangement of various interface elements. See `framework.layerRequest` for more detail.
+--  - deselctAction: Nil, or a function to be called when a click is performed outside the bounds of a selected element. (WARNING: THIS IS LIKELY BROKEN)
+--
+-- Returns a key (derived from preferredKey) that can be used to remove the element from the interface. The element will NOT be automatically removed. See `framework:RemoveElement()` for more detail.
 function framework:InsertElement(body, preferredKey, layerRequest, deselectAction)
 	-- Create element
 
@@ -203,6 +243,10 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	return key
 end
 
+-- Removes an element from the display.
+--
+-- Parameters:
+--  - key: the key returned from `framework:InsertElement()` when the element was inserted.
 function framework:RemoveElement(key) 
 	if key ~= nil then
 		Log("Removed " .. key)
@@ -1346,6 +1390,15 @@ end
 local emptyTable = {}
 local recalculatingRasterizer = false
 
+-- Wraps the body in a draw list, to avoid both layout recalculation and redrawing.
+-- Set `rasterizer.invalidated = true` to re-layout and re-draw.
+-- Call `rasterizer:SetBody()` to change the contents of the rasterizer. This automatically invalidates the rasterizer.
+--
+-- Currently, nested rasterizers have no performance benefit, as draw lists cannot be nested.
+--
+-- Additional notes: 
+--  - When drawDebug is enabled, rasterization is disabled.
+--  - When scaling or screen size changes, all rasterizers will automatically invalidate themselves.
 function framework:Rasterizer(providedBody)
 	local rasterizer = { invalidated = true, type = "Rasterizer" }
 
@@ -1602,7 +1655,7 @@ end
 
 -- Calls an action on the top-most responder containing the specified point, failingover to its parent responder. Returns the responder that calls the action.
 local function SearchDownResponderTree(responder, x, y, ...)
-	for _,childResponder in pairs(responder.responders) do
+	for _, childResponder in pairs(responder.responders) do
 		local success, responderX, responderY, responderWidth, responderHeight = pcall(childResponder.Geometry, childResponder)
 		if not success then
 			-- responderX contains the error if this fails
