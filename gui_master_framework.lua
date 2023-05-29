@@ -25,7 +25,7 @@ local count = 0
 local framework = {
 	debug = false, -- if true, debug messages will be echoed.
 	drawDebug = false, -- if true, various draw-related debug features will be enabled.
-	compatabilityVersion = 14,
+	compatabilityVersion = 15,
 
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 	
@@ -1275,6 +1275,21 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 			maxWidth = max(maxWidth, memberWidth)
 		end
 
+		if availableHeight < (elapsedDistance - spacing) then -- if we go oversize, see if we can convince things to tighten up (this can create some rendering issues combined with ScrollContainers & ResizableMovableWindow, a better solution is needed)
+			local offset = elapsedDistance - spacing - availableHeight
+			elapsedDistance = 0
+			maxWidth = 0
+
+			for i = 1, memberCount do
+				local member = members[memberCount - (i - 1)]
+				local memberWidth, memberHeight = member:Layout(availableWidth, availableHeight - elapsedDistance - offset)
+				member.vStackCachedY = elapsedDistance
+				member.vStackCachedWidth = memberWidth
+				elapsedDistance = elapsedDistance + memberHeight + spacing
+				maxWidth = max(maxWidth, memberWidth)
+			end
+		end
+
 		return maxWidth, elapsedDistance - spacing
 	end
 
@@ -1364,6 +1379,21 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 			member.hStackCachedHeight = memberHeight
 			elapsedDistance = elapsedDistance + memberWidth + spacing
 			maxHeight = max(memberHeight, maxHeight)
+		end
+
+		if availableWidth < (elapsedDistance - spacing) then -- if we go oversize, see if we can convince things to tighten up (this can create some rendering issues combined with ScrollContainers & ResizableMovableWindow, a better solution is needed)
+			local offset = elapsedDistance - spacing - availableWidth
+			elapsedDistance = 0
+			maxHeight = 0
+
+			for i = 1, memberCount do
+				local member = members[i]
+				local memberWidth, memberHeight = member:Layout(availableWidth - elapsedDistance - offset, availableHeight)
+				member.hStackCachedX = elapsedDistance
+				member.hStackCachedHeight = memberHeight
+				elapsedDistance = elapsedDistance + memberWidth + spacing
+				maxHeight = max(maxHeight, memberHeight)
+			end
 		end
 		
 		return elapsedDistance - spacing, maxHeight
@@ -1726,9 +1756,9 @@ end
 
 local mouseWheelEvent = events.mouseWheel
 function widget:MouseWheel(up, value)
-	if elementBelowMouse then
-		local frame = elementBelowMouse.primaryFrame
-		return FindResponder(mouseWheelEvent, frame.cachedX, frame.cachedY)
+	local mouseX, mouseY = Spring.GetMouseState()
+	if CheckElementUnderMouse(mouseX, mouseY) then
+		return FindResponder(mouseWheelEvent, mouseX, mouseY, up, value)
 	else
 		return false
 	end
