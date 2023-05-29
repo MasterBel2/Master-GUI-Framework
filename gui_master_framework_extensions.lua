@@ -77,7 +77,8 @@ function widget:Initialize()
                     function(self, x, y)
                         highlightColor = hoverColor
                         if MasterFramework.PointIsInRect(x, y, self:Geometry()) then
-                            action(checkbox)
+                            checkbox:SetChecked(not checked)
+                            action(checkbox, checked)
                         end
                     end
                 ),
