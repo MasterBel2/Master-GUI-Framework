@@ -160,7 +160,7 @@ function widget:Initialize()
             local frame = {}
 
             local handleDimension = MasterFramework:Dimension(20)
-            local xOffset = defaultX
+            local xOffset = defaultX -- offsets are to top left corner
             local yOffset = defaultY
 
             if key then
@@ -204,10 +204,25 @@ function widget:Initialize()
                 end
             )
 
-            local vStack = MasterFramework:StackInPlace({ child, handlePressDetector }, 0, 1)
+            local zStack = MasterFramework:StackInPlace({ child, handlePressDetector }, 0, 1)
 
-            function frame:Layout(...)
-                return vStack:Layout(...)
+            local width, height
+            function frame:Layout(availableWidth, availableHeight)
+                width, height = zStack:Layout(availableWidth, availableHeight)
+                if xOffset > availableWidth - 5 then
+                    xOffset = availableWidth - 5
+                    if key then
+                        framePositionCache[key].xOffset = xOffset
+                    end
+                end
+                if yOffset > availableHeight then
+                    yOffset = availableHeight
+                    if key then
+                        framePositionCache[key].yOffset = yOffset
+                    end
+                end
+                    
+                return width, height
             end
 
             local oldScale = scale()
@@ -221,17 +236,25 @@ function widget:Initialize()
                     oldScale = currentScale
                 end
 
-                vStack:Draw(x + xOffset, y + yOffset)
+                zStack:Draw(x + xOffset, y + yOffset - height)
+            end
+
+            function frame:CurrentOffset()
+                return xOffset, yOffset
+            end
+
+            function frame:SetOffset(x, y)
+                xOffset = math.max(x, 0)
+                yOffset = math.max(y, 5)
+
+                if key then
+                    framePositionCache[key].xOffset = x
+                    framePositionCache[key].yOffset = y
+                end
             end
 
             function frame:Move(x, y)
-                xOffset = xOffset + x
-                yOffset = yOffset + y
-
-                if key then 
-                    framePositionCache[key].xOffset = xOffset
-                    framePositionCache[key].yOffset = yOffset
-                end
+                self:SetOffset(xOffset + x, yOffset + y)
             end
 
             return frame
@@ -244,6 +267,13 @@ function widget:Initialize()
 
             local width = defaultWidth
             local height = defaultHeight
+
+            local dragStartMouseDownX
+            local dragStartMouseDownY
+            local dragStartX
+            local dragStartY
+            local dragStartWidth
+            local dragStartHeight
 
             if key then
                 if frameSizeCache[key] then
@@ -304,21 +334,58 @@ function widget:Initialize()
 
                     draggableDecoration.color = draggingColor
 
+                    dragStartMouseDownX = x
+                    dragStartMouseDownY = y
+
+                    dragStartX, dragStartY = movableFrame:CurrentOffset()
+
+                    dragStartWidth = width
+                    dragStartHeight = height
+
                     return true
                 end,
-                function(responder, x, y, dx, dy)
+                function(responder, mouseX, mouseY, dx, dy, button)
+                    if not (draggingLeft or draggingRight or draggingBottom or draggingTop) then return false end
+                    local dMouseX = mouseX - dragStartMouseDownX
+                    local dMouseY = mouseY - dragStartMouseDownY
+
+                    local newProspectiveWidth = width
+                    local newProspectiveHeight = height
                     if draggingLeft then
-                        width = width - dx
-                        movableFrame:Move(dx, 0)
+                        newProspectiveWidth = dragStartWidth - dMouseX
                     elseif draggingRight then
-                        width = width + dx
+                        newProspectiveWidth = dragStartWidth + dMouseX
                     end
                     if draggingBottom then
-                        height = height - dy
-                        movableFrame:Move(0, dy)
+                        newProspectiveHeight = dragStartHeight - dMouseY
                     elseif draggingTop then
-                        height = height + dy
+                        newProspectiveHeight = dragStartHeight + dMouseY
                     end
+                    
+                    local new_Width, new_Height = child:Layout(newProspectiveWidth, newProspectiveHeight)
+                    local newFinalWidth = math.min(new_Width, newProspectiveWidth) -- I tried commenting these out for some debugging thing and it appears
+                    local newFinalHeight = math.min(new_Height, newProspectiveHeight) -- clamping works even when we don't do this???
+
+                    -- local newFinalWidth = newProspectiveWidth
+                    -- local newFinalHeight = newProspectiveHeight
+
+                    local _dx = 0
+                    local _dy = 0
+
+                    if draggingLeft then
+                        width = newFinalWidth
+                        _dx = dragStartWidth - newFinalWidth
+                    elseif draggingRight then
+                        width = newFinalWidth
+                    end
+                    if draggingBottom then
+                        height = newFinalHeight
+                    elseif draggingTop then
+                        height = newFinalHeight
+                        _dy = newFinalHeight - dragStartHeight
+                    end
+
+                    movableFrame:SetOffset(dragStartX + _dx, dragStartY + _dy)
 
                     if key then
                         frameSizeCache[key].width = width
@@ -360,14 +427,24 @@ function widget:Initialize()
                 end
             )
 
+            local function SizeControl(child)
+                local control = {}
+                function control:Layout(availableWidth, availableHeight)
+                    width, height = child:Layout(width, height)
+                    return child:Layout(width, height)
+                end
+                function control:Draw(...)
+                    return child:Draw(...)
+                end
+                return control
+            end
+            local sizeControl = SizeControl(mouseOverResponder)
             movableFrame = MasterFramework:MovableFrame(
-                key, mouseOverResponder,
+                key, sizeControl,
                 defaultX, defaultY
             )
 
             function frame:Layout(availableWidth, availableHeight)
-                movableFrame:Layout(width, height)
-
                 local currentScale = scale()
                 if currentScale ~= oldScale then
                     scaleTranslation = currentScale / oldScale
@@ -376,12 +453,14 @@ function widget:Initialize()
                     oldScale = currentScale
                 end
 
+                movableFrame:Layout(availableWidth, availableHeight)
+
                 -- if growToFitContents then
                 --     width = math.max(childWidth, width)
                 --     height = math.max(childHeight, height)
                 -- end
 
-                return width, height
+                return availableWidth, availableHeight
             end
 
             function frame:Draw(x, y)
