@@ -19,7 +19,7 @@ function widget:Initialize()
 
         local semiTransparent = 0.66
 
-        local hoverColor    = MasterFramework:Color(1, 1, 1, 0.66)
+        local hoverColor    = MasterFramework:Color(1, 1, 1, 0.33)
         local pressColor    = MasterFramework:Color(0.66, 0.66, 1, 0.66)
         local selectedColor = MasterFramework:Color(0.66, 1, 1, 0.66)
 
