@@ -6,7 +6,7 @@ function widget:GetInfo()
     }
 end
 
-local requiredFrameworkVersion = 15
+local requiredFrameworkVersion = 16
 
 local framePositionCache = {}
 local frameSizeCache = {}

@@ -25,7 +25,7 @@ local count = 0
 local framework = {
 	debug = false, -- if true, debug messages will be echoed.
 	drawDebug = false, -- if true, various draw-related debug features will be enabled.
-	compatabilityVersion = 15,
+	compatabilityVersion = 16,
 
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 	
@@ -982,13 +982,13 @@ function framework:MousePressResponder(rect, downAction, moveAction, releaseActi
 		return responder:downAction(x, y, button)
 	end
 
-	function responder:MouseMove(x, y, dx, dy)
-		self:moveAction(x, y, dx, dy)
+	function responder:MouseMove(x, y, dx, dy, button)
+		self:moveAction(x, y, dx, dy, button)
 	end
 	
-	function responder:MouseRelease(x, y)
+	function responder:MouseRelease(x, y, button)
 		-- The call site will remove as a drag listener
-		self:releaseAction(x, y)
+		self:releaseAction(x, y, button)
 	end
 
 	return responder
@@ -1735,7 +1735,7 @@ end
 function widget:MouseMove(x, y, dx, dy, button)
 	local dragListener = dragListeners[button]
 	if dragListener ~= nil then
-		local success, errorMessage = pcall(dragListener.MouseMove, dragListener, x, y, dx, dy)
+		local success, errorMessage = pcall(dragListener.MouseMove, dragListener, x, y, dx, dy, button)
 		if not success then
 			Error("widget:MouseMove", "dragListener:MouseMove", errorMessage)
 		end
@@ -1745,7 +1745,7 @@ end
 function widget:MouseRelease(x, y, button)
 	local dragListener = dragListeners[button]
 	if dragListener then
-		local success, errorMessage = pcall(dragListener.MouseRelease, dragListener, x, y)
+		local success, errorMessage = pcall(dragListener.MouseRelease, dragListener, x, y, button)
 		if not success then
 			Error("widget:MouseRelease", "dragListener:MouseRelease", errorMessage)
 		end
