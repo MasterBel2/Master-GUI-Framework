@@ -978,10 +978,11 @@ end
 -- In order to receive enter and actions, the responder must return true to hover actions.
 function framework:MouseOverResponder(rect, hoverAction, enterAction, leaveAction)
 
+	-- arguments for mouseOver: responder, x, y
 	local responder = self:Responder(rect, events.mouseOver, hoverAction)
 
-	responder.MouseEnter = enterAction
-	responder.MouseLeave = leaveAction
+	responder.MouseEnter = enterAction -- Arguments: responder
+	responder.MouseLeave = leaveAction -- Arguments: responder
 
 	return responder
 end
@@ -1305,7 +1306,7 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 			maxWidth = max(maxWidth, memberWidth)
 		end
 
-		if availableHeight < (elapsedDistance - spacing) then -- if we go oversize, see if we can convince things to tighten up (this can create some rendering issues combined with ScrollContainers & ResizableMovableWindow, a better solution is needed)
+		if availableHeight < (elapsedDistance - spacing) then -- if we go oversize, see if we can convince things to tighten up (this can create some rendering issues combined with ScrollContainers & ResizableMovableFrame, a better solution is needed)
 			local offset = elapsedDistance - spacing - availableHeight
 			elapsedDistance = 0
 			maxWidth = 0
@@ -1411,7 +1412,7 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 			maxHeight = max(memberHeight, maxHeight)
 		end
 
-		if availableWidth < (elapsedDistance - spacing) then -- if we go oversize, see if we can convince things to tighten up (this can create some rendering issues combined with ScrollContainers & ResizableMovableWindow, a better solution is needed)
+		if availableWidth < (elapsedDistance - spacing) then -- if we go oversize, see if we can convince things to tighten up (this can create some rendering issues combined with ScrollContainers & ResizableMovableFrame, a better solution is needed)
 			local offset = elapsedDistance - spacing - availableWidth
 			elapsedDistance = 0
 			maxHeight = 0
