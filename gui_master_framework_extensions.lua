@@ -249,12 +249,11 @@ function widget:Initialize()
                     frameSizeCache[key] = { width = width, height = height }
                 end
             end
-            
 
             local scale = MasterFramework:Dimension(1)
             local oldScale = scale()
 
-            local movableFrame
+            local movableFrame -- value set below responders
 
             local draggableDistance = MasterFramework:Dimension(20)
             local margin = MasterFramework:Dimension(0) -- Must be 0; see ResizableMovableFrame documentation. 
@@ -388,10 +387,6 @@ function widget:Initialize()
             return frame
         end
     end
-end
-
-local function XYRelativeToRect(x, y, width, height)
-    
 end
 
 function widget:GetConfigData()
