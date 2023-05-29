@@ -1,5 +1,15 @@
 local table_insert = table.insert
 
+-- Returns an array with a set number of values, with a generation function that takes the array index of the value 
+-- to generate and returns the value to be stored at that index.
+function table.repeating(count, func)
+    local newTable = {}
+    for i = 1, 3 do
+        table_insert(newTable, func(i))
+    end
+    return newTable
+end
+
 -- Creates a new table composed of the results of calling a function on each key-value pair of the original table.
 function table.map(_table, transform)
     local newTable = {}
@@ -64,6 +74,18 @@ function table.filter(_table, shouldIncludeElement)
     return newTable
 end
 
+-- Returns a new array with all elements of a given array where the provided filter returns true. 
+-- The filter is given the index and value for each entry in the array. Order is preserved.
+function table.ifilter(array, shouldIncludeElement)
+    local newArray = {}
+    for index, value in ipairs(array) do
+        if shouldIncludeElement(index, value) then
+            table.insert(newArray, value)
+        end
+    end
+    return newArray
+end
+
 function table.reduce(array, initialValue, operation)
     local value = initialValue
     for _, element in ipairs(array) do
@@ -86,6 +108,19 @@ function table.joinStrings(table, separator)
     end
     
     return string
+end
+
+-- Returns an array containing all elements in the provided arrays, in the reverse order than provided.
+function table.joinArrays(arrayArray)
+    local newArray = {}
+
+    for _, array in pairs(arrayArray) do
+        for _, value in pairs(array) do
+            table_insert(newArray, value)
+        end
+    end
+
+    return newArray
 end
 
 -- Returns an array containing all elements in the provided arrays, in the reverse order than provided.
