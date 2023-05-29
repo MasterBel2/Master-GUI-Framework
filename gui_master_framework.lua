@@ -819,8 +819,8 @@ end
 framework.defaultFont = framework:Font("FreeSansBold.otf", 12)
 
 local activeTextGroup
-function framework:TextGroup(body)
-	local textGroup = {}
+function framework:TextGroup(body, name)
+	local textGroup = { name = name or "default" }
 	local elements = {}
 
 	function textGroup:SetBody(newBody)
@@ -1633,7 +1633,7 @@ local function FindTooltip(x, y, tooltips)
 			Error("FindTooltip", "tooltip:Geometry", "Element: " .. key, tooltipX) 
 			break
 		end
-		if not tooltipX and tooltipY and tooltipWidth and tooltipHeight then
+		if not (x and y and tooltipX and tooltipY and tooltipWidth and tooltipHeight) then
 			Error("FindTooltip", "Element: " .. key, "Tooltip:Geometry is incomplete: " .. (tooltipX or "nil") .. ", " .. (tooltipY or "nil") .. ", " .. (tooltipWidth or "nil") .. ", " .. (tooltipHeight or "nil"))
 			break
 		end
@@ -1711,7 +1711,7 @@ local function CheckElementUnderMouse(x, y)
 					Error("CheckUnderMouse", "Element: " .. key, "PrimaryFrame:Geometry", frameX)
 					break
 				end
-				if not (frameX and frameY and frameWidth and frameHeight) then
+				if not (x and y and frameX and frameY and frameWidth and frameHeight) then
 					Error("CheckUnderMouse", "Element: " .. key, "PrimaryFrame:Geometry is incomplete: " .. (frameX or "nil") .. ", " .. (frameY or "nil") .. ", " .. (frameWidth or "nil") .. ", " .. (frameHeight or "nil"))
 					break
 				end
@@ -1749,11 +1749,11 @@ local function SearchDownResponderTree(responder, x, y, ...)
 		local success, responderX, responderY, responderWidth, responderHeight = pcall(childResponder.Geometry, childResponder)
 		if not success then
 			-- responderX contains the error if this fails
-			Error("Element: " .. key, "childResponder:Geometry", responderX)
+			Error("SearchDownResponderTree", "childResponder:Geometry", responderX)
 			break
 		end
-		if not (responderX and responderY and responderWidth and responderHeight) then
-			Error("Element: " .. key, "childResponder:Geometry is incomplete: " .. (responderX or "nil") .. ", " .. (responderY or "nil") .. ", " .. (responderWidth or "nil") .. ", " .. (responderHeight or "nil"))
+		if not (x and y and responderX and responderY and responderWidth and responderHeight) then
+			Error("SearchDownResponderTree", "childResponder:Geometry is incomplete: " .. (responderX or "nil") .. ", " .. (responderY or "nil") .. ", " .. (responderWidth or "nil") .. ", " .. (responderHeight or "nil"))
 			break
 		end
 
