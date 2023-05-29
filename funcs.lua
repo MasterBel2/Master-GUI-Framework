@@ -36,7 +36,10 @@ function table.mapToArray(_table, transform)
     local newArray = {}
 
     for key, value in pairs(_table) do
-        table_insert(newArray, transform(key, value))
+        local newValue = transform(key, value)
+        if newValue then
+            table_insert(newArray, newValue)
+        end
     end
 
     return newArray
