@@ -25,7 +25,7 @@ local count = 0
 local framework = {
 	debug = false, -- if true, debug messages will be echoed.
 	drawDebug = false, -- if true, various draw-related debug features will be enabled.
-	compatabilityVersion = 16,
+	compatabilityVersion = 17,
 
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 	
@@ -88,6 +88,7 @@ local keyElement
 local elementBelowMouse
 
 local activeElement
+local focusTarget
 
 -- A drag listener must assign itself to the index of the button that was pressed, and must implement the 
 -- functions MouseRelease(x, y) and MouseMove(x, y, dx, dy). Listeners will be removed automatically on 
@@ -96,6 +97,31 @@ local dragListeners = {}
 
 -- TODO: Conflicts Per Name!
 local conflicts = {}
+
+------------------------------------------------------------------------------------------------------------
+-- Focus
+------------------------------------------------------------------------------------------------------------
+
+function framework:TakeFocus(newFocusTarget)
+	if focusTarget then
+		focusTarget:ReleaseFocus()
+	end
+	if widgetHandler:OwnText() then
+		focusTarget = newFocusTarget
+		return true
+	end
+end
+
+function framework:ReleaseFocus(requestingFocusTarget)
+	if requestingFocusTarget == focusTarget then
+		focusTarget = nil
+		return widgetHandler:DisownText()
+	end
+end
+
+function framework:FocusTarget()
+	return focusTarget
+end
 
 ------------------------------------------------------------------------------------------------------------
 -- Debug
@@ -891,6 +917,10 @@ function framework:Text(string, color, constantWidth, constantHeight, font, watc
 		layout(font)
 	end
 
+	function text:GetString()
+		return string
+	end
+
 	function text:SetString(newString)
 		if string ~= newString then
 			string = newString
@@ -1631,8 +1661,38 @@ end
 -- Keyboard Events
 ------------------------------------------------------------------------------------------------------------
 
-function widget:KeyPress(key, mods, isRepeat, label, unicode) end
-function widget:KeyRelease(key, mods, label, unicode) end
+function widget:TextInput(char)
+    if not focusTarget then return end
+
+	local success, errorMessage = pcall(focusTarget.TextInput, focusTarget, char)
+	if not success then 
+		Error("widget:TextInput", "focusTarget:TextInput", errorMessage)
+	end
+
+    return true
+end
+
+function widget:KeyPress(key, mods, isRepeat, label, unicode)
+    if not focusTarget then return end
+
+    local success, errorMessage = pcall(focusTarget.KeyPress, focusTarget, key, mods, isRepeat, label, unicode)
+	if not success then 
+		Error("widget:KeyPress", "focusTarget:KeyPress", errorMessage)
+	end
+
+    return true
+end
+
+function widget:KeyRelease(key, mods, label, unicode)
+	if not focusTarget then return end
+	
+	local success, errorMessage = pcall(focusTarget.KeyRelease, focusTarget, key, mods, label, unicode)
+	if not success then 
+		Error("widget:KeyRelease", "focusTarget:KeyRelease", errorMessage)
+	end
+	
+	return true
+end
 
 ------------------------------------------------------------------------------------------------------------
 -- Mouse Events
@@ -1719,6 +1779,10 @@ end
 -- Alias for performance reasons; do not modify
 local mousePressEvent = events.mousePress
 function widget:MousePress(x, y, button)
+	if focusTarget then
+		focusTarget:ReleaseFocus()
+		focusTarget = nil
+	end
 	if not CheckElementUnderMouse(x, y) then
 		for _, key in ipairs(elementOrder) do
 			local element = elements[key]

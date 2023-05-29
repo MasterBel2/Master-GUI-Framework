@@ -6,7 +6,7 @@ function widget:GetInfo()
     }
 end
 
-local requiredFrameworkVersion = 16
+local requiredFrameworkVersion = 17
 
 local framePositionCache = {}
 local frameSizeCache = {}
@@ -153,6 +153,156 @@ function widget:Initialize()
             button.margin = margin
 
             return button
+        end
+
+        function MasterFramework:TextEntry(string, ...)
+            local entry = { text = MasterFramework:Text(string, ...), selectionBegin = string:len() + 1, selectionEnd = string:len() + 1, canLoseFocus = false }
+            
+            local selectedStroke = MasterFramework:Stroke(2, hoverColor)
+            local background = MasterFramework:MarginAroundRect(
+                entry.text,
+                MasterFramework:Dimension(8),
+                MasterFramework:Dimension(8),
+                MasterFramework:Dimension(8),
+                MasterFramework:Dimension(8),
+                { MasterFramework:Color(0, 0, 0, 0.7) }   
+            )
+            local selectionDetector = MasterFramework:MousePressResponder(
+                background,
+                function(responder, mouseX, mouseY, button)
+                    if button ~= 1 then return false end
+
+                    selectedStroke.color = pressColor
+                    background.decorations[2] = selectedStroke
+                    
+                    return true
+                end,
+                function(responder, mouseX, mouseY)
+                    if MasterFramework.PointIsInRect(mouseX, mouseY, responder:Geometry()) then
+                        selectedStroke.color = pressColor
+                        background.decorations[2] = selectedStroke
+                    elseif MasterFramework:FocusTarget() == entry then
+                        selectedStroke.color = selectedColor
+                        background.decorations[2] = selectedStroke
+                    else
+                        background.decorations[2] = nil
+                    end
+                end,
+                function(responder, mouseX, mouseY)
+                    if (MasterFramework:FocusTarget() == entry) then
+                        selectedStroke.color = selectedColor
+                        background.decorations[2] = selectedStroke
+                    elseif MasterFramework.PointIsInRect(mouseX, mouseY, responder:Geometry()) and entry:TakeFocus() then
+                        selectedStroke.color = selectedColor
+                        background.decorations[2] = selectedStroke
+                    else
+                        background.decorations[2] = nil
+                    end
+                end
+            )
+
+            function entry:editBackspace()
+                local string = self.text:GetString()
+                
+                if self.selectionBegin == self.selectionEnd then -- Point select
+                    if self.selectionBegin == 1 then return true end
+                    string = string:sub(1, self.selectionBegin - 2)  .. string:sub(self.selectionEnd, string:len())
+            
+                    self.selectionBegin = self.selectionBegin - 1
+                else -- Block select
+                    string = string:sub(1, self.selectionBegin) .. string:sub(self.selectionEnd, string:len())
+                end
+                
+                self.selectionEnd = self.selectionBegin
+            
+                self.text:SetString(string)
+            end
+            
+            function entry:editDelete()
+                local string = self.text:GetString()
+            
+                if self.selectionBegin == self.selectionEnd then
+                    string = string:sub(1, self.selectionBegin - 1) .. string:sub(self.selectionEnd + 1, string:len())
+                else
+                    string = string:sub(1, self.selectionBegin) .. string:sub(self.selectionEnd, string:len())
+                end
+            
+                self.selectionEnd = self.selectionBegin
+            
+                self.text:SetString(string)
+            end
+            
+            function entry:editPreviousChar()
+                self.selectionBegin = math.max(self.selectionBegin - 1, 1)
+                self.selectionEnd = self.selectionBegin
+                return true
+            end
+            
+            function entry:editNextChar()
+                self.selectionBegin = math.min(self.selectionBegin + 1, self.text.GetString():len() + 1)
+                self.selectionEnd = self.selectionBegin
+            end
+
+            -- function entry:editPreviousWord() --[[Not implemented]] end
+            -- function entry:editNextWord() --[[Not implemented]] end
+
+            function entry:editReturn()
+            end
+            
+            function entry:editEscape()
+                self:ReleaseFocus()
+            end
+
+            function entry:TextInput(char)
+                local string = self.text:GetString()
+
+                string = string:sub(1, self.selectionBegin) .. char .. string:sub(self.selectionEnd + 1)
+                if self.selectionBegin <= string:len() then
+                    self.selectionBegin = self.selectionBegin + char:len()
+                end
+                self.selectionEnd = self.selectionBegin
+                
+                self.text:SetString(string)
+            end
+
+            function entry:KeyPress(key, mods, isRepeat)
+                if key == 0x08 then
+                    self:editBackspace()
+                elseif key == 0x7F then 
+                    self:editDelete()
+                elseif key == 0x1B then 
+                    self:editEscape()
+                elseif key == 0x113 then
+                    self:editNextChar()
+                elseif key == 0x114 then
+                    self:editPreviousChar()
+                end
+            end
+
+            function entry:KeyRelease() end
+
+            function entry:TakeFocus()
+                if MasterFramework:TakeFocus(self) then
+                    selectedStroke.color = selectedColor
+                    background.decorations[2] = selectedStroke
+                    return true
+                end
+            end
+
+            function entry:ReleaseFocus()
+                MasterFramework:ReleaseFocus(self)
+                background.decorations[2] = nil
+            end
+
+            function entry:Layout(...)
+                return selectionDetector:Layout(...)
+            end
+
+            function entry:Draw(x, y)
+                selectionDetector:Draw(x, y)
+            end
+
+            return entry
         end
 
         function MasterFramework:OffsettedViewport(body, autoWidth, autoHeight)
