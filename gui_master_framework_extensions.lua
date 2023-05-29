@@ -108,33 +108,37 @@ function widget:Initialize()
             local button = { visual = visual }
             local margin = MasterFramework:MarginAroundRect(visual, defaultMargin, defaultMargin, defaultMargin, defaultMargin, {}, marginDimension, false)
 
-            button.highlightColor = nil
+            local highlightColor = hoverColor
             button.action = action
 
-
-            local responder = MasterFramework:MousePressResponder(
-                margin,
-                function(self, x, y, button)
-                    if button ~= 1 then return false end
-                    if MasterFramework.PointIsInRect(x, y, self:Geometry()) then
-                        margin.decorations = { [1] = pressColor }
-                    else
-                        margin.decorations = {}
+            local responder = MasterFramework:MouseOverChangeResponder(
+                MasterFramework:MousePressResponder(
+                    margin,
+                    function(self, x, y, button)
+                        if button ~= 1 then return false end
+                        if MasterFramework.PointIsInRect(x, y, self:Geometry()) then
+                            margin.decorations = { [1] = pressColor }
+                        else
+                            margin.decorations = {}
+                        end
+                        return true
+                    end,
+                    function(self, x, y, dx, dy)
+                        if MasterFramework.PointIsInRect(x, y, self:Geometry()) then
+                            margin.decorations = { [1] = pressColor }
+                        else
+                            margin.decorations = {}
+                        end
+                    end, 
+                    function(self, x, y)
+                        if MasterFramework.PointIsInRect(x, y, self:Geometry()) then
+                            margin.decorations = {}
+                            button.action(button)
+                        end
                     end
-                    return true
-                end,
-                function(self, x, y, dx, dy)
-                    if MasterFramework.PointIsInRect(x, y, self:Geometry()) then
-                        margin.decorations = { [1] = pressColor }
-                    else
-                        margin.decorations = {}
-                    end
-                end, 
-                function(self, x, y)
-                    if MasterFramework.PointIsInRect(x, y, self:Geometry()) then
-                        margin.decorations = {}
-                        button.action(button)
-                    end
+                ),
+                function(isInside)
+                    margin.decorations[1] = (isInside and highlightColor) or unhighlightedColor
                 end
             )
 
