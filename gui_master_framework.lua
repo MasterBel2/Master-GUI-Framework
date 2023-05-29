@@ -824,7 +824,7 @@ function framework:TextGroup(body)
 		local previousTextGroup = activeTextGroup
 		activeTextGroup = self
 		body:Draw(...)
-		activeTextgroup = previousTextGroup
+		activeTextGroup = previousTextGroup
 
 		for _, textElements in pairs(elements) do
 			local textElement = textElements[1]
