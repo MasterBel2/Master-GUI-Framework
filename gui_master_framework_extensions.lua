@@ -6,7 +6,7 @@ function widget:GetInfo()
     }
 end
 
-local requiredFrameworkVersion = 17
+local requiredFrameworkVersion = 18
 
 local framePositionCache = {}
 local frameSizeCache = {}
@@ -155,9 +155,15 @@ function widget:Initialize()
             return button
         end
 
+        -- Selection indices ranges from 1 (before the first character) to string:len() + 1 (after the last character)
+        -- Consider that to changing to 0 (before the first character) to string:len() (after the first character)
         function MasterFramework:TextEntry(string, ...)
             local entry = { text = MasterFramework:Text(string, ...), selectionBegin = string:len() + 1, selectionEnd = string:len() + 1, canLoseFocus = false }
             
+            local focused
+
+            local selectFrom
+
             local selectedStroke = MasterFramework:Stroke(2, hoverColor)
             local background = MasterFramework:MarginAroundRect(
                 entry.text,
@@ -226,21 +232,97 @@ function widget:Initialize()
                 else
                     string = string:sub(1, self.selectionBegin) .. string:sub(self.selectionEnd, string:len())
                 end
-            
+
                 self.selectionEnd = self.selectionBegin
-            
+
                 self.text:SetString(string)
             end
-            
-            function entry:editPreviousChar()
-                self.selectionBegin = math.max(self.selectionBegin - 1, 1)
-                self.selectionEnd = self.selectionBegin
+        
+            function entry:editPrevious(isShift, isCtrl)
+
+                if isShift and not selectFrom then
+                    selectFrom = "begin"
+                end
+
+                if isCtrl then
+                    local string = self.text:GetString()
+                    local reversedStringEnd = string:len()
+                    local stringEnd = reversedStringEnd + 1
+                    local reversed = string:reverse()
+                    local reversedSelectionBegin = stringEnd - self.selectionBegin -- TODO: Check!
+                    local reversedSelectionEnd = stringEnd - self.selectionEnd
+
+                    if selectFrom == "end" then
+                        local newReversedPointerLocation = math.max(reversed:find("[%s]", reversedSelectionEnd) or reversedStringEnd, reversedStringEnd)
+                        self.selectionEnd = stringEnd - newReversedPointerLocation
+                    else
+                        local newReversedPointerLocation = math.max(reversed:find("[%s]", reversedSelectionBegin) or reversedStringEnd, reversedStringEnd)
+                        self.selectionBegin = stringEnd - newReversedPointerLocation
+                    end
+                elseif isShift or not selectFrom then
+                    if selectFrom == "end" then
+                        self.selectionEnd = math.max(self.selectionEnd - 1, 1)                        
+                    else
+                        self.selectionBegin = math.max(self.selectionBegin - 1, 1)
+                    end
+                end
+
+                if self.selectionEnd < self.selectionBegin then
+                    local temp = self.selectionEnd
+                    self.selectionEnd = self.selectionBegin 
+                    self.selectionBegin = temp
+                    selectFrom = "begin"
+                end
+
+                if not isShift then
+                    if selectFrom == "end" then
+                        self.selectionBegin = self.selectionEnd
+                    else
+                        self.selectionEnd = self.selectionBegin
+                    end
+                    selectFrom = nil
+                end
+
                 return true
             end
             
-            function entry:editNextChar()
-                self.selectionBegin = math.min(self.selectionBegin + 1, self.text.GetString():len() + 1)
-                self.selectionEnd = self.selectionBegin
+            function entry:editNext(isShift, isCtrl)
+                local string = self.text:GetString()
+                local stringEnd = string:len() + 1
+
+                if isShift and not selectFrom then
+                    selectFrom = "end"
+                end
+
+                if isCtrl then
+                    if selectFrom == "begin" then
+                        self.selectionBegin = math.min(stringEnd, string:find("[%s]", self.selectionBegin) or stringEnd)
+                    else
+                        self.selectionEnd = math.min(stringEnd, string:find("[%s]", self.selectionEnd) or stringEnd)
+                    end
+                elseif isShift or not selectFrom then
+                    if selectFrom == "begin" then
+                        self.selectionBegin = math.min(stringEnd, self.selectionBegin + 1)
+                    else
+                        self.selectionEnd = math.min(stringEnd, self.selectionEnd + 1)
+                    end
+                end
+
+                if self.selectionEnd < self.selectionBegin then
+                    local temp = self.selectionEnd
+                    self.selectionEnd = self.selectionBegin 
+                    self.selectionBegin = temp
+                    selectFrom = "end"
+                end
+
+                if not isShift then
+                    if selectFrom == "begin" then
+                        self.selectionEnd = self.selectionBegin
+                    else
+                        self.selectionBegin = self.selectionEnd
+                    end
+                    selectFrom = nil
+                end
             end
 
             -- function entry:editPreviousWord() --[[Not implemented]] end
@@ -273,9 +355,9 @@ function widget:Initialize()
                 elseif key == 0x1B then 
                     self:editEscape()
                 elseif key == 0x113 then
-                    self:editNextChar()
+                    self:editNext(mods.shift, mods.ctrl)
                 elseif key == 0x114 then
-                    self:editPreviousChar()
+                    self:editPrevious(mods.shift, mods.ctrl)
                 end
             end
 
@@ -283,6 +365,7 @@ function widget:Initialize()
 
             function entry:TakeFocus()
                 if MasterFramework:TakeFocus(self) then
+                    focused = true
                     selectedStroke.color = selectedColor
                     background.decorations[2] = selectedStroke
                     return true
@@ -290,6 +373,7 @@ function widget:Initialize()
             end
 
             function entry:ReleaseFocus()
+                focused = false
                 MasterFramework:ReleaseFocus(self)
                 background.decorations[2] = nil
             end
@@ -300,6 +384,30 @@ function widget:Initialize()
 
             function entry:Draw(x, y)
                 selectionDetector:Draw(x, y)
+
+                if focused and not self.hideSelection then
+
+                    -- this will be drawn after the background but before text, because we don't have our own TextGroup
+                    local font = self.text._readOnly_font
+                    local string = self.text:GetString()
+                    local stringBeforeInsertion = string:sub(1, self.selectionBegin - 1)
+
+                    local textX, textY, _, textHeight = self.text:Geometry()
+
+                    local highlightBeginXOffset = font.glFont:GetTextWidth(stringBeforeInsertion) * font.size
+
+                    if self.selectionBegin < self.selectionEnd then
+                        local highlightedString = string:sub(self.selectionBegin, self.selectionEnd - 1)
+
+                        local highlightEndXOffset = font.glFont:GetTextWidth(highlightedString) * font.size + highlightBeginXOffset
+
+                        hoverColor:Set()
+                        gl.Rect(textX + highlightBeginXOffset, textY, textX + highlightEndXOffset, textY + textHeight)
+                    else
+                        hoverColor:Set()
+                        gl.Rect(textX + highlightBeginXOffset - 0.5, textY, textX + highlightBeginXOffset + 0.5, textY + textHeight)
+                    end
+                end
             end
 
             return entry

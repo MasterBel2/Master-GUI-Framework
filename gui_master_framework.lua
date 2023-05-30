@@ -25,7 +25,7 @@ local count = 0
 local framework = {
 	debug = false, -- if true, debug messages will be echoed.
 	drawDebug = false, -- if true, various draw-related debug features will be enabled.
-	compatabilityVersion = 17,
+	compatabilityVersion = 18,
 
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 	
@@ -889,7 +889,11 @@ function framework:Text(string, color, constantWidth, constantHeight, font, watc
 		if text.constantHeight then
 			height = text.constantHeight
 		else
-			local unscaledHeight, unscaledDescender, lines = font.glFont:GetTextHeight(string)
+			local layoutString = string
+			if string == "" then
+				layoutString = " "
+			end
+			local unscaledHeight, unscaledDescender, lines = font.glFont:GetTextHeight(layoutString)
 			-- height = unscaledHeight * fontSize * fontScale
 			-- height = unscaledHeight * fontSize * fontScale -- height doesn't include the ascender, which will lead to weird layout things
 			descender = unscaledDescender * fontSize * fontScale
@@ -958,6 +962,16 @@ function framework:Text(string, color, constantWidth, constantHeight, font, watc
 		-- height - 1 is because it appeared to be drawing 1 pixel too high - for the default font, at least. I haven't checked with any other font size yet.
 		-- I don't know what to do about text that's supposed to be centred vertically in a cell, because this method of drawing means the descender pushes the text up a bunch.
 		glFont:Print(string, cachedX, cachedY + height - 1, fontSize * fontScale, "ao")
+	end
+
+	function text:Size()
+		return width, height
+	end
+	function text:CachedPosition()
+		return cachedX, cachedY
+	end
+	function text:Geometry()
+		return cachedX, cachedY, width, height
 	end
 
 	return text
@@ -1143,6 +1157,9 @@ function framework:GeometryTarget(body)
         end
         return width, height
     end
+	function geometryTarget:Geometry()
+		return self:Size(), self:CachedPosition()
+	end
 
     return geometryTarget
 end
