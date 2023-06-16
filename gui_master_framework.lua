@@ -243,6 +243,12 @@ end
 function framework:InsertElement(body, preferredKey, layerRequest, deselectAction)
 	-- Create element
 
+	preferredKey = preferredKey or "Unknown"
+
+	if not body then
+		error("[framework:InsertElement] No body provided for element \"" .. preferredKey .. "\"")
+	end
+
 	local element = { 
 		body = body, 
 		primaryFrame = nil, 
@@ -262,7 +268,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	element.key = key 
 	elements[key] = element
 
-	local wantedLayer = WantedLayer(layerRequest)
+	local wantedLayer = WantedLayer(layerRequest or framework.layerRequest.anywhere())
 	table.insert(elementOrder, wantedLayer, key)
 	element.layerRequest = layerRequest
 
