@@ -6,7 +6,7 @@ function widget:GetInfo()
     }
 end
 
-local requiredFrameworkVersion = 18
+local requiredFrameworkVersion = 19
 
 function widget:Initialize()
     local MasterFramework = WG.MasterFramework[requiredFrameworkVersion]

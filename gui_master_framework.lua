@@ -25,7 +25,7 @@ local count = 0
 local framework = {
 	debug = false, -- if true, debug messages will be echoed.
 	drawDebug = false, -- if true, various draw-related debug features will be enabled.
-	compatabilityVersion = 18,
+	compatabilityVersion = 19,
 
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 	
@@ -796,6 +796,7 @@ framework.color = {
 function framework:Font(fileName, size, outlineWidth, outlineWeight)
 	local key = fileName.."s"..(size or "default").."o"..(outlineWidth or "default").."os"..(outlineWeight or "default")
 	local font = fonts[key]
+	local scale
 
 	LogDrawCall("Font (Load)")
 
@@ -803,15 +804,18 @@ function framework:Font(fileName, size, outlineWidth, outlineWeight)
 		font = {
 			key = key,
 			fileName = fileName,
-			size = size,
 			outlineWidth = outlineWidth,
 			outlineWeight = outlineWeight
 		}
 
+		function font:ScaledSize()
+			return size * scale
+		end
+
 		function font:Scale(newScale)
 			if self.glFont then gl_DeleteFont(self.glFont) end
 			self.glFont = gl_LoadFont(fileName, round(size * newScale), round((outlineWidth or 0) * newScale), outlineWeight)
-			self.scale = newScale
+			scale = newScale
 		end
 
 		font:Scale(combinedScaleFactor)
@@ -884,14 +888,13 @@ function framework:Text(string, color, constantWidth, constantHeight, font, watc
 		type = "Text"
 	}
 
-	local fontScale
-	local fontSize
+	local scaledSize
 	local width, height, descender, ascender
 
 	local prevDescender, prevHeight = 0, 0
 
 	local function layout(font)
-		width = text.constantWidth or font.glFont:GetTextWidth(string) * fontSize * fontScale
+		width = text.constantWidth or font.glFont:GetTextWidth(string) * scaledSize
 		if text.constantHeight then
 			height = text.constantHeight
 		else
@@ -902,9 +905,9 @@ function framework:Text(string, color, constantWidth, constantHeight, font, watc
 			local unscaledHeight, unscaledDescender, lines = font.glFont:GetTextHeight(layoutString)
 			-- height = unscaledHeight * fontSize * fontScale
 			-- height = unscaledHeight * fontSize * fontScale -- height doesn't include the ascender, which will lead to weird layout things
-			descender = unscaledDescender * fontSize * fontScale
+			descender = unscaledDescender * scaledSize
 			-- ascender = fontSize * fontScale - (height - descender)
-			height = lines * fontSize * fontScale
+			height = lines * scaledSize
 
 			-- Spring.Echo("String: " .. string .. ", prevHeight: " .. prevHeight .. ", height: " .. height .. ", prevDescender: " .. prevDescender .. ", descender: " .. descender .. ", fontSize: " .. fontSize .. ", fontScale: " .. fontScale)
 
@@ -921,9 +924,8 @@ function framework:Text(string, color, constantWidth, constantHeight, font, watc
 
 	function text:SetFont(newFont)
 		local font = newFont or framework.defaultFont
-		fontSize = font.size
-		fontScale = font.scale
 		self._readOnly_font = font -- So TextGroup can group drawing by font
+		scaledSize = font:ScaledSize()
 		layout(font)
 	end
 
@@ -945,8 +947,8 @@ function framework:Text(string, color, constantWidth, constantHeight, font, watc
 	local cachedX, cachedY
 
 	function text:Layout(availableHeight, availableWidth)
-		if fontScale ~= font.scale then
-			fontScale = font.scale
+		if scaledSize ~= font:ScaledSize() then
+			scaledSize = font:ScaledSize()
 			layout(font)
 		end
 		-- return width, height - descender + ascender
@@ -967,7 +969,7 @@ function framework:Text(string, color, constantWidth, constantHeight, font, watc
 
 		-- height - 1 is because it appeared to be drawing 1 pixel too high - for the default font, at least. I haven't checked with any other font size yet.
 		-- I don't know what to do about text that's supposed to be centred vertically in a cell, because this method of drawing means the descender pushes the text up a bunch.
-		glFont:Print(string, cachedX, cachedY + height - 1, fontSize * fontScale, "ao")
+		glFont:Print(string, cachedX, cachedY + height - 1, scaledSize, "ao")
 	end
 
 	function text:Size()

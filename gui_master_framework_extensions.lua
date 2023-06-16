@@ -6,7 +6,7 @@ function widget:GetInfo()
     }
 end
 
-local requiredFrameworkVersion = 18
+local requiredFrameworkVersion = 19
 
 local framePositionCache = {}
 local frameSizeCache = {}
@@ -394,12 +394,12 @@ function widget:Initialize()
 
                     local textX, textY, _, textHeight = self.text:Geometry()
 
-                    local highlightBeginXOffset = font.glFont:GetTextWidth(stringBeforeInsertion) * font.size
+                    local highlightBeginXOffset = font.glFont:GetTextWidth(stringBeforeInsertion) * font:ScaledSize()
 
                     if self.selectionBegin < self.selectionEnd then
                         local highlightedString = string:sub(self.selectionBegin, self.selectionEnd - 1)
 
-                        local highlightEndXOffset = font.glFont:GetTextWidth(highlightedString) * font.size + highlightBeginXOffset
+                        local highlightEndXOffset = font.glFont:GetTextWidth(highlightedString) * font:ScaledSize() + highlightBeginXOffset
 
                         hoverColor:Set()
                         gl.Rect(textX + highlightBeginXOffset, textY, textX + highlightEndXOffset, textY + textHeight)
