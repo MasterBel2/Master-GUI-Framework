@@ -25,7 +25,7 @@ local count = 0
 local framework = {
 	debug = false, -- if true, debug messages will be echoed.
 	drawDebug = false, -- if true, various draw-related debug features will be enabled.
-	compatabilityVersion = 19,
+	compatabilityVersion = 20,
 
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 	
@@ -152,6 +152,27 @@ local function Error(...)
 
 	Spring.Echo(errorString)
 end
+
+local function debugDescriptionString(table, name, indentation)
+	local description = ""
+    indentation = indentation or 0
+	description = "\255\100\100\100" .. string.rep("| ", indentation) .. "\255\001\255\001Table: " .. tostring(name)
+    for key, value in pairs(table) do
+        if type(value) == "table" then
+            description = description .. "\n" .. debugDescriptionString(value, key, indentation + 1)
+        else
+            description = description .. "\n\255\100\100\100" .. string.rep("| ", indentation + 1) .. "\255\255\255\255" .. tostring(key) .. "\255\100\100\100:\255\255\255\255 " .. tostring(value)
+        end
+    end
+
+	return description
+end
+local function debugDescription(...)
+	Spring.Echo(debugDescriptionString(...))
+end
+
+framework.debugDescriptionString = debugDescriptionString
+framework.debugDescription = debugDescription
 
 ------------------------------------------------------------------------------------------------------------
 -- Other Helpers
@@ -360,7 +381,7 @@ local function startProfile(_profileName)
 	startTimer = Spring_GetTimerMicros()
 	-- startTimer = Spring_GetTimer()
 end
-	
+framework.startProfile = startProfile
 
 local function endProfile()
 	-- local time = Spring_DiffTimers(Spring_GetTimer(), startTimer, nil)
@@ -368,6 +389,8 @@ local function endProfile()
 	framework.stats[profileName] = time
 	-- Log("Profiled " .. profileName .. ": " .. Spring_DiffTimers(Spring_GetTimer(), startTimer) * 1000 .. " microseconds")
 end
+framework.endProfile = endProfile
+
 
 ------------------------------------------------------------------------------------------------------------
 -- Helpers
