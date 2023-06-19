@@ -409,6 +409,10 @@ function widget:Initialize()
 
             function entry:KeyRelease() end
 
+            -- Attepts to own text editing focus.
+            --
+            -- We can take focus from another MasterFramework element, but not a different widget.
+            -- Returns `true` on success, `nil` on failure.
             function entry:TakeFocus()
                 if MasterFramework:TakeFocus(self) then
                     focused = true
@@ -418,6 +422,7 @@ function widget:Initialize()
                 end
             end
 
+            -- Releases text editing focus, if we have it.
             function entry:ReleaseFocus()
                 focused = false
                 MasterFramework:ReleaseFocus(self)

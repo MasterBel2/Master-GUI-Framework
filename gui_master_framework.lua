@@ -31,28 +31,33 @@ local framework = {
 	
 	-- A set of functions used to generate a layerRequest. 
 	-- 
-	-- These requests are not a guarantee for the element's lifetime; they only guarantee the placement of the element.
+	-- These requests are not a guarantee for the element's lifetime; they only guarantee the placement of 
+	-- the element.
 	-- Use `framework:MoveElement()` to update its placement. 
 	layerRequest = {
 
-		-- The new element will be placed directly above the specified element, such that if they overlap, the new element will be obscured.
+		-- The new element will be placed directly above the specified element, such that if they overlap, 
+		-- the new element will be obscured.
 		-- Parameter target: the key (returned by `InsertElement()`) of the element.
 		--
 		-- Returns a valid layer request.
 		directlyBelow = function(target) return { mode = "below", target = target } end,
 
-		-- The new element will be placed directly above the specified element, such that if they overlap, the new element will not be obscured.
+		-- The new element will be placed directly above the specified element, such that if they overlap, 
+		-- the new element will not be obscured.
 		-- Parameter target: the key (returned by `InsertElement()`) of the element. 
 		--
 		-- Returns a valid layer request.
 		directlyAbove = function(target) return { mode = "above", target = target } end,
 
-		-- The element will be placed above all other elements, such that if it overlaps any other element, it will not be obscured.
+		-- The element will be placed above all other elements, such that if it overlaps any other element, 
+		-- it will not be obscured.
 		--
 		-- Returns a valid layer request.
 		top = function() return { mode = "top" } end,
 
-		-- The element will be placed below all other elements, such that if it overlaps any other element, it will be obscured.
+		-- The element will be placed below all other elements, such that if it overlaps any other element, 
+		-- it will be obscured.
 		--
 		-- Returns a valid layer request.
 		bottom = function() return { mode = "bottom" } end,
@@ -112,6 +117,8 @@ function framework:TakeFocus(newFocusTarget)
 	end
 end
 
+-- NOTE: this is to be called by focusTarget, not by anything else! We don't tell focusTarget that we took
+-- focus away from them, 
 function framework:ReleaseFocus(requestingFocusTarget)
 	if requestingFocusTarget == focusTarget then
 		focusTarget = nil
@@ -254,13 +261,18 @@ end
 -- Adds an element to be drawn.
 --
 -- Parameters:
---  - body: A component as specified in the "Basic Components" section of this file. This component must either be or contain a `framework:PrimaryFrame`.
+--  - body: A component as specified in the "Basic Components" section of this file. This component must 
+--          either be or contain a `framework:PrimaryFrame`.
 --  - preferredKey: A string that will be used to generate an identifying string for this element. 
---                  To avoid collisions, the key may be modified. The key actually used will be returned by this function. 
---  - layerRequest: allows arrangement of various interface elements. See `framework.layerRequest` for more detail.
---  - deselctAction: Nil, or a function to be called when a click is performed outside the bounds of a selected element. (WARNING: THIS IS LIKELY BROKEN)
+--                  To avoid collisions, the key may be modified. The key actually used will be returned 
+--                  by this function. 
+--  - layerRequest: allows arrangement of various interface elements. See `framework.layerRequest` for more 
+--                  detail.
+--  - deselctAction: Nil, or a function to be called when a click is performed outside the bounds of a 
+--                   selected element. (WARNING: THIS IS LIKELY BROKEN)
 --
--- Returns a key (derived from preferredKey) that can be used to remove the element from the interface. The element will NOT be automatically removed. See `framework:RemoveElement()` for more detail.
+-- Returns a key (derived from preferredKey) that can be used to remove the element from the interface. 
+-- The element will NOT be automatically removed. See `framework:RemoveElement()` for more detail.
 function framework:InsertElement(body, preferredKey, layerRequest, deselectAction)
 	-- Create element
 
@@ -908,6 +920,10 @@ function framework:TextGroup(body, name)
 	return textGroup
 end
 
+-- Automatically wrapping text. 
+-- Set `maxLines = 1` to disable wrapping. (`framework:Text()` is an alias for `framework:WrappingText` that sets `maxLines = 1`.)
+--
+-- Note that raw/display index conversion updates only on layout, so between when the raw string is updated and layout occurs, index conversion to or from the display string will be invalid.
 function framework:WrappingText(string, color, font, maxLines)
 	maxLines = maxLines or math.huge
 	font = font or framework.defaultFont
@@ -921,16 +937,26 @@ function framework:WrappingText(string, color, font, maxLines)
 	local cachedX, cachedY, cachedWidth, cachedHeight
 	local addedCharacters = {}
 
+	-- Sets the raw string.
+	-- 
+	-- If a nil value is provided, an empty string will be set.
 	function wrappingText:SetString(newString)
 		string = newString or ""
 	end
+	-- Returns the string that was provided to `WrappingText`, unmodified. 
+	-- 
+	-- Use`wrappingText:RawIndexToDisplayIndex` and to find the equivalent location of a character in the display string.
 	function wrappingText:GetRawString()
 		return string
 	end
+
+	-- Returns the string that will be drawn on-screen. This may have newlines and color codes inserted.
+	-- Use `wrappingText:DisplayIndexToRawIndex` to find the equivalent location of a character in the raw string.
 	function wrappingText:GetDisplayString()
 		return wrappedText
 	end
 
+	-- Returns the index of the matching character in the display string.
 	function wrappingText:RawIndexToDisplayIndex(rawIndex)
 		for breakNumber, breakIndex in ipairs(addedCharacters) do
 			if breakIndex - breakNumber >= rawIndex then
@@ -939,7 +965,9 @@ function framework:WrappingText(string, color, font, maxLines)
 		end
 		return rawIndex + #addedCharacters
 	end
-	-- Returns the index of the character. If the detected character was added, we'll just return the next character that wasn't added.
+	-- Returns the index of the matching character in the raw string. 
+	-- 
+	-- If the detected character was added, we'll just return the next character that wasn't added.
 	-- If we provide the index of an added character, we'll return a second result - `true` - to indicate as such.
 	-- Reminder, some characters might be changed (e.g. " " to "\n") and they won't be flagged.
 	function wrappingText:DisplayIndexToRawIndex(displayIndex)
@@ -960,6 +988,7 @@ function framework:WrappingText(string, color, font, maxLines)
 		return displayIndex - #addedCharacters, (#addedCharacters > 0)
 	end
 
+	-- Converts a screen coordinate to an index in the display string. 
 	function wrappingText:CoordinateToCharacterDisplayIndex(x, y)
 		local xOffset = x - cachedX
 		local yOffset = y - cachedY
@@ -999,16 +1028,20 @@ function framework:WrappingText(string, color, font, maxLines)
 		return lineEnd + 1
 	end
 
+	-- Converts a screen coordinate to an index in the raw string.
 	function wrappingText:CoordinateToCharacterRawIndex(x, y)
 		return self:DisplayIndexToRawIndex(self:CoordinateToCharacterDisplayIndex(x, y))
 	end
 
-	function wrappingText:ColoredText(_string)
-		return _string
+	-- An overridable function that may provide various annotations (color, or more) to the raw string, before wrapping occurs.
+	--
+	-- The result of `wrappingText:ColoredString` is used to generate an intermediate value between the raw string and the display string. No index conversion is provided.
+	function wrappingText:ColoredString(rawString)
+		return rawString
 	end
 
 	function wrappingText:Layout(availableWidth, availableHeight)
-		local coloredText = self:ColoredText(string)
+		local coloredText = self:ColoredString(string)
 
 		local trueLineHeight = font:ScaledSize() * font.glFont.lineheight
 		local maxHeight = math.min(availableHeight, maxLines * trueLineHeight)
@@ -1029,6 +1062,7 @@ function framework:WrappingText(string, color, font, maxLines)
 		
 		return cachedWidth, cachedHeight
 	end
+
 	function wrappingText:Draw(x, y)
 		cachedX = x
 		cachedY = y
@@ -1036,6 +1070,9 @@ function framework:WrappingText(string, color, font, maxLines)
 		activeTextGroup:AddElement(self)
 	end
 
+	-- Draws the text on-screen, using the cached coordinates from `wrappingText:Draw(x, y)`.
+	--
+	-- Called by the `framework:TextGroup` that `wrappingText:Draw(x, y)` registered us with.
 	function wrappingText:DrawForReal(glFont)
 		local color = self.color
 		glFont:SetTextColor(color.r, color.g, color.b, color.a)
@@ -1045,26 +1082,32 @@ function framework:WrappingText(string, color, font, maxLines)
 		glFont:Print(wrappedText, cachedX, cachedY + cachedHeight - 1, font:ScaledSize(), "ao")
 	end
 
+	-- Returns the x,y coordinates provided in the last call of `wrappingText:Draw(x, y)`
 	function wrappingText:CachedPosition()
 		return cachedX, cachedY
 	end
+	-- Returns the `wrappingText's` cached position and cached size.
 	function wrappingText:Geometry()
 		return cachedX, cachedY, cachedWidth, cachedHeight
 	end
+	-- Returns the width, height calculated in the last call of `wrappingText:Layout(availableWidth, availableHeight)`
 	function wrappingText:Size()
 		return cachedWidth, cachedHeight
 	end
 
 	return wrappingText
 end
--- Auto-sizing text
--- FIXME: Text currently has an issue where it'll jump up and down. Not sure why this is happening. A pixel 
--- rounding issue maybe.
+
+-- An alias for `framework:WrappingText` that sets `maxLines = 1`.
+--
+-- functions:
+-- - `text:GetString()` : an alias for `wrappingText:GetRawString()`
 function framework:Text(string, color, font, watch)
 	local text = self:WrappingText(string, color, font, 1)
 	function text:GetString() return self:GetRawString() end
 	return text
 end
+
 
 function framework:DeleteFont(font)
 	LogDrawCall("Font (Delete)")
