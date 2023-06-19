@@ -1,5 +1,24 @@
 # Changelog
 
+## CV 22: File reorg + nice-to-haves
+
+Versioning is now more thorough: you can drag-and-drop multiple frameworks in beside each other and have them (mostly) work. They won't be able to steal focus from each other, for example, but it's a start. Ideally you won't have to constantly bump the versions on all the widgets, but I haven't figured out something to resolve that just yet.
+
+(Almost) every component is now in its own file, to make navigating & adding new stuff a bunch easier.
+
+Various un-committed tweaks (mostly commented/unused stuff) crept in here, and will have to be cleaned up. Behaviour should not have changed, other than specific changes to make such a reorg possible.
+
+A framework-local environment - `framework.Internal` is provided during initialisation. Cache this (`local Internal = Internal` if a component needs to access this table throughout its use.) This allows inter-component communication of values, or communication of internal values to the widget file.
+Config data is saved/stored to/from `framework.Internal.ConfigData`. I'd highly recommend each component store their data under in a table keyed into `ConfigData` with their component name - e.g. `framework.Internal.ConfigData.MovableFrame`.
+
+Framework-external dependencies are provided during initialisation as `framework.Include`. Again, anything needed from this table throughout the component's use must be cached.
+
+Various constants that were used in various places are now stored directly in the framework - e.g. `framework.color`, `framework.stroke`, `framework.dimension`. 
+
+Debug:
+- All debug functions are now available externally. 
+- Debug mode is now enabled by calling `Internal.SetDebugMode(general, draw)` directly after framework initialisation. This includes a new and improved identifier system that automatically adds a debugIdentifier with a table's type, and also automatically adds reporting for draw and layout calls. 
+
 ## CV 21: Wrapping Text
 
 Added `framework:WrappingText`! `WrappingText` stores a `rawString` and displays a `displayString`, with an interface to convert character between them. Text colouring is also supported: override `WrappingText:ColoredString(string)` to annotate the raw string (e.g. for code syntax highlighting). Support for return-based newlines was added (`wrappingText:editReturn()`) and indices for delete + backspace were fixed.

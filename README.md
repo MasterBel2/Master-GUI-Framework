@@ -5,9 +5,20 @@ This readme is outdated, but still vaguely correct.
 
 ## Installing
 
-Copy/symlink `funcs.lua` and `gui_master_framework.lua` to your Spring installation's `LuaUI/Widgets/` folder. If extensions are required, also copy/symlink `gui_master_framework_extensions.lua`. It's that easy!
+Copy/symlink `funcs.lua` and `gui_master_framework_22.lua` to your Spring installation's `LuaUI/Widgets/` folder, and the `MasterFramework 22` folder to your `LuaUI/` folder, forming the path `LuaUI/MasterFramework 22/`.
 
-Once installed, make sure you enable `MasterBel2's GUI Framework` in Widget Selector. See [Barebones Example](#Barebones-Example) for how to use MasterFramwork in your project.
+As a result, your LuaUI directory should look like this:
+```
+LuaUI/
+    MasterFramework 22/
+    Widgets/
+        funcs.lua
+        gui_master_framework_22.lua
+        ...
+    ...
+```
+
+Once installed, make sure you enable `MasterBel2's GUI Framework (22)` in Widget Selector. See [Barebones Example](#Barebones-Example) for how to use MasterFramework in your project.
 
 ## Overview:
 
@@ -67,12 +78,7 @@ widget:Initialize()
 end
 ```
 
-`WG.MasterFramework` is guarantee to be available only from when the framework's `widget:Initialize()` is called, and not before.
-
-## Examples
-
-- [Master Keytracker](https://github.com/MasterBel2/Master-Keytracker)
-- [Master MiniMap](https://github.com/MasterBel2/Master-MiniMap) (outdated)
+`WG.MasterFramework` is guaranteed to be available only from when the framework's `widget:Initialize()` is called, and not before.
 
 ### Barebones Example
 
@@ -113,6 +119,11 @@ function widget:Shutdown()
     end
 end
 ```
+
+## Other Examples
+
+- [Master Keytracker](https://github.com/MasterBel2/Master-Keytracker) (outdated)
+- [Master MiniMap](https://github.com/MasterBel2/Master-MiniMap) (outdated)
 
 ## Notes
 
