@@ -1,5 +1,9 @@
 # Changelog
 
+## CV 23: Correctly handle space-grabbing components: HungryStacks
+
+Removed the trickery in `HorizontalStack` & `VerticalStack`: Hungry Stacks allow positioning of predictably-sized views before and after a component of unbounded size, and layout the unbounded component last, making sure it always knows exactly how much space it's got.
+
 ## CV 22: File reorg + nice-to-haves
 
 Versioning is now more thorough: you can drag-and-drop multiple frameworks in beside each other and have them (mostly) work. They won't be able to steal focus from each other, for example, but it's a start. Ideally you won't have to constantly bump the versions on all the widgets, but I haven't figured out something to resolve that just yet.

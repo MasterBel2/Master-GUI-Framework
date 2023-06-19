@@ -1,8 +1,12 @@
 local max = Include.math.max
 local floor = Include.math.floor
 
+-- Elements that take all available height (or an unbounded function of it) will likely not size correctly. 
+-- Instead, use `framework:VerticalHungryStack`.
+-- (N.B. Unbounded components at the end of the stack will always size correctly. An example of a component with
+-- unbounded height is one that returns `availableWidth, availableHeight` from its `Layout` method.)
 function framework:VerticalStack(contents, spacing, xAnchor)
-	local verticalStack = { members = contents, xAnchor = xAnchor, spacing = spacing, type = "VerticalStack" }
+	local verticalStack = { members = contents, xAnchor = xAnchor, spacing = spacing }
 
 	local maxWidth
 
@@ -26,21 +30,6 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 			member.vStackCachedWidth = memberWidth
 			elapsedDistance = elapsedDistance + memberHeight + spacing
 			maxWidth = max(maxWidth, memberWidth)
-		end
-
-		if availableHeight < (elapsedDistance - spacing) then -- if we go oversize, see if we can convince things to tighten up (this can create some rendering issues combined with ScrollContainers & ResizableMovableFrame, a better solution is needed)
-			local offset = elapsedDistance - spacing - availableHeight
-			elapsedDistance = 0
-			maxWidth = 0
-
-			for i = 1, memberCount do
-				local member = members[memberCount - (i - 1)]
-				local memberWidth, memberHeight = member:Layout(availableWidth, availableHeight - elapsedDistance - offset)
-				member.vStackCachedY = elapsedDistance
-				member.vStackCachedWidth = memberWidth
-				elapsedDistance = elapsedDistance + memberHeight + spacing
-				maxWidth = max(maxWidth, memberWidth)
-			end
 		end
 
 		return maxWidth, elapsedDistance - spacing

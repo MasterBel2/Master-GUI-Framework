@@ -1,8 +1,12 @@
 local floor = Include.math.floor
 local max = Include.math.max
 
+-- Elements that take all available width (or an unbounded function of it) will likely not size correctly. 
+-- Instead, use `framework:HorizontalHungryStack`.
+-- (N.B. Unbounded components at the end of the stack will always size correctly. An example of an component with
+-- unbounded width is one that returns `availableWidth, availableHeight` from its `Layout` method.)
 function framework:HorizontalStack(_members, spacing, yAnchor)
-	local horizontalStack = { members = _members, yAnchor = yAnchor or 0.5, spacing = spacing, type = "HorizontalStack" }
+	local horizontalStack = { members = _members, yAnchor = yAnchor or 0.5, spacing = spacing }
 
 	-- for _, member in pairs(members) do
 	-- 	if member ~= nil then
@@ -33,21 +37,6 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 			member.hStackCachedHeight = memberHeight
 			elapsedDistance = elapsedDistance + memberWidth + spacing
 			maxHeight = max(memberHeight, maxHeight)
-		end
-
-		if availableWidth < (elapsedDistance - spacing) then -- if we go oversize, see if we can convince things to tighten up (this can create some rendering issues combined with ScrollContainers & ResizableMovableFrame, a better solution is needed)
-			local offset = elapsedDistance - spacing - availableWidth
-			elapsedDistance = 0
-			maxHeight = 0
-
-			for i = 1, memberCount do
-				local member = members[i]
-				local memberWidth, memberHeight = member:Layout(availableWidth - elapsedDistance - offset, availableHeight)
-				member.hStackCachedX = elapsedDistance
-				member.hStackCachedHeight = memberHeight
-				elapsedDistance = elapsedDistance + memberWidth + spacing
-				maxHeight = max(maxHeight, memberHeight)
-			end
 		end
 		
 		return elapsedDistance - spacing, maxHeight

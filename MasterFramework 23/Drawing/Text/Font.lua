@@ -49,5 +49,3 @@ function framework:DeleteFont(font)
 	Internal.fonts[font.key] = nil
 	gl_DeleteFont(font.glFont)
 end
-
-framework.defaultFont = framework:Font("FreeSansBold.otf", 12)

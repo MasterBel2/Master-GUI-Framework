@@ -5,20 +5,20 @@ This readme is outdated, but still vaguely correct.
 
 ## Installing
 
-Copy/symlink `funcs.lua` and `gui_master_framework_22.lua` to your Spring installation's `LuaUI/Widgets/` folder, and the `MasterFramework 22` folder to your `LuaUI/` folder, forming the path `LuaUI/MasterFramework 22/`.
+Copy/symlink `funcs.lua` and `gui_master_framework_23.lua` to your Spring installation's `LuaUI/Widgets/` folder, and the `MasterFramework 23` folder to your `LuaUI/` folder, forming the path `LuaUI/MasterFramework 23/`.
 
 As a result, your LuaUI directory should look like this:
 ```
 LuaUI/
-    MasterFramework 22/
+    MasterFramework 23/
     Widgets/
         funcs.lua
-        gui_master_framework_22.lua
+        gui_master_framework_23.lua
         ...
     ...
 ```
 
-Once installed, make sure you enable `MasterBel2's GUI Framework (22)` in Widget Selector. See [Barebones Example](#Barebones-Example) for how to use MasterFramework in your project.
+Once installed, make sure you enable `MasterBel2's GUI Framework (23)` in Widget Selector. See [Barebones Example](#Barebones-Example) for how to use MasterFramework in your project.
 
 ## Overview:
 
@@ -92,7 +92,7 @@ function widget:GetInfo()
 end
 
 local MasterFramework
-local requiredFrameworkVersion = 14
+local requiredFrameworkVersion = 23
 
 local key
 

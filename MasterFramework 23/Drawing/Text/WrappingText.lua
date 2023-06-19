@@ -128,7 +128,7 @@ function framework:WrappingText(string, color, font, maxLines)
 
 		local trueLineHeight = font:ScaledSize() * font.glFont.lineheight
 		local maxHeight = math.min(availableHeight, maxLines * trueLineHeight)
-		wrappedText, lineCount = font.glFont:WrapText(coloredText, availableWidth, maxHeight, font:ScaledSize()) -- Apparently this adds an extra character even when line breaks already
+		wrappedText, lineCount = font.glFont:WrapText(coloredText, availableWidth, maxHeight, font:ScaledSize()) -- Apparently this adds an extra character ("\r") even when line breaks already
 		cachedWidth = font.glFont:GetTextWidth(wrappedText) * font:ScaledSize()
 		cachedHeight = math.min(maxHeight, lineCount * trueLineHeight)
 
