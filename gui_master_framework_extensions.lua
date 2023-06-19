@@ -6,7 +6,7 @@ function widget:GetInfo()
     }
 end
 
-local requiredFrameworkVersion = 20
+local requiredFrameworkVersion = 21
 
 local framePositionCache = {}
 local frameSizeCache = {}
@@ -157,16 +157,24 @@ function widget:Initialize()
 
         -- Selection indices ranges from 1 (before the first character) to string:len() + 1 (after the last character)
         -- Consider that to changing to 0 (before the first character) to string:len() (after the first character)
-        function MasterFramework:TextEntry(string, ...)
-            local entry = { text = MasterFramework:Text(string, ...), selectionBegin = string:len() + 1, selectionEnd = string:len() + 1, canLoseFocus = false }
-            
+        function MasterFramework:TextEntry(string, placeholderString, color, font, maxLines)
+            color = color or MasterFramework.color.white
+            local entry = {
+                text = MasterFramework:WrappingText(string, color, font, maxLines),
+                placeholder = MasterFramework:Text(placeholderString, MasterFramework:Color(color.r, color.g, color.b, 0.3), font, 1),
+                selectionBegin = string:len() + 1, 
+                selectionEnd = string:len() + 1, 
+                canLoseFocus = false
+            }
+
             local focused
 
             local selectFrom
 
             local selectedStroke = MasterFramework:Stroke(2, hoverColor)
+            local textStack = MasterFramework:StackInPlace({ entry.text, entry.placeholder }, 0, 0)
             local background = MasterFramework:MarginAroundRect(
-                entry.text,
+                textStack,
                 MasterFramework:Dimension(8),
                 MasterFramework:Dimension(8),
                 MasterFramework:Dimension(8),
@@ -177,6 +185,12 @@ function widget:Initialize()
                 background,
                 function(responder, mouseX, mouseY, button)
                     if button ~= 1 then return false end
+                    
+                    entry.selectionBegin = entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY)
+                    entry.selectionEnd = entry.selectionBegin
+                    selectFrom = "begin" -- TODO: selection matching, click & drag text if you drag where already selected??
+                    
+                    entry:TakeFocus()
 
                     selectedStroke.color = pressColor
                     background.decorations[2] = selectedStroke
@@ -184,22 +198,40 @@ function widget:Initialize()
                     return true
                 end,
                 function(responder, mouseX, mouseY)
-                    if MasterFramework.PointIsInRect(mouseX, mouseY, responder:Geometry()) then
-                        selectedStroke.color = pressColor
-                        background.decorations[2] = selectedStroke
-                    elseif MasterFramework:FocusTarget() == entry then
-                        selectedStroke.color = selectedColor
-                        background.decorations[2] = selectedStroke
+                    if selectFrom == "begin" then
+                        entry.selectionBegin = entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY)
                     else
-                        background.decorations[2] = nil
+                        entry.selectionEnd = entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY)
                     end
+
+                    if entry.selectionEnd < entry.selectionBegin then
+                        local temp = entry.selectionEnd
+                        entry.selectionEnd = entry.selectionBegin 
+                        entry.selectionBegin = temp
+                        if selectFrom == "begin" then
+                            selectFrom = "end"
+                        else
+                            selectFrom = "begin"
+                        end
+                    end
+                    
+                    -- if MasterFramework.PointIsInRect(mouseX, mouseY, responder:Geometry()) then
+                    --     selectedStroke.color = pressColor
+                    --     background.decorations[2] = selectedStroke
+                    -- elseif MasterFramework:FocusTarget() == entry then
+                    --     selectedStroke.color = selectedColor
+                    --     background.decorations[2] = selectedStroke
+                    -- else
+                    --     background.decorations[2] = nil
+                    -- end
                 end,
                 function(responder, mouseX, mouseY)
-                    if (MasterFramework:FocusTarget() == entry) then
-                        selectedStroke.color = selectedColor
-                        background.decorations[2] = selectedStroke
-                    elseif MasterFramework.PointIsInRect(mouseX, mouseY, responder:Geometry()) and entry:TakeFocus() then
-                        selectedStroke.color = selectedColor
+                    selectedStroke.color = selectedColor
+                    if self.selectionBegin == self.selectionEnd then
+                        selectFrom = nil
+                    end
+
+                    if MasterFramework.PointIsInRect(mouseX, mouseY, responder:Geometry()) and MasterFramework:FocusTarget() == entry then
                         background.decorations[2] = selectedStroke
                     else
                         background.decorations[2] = nil
@@ -208,7 +240,7 @@ function widget:Initialize()
             )
 
             function entry:editBackspace()
-                local string = self.text:GetString()
+                local string = self.text:GetRawString()
                 
                 if self.selectionBegin == self.selectionEnd then -- Point select
                     if self.selectionBegin == 1 then return true end
@@ -216,7 +248,7 @@ function widget:Initialize()
             
                     self.selectionBegin = self.selectionBegin - 1
                 else -- Block select
-                    string = string:sub(1, self.selectionBegin) .. string:sub(self.selectionEnd, string:len())
+                    string = string:sub(1, self.selectionBegin - 1) .. string:sub(self.selectionEnd, string:len())
                 end
                 
                 self.selectionEnd = self.selectionBegin
@@ -225,12 +257,12 @@ function widget:Initialize()
             end
             
             function entry:editDelete()
-                local string = self.text:GetString()
+                local string = self.text:GetRawString()
             
                 if self.selectionBegin == self.selectionEnd then
                     string = string:sub(1, self.selectionBegin - 1) .. string:sub(self.selectionEnd + 1, string:len())
                 else
-                    string = string:sub(1, self.selectionBegin) .. string:sub(self.selectionEnd, string:len())
+                    string = string:sub(1, self.selectionBegin - 1) .. string:sub(self.selectionEnd, string:len())
                 end
 
                 self.selectionEnd = self.selectionBegin
@@ -245,7 +277,7 @@ function widget:Initialize()
                 end
 
                 if isCtrl then
-                    local string = self.text:GetString()
+                    local string = self.text:GetRawString()
                     local reversedStringEnd = string:len()
                     local stringEnd = reversedStringEnd + 1
                     local reversed = string:reverse()
@@ -287,7 +319,7 @@ function widget:Initialize()
             end
             
             function entry:editNext(isShift, isCtrl)
-                local string = self.text:GetString()
+                local string = self.text:GetRawString()
                 local stringEnd = string:len() + 1
 
                 if isShift and not selectFrom then
@@ -329,6 +361,20 @@ function widget:Initialize()
             -- function entry:editNextWord() --[[Not implemented]] end
 
             function entry:editReturn()
+                local string = self.text:GetRawString()
+                
+                if self.selectionBegin == self.selectionEnd then -- Point select
+                    if self.selectionBegin == 1 then return true end
+                    string = string:sub(1, self.selectionBegin) .. "\n".. string:sub(self.selectionEnd + 1, string:len())
+            
+                    self.selectionBegin = self.selectionBegin + 1
+                else -- Block select
+                    string = string:sub(1, self.selectionBegin) .. "\n" .. string:sub(self.selectionEnd, string:len())
+                end
+                
+                self.selectionEnd = self.selectionBegin
+            
+                self.text:SetString(string)
             end
             
             function entry:editEscape()
@@ -336,15 +382,13 @@ function widget:Initialize()
             end
 
             function entry:TextInput(char)
-                local string = self.text:GetString()
+                local string = self.text:GetRawString()
 
-                string = string:sub(1, self.selectionBegin) .. char .. string:sub(self.selectionEnd + 1)
-                if self.selectionBegin <= string:len() then
-                    self.selectionBegin = self.selectionBegin + char:len()
-                end
-                self.selectionEnd = self.selectionBegin
-                
+                string = string:sub(1, self.selectionBegin - 1) .. char .. string:sub(self.selectionEnd)
                 self.text:SetString(string)
+
+                self.selectionBegin = self.selectionBegin + char:len()
+                self.selectionEnd = self.selectionBegin
             end
 
             function entry:KeyPress(key, mods, isRepeat)
@@ -358,6 +402,8 @@ function widget:Initialize()
                     self:editNext(mods.shift, mods.ctrl)
                 elseif key == 0x114 then
                     self:editPrevious(mods.shift, mods.ctrl)
+                elseif key == 0x0D or key == 0x10F then
+                    self:editReturn(mods.ctrl)
                 end
             end
 
@@ -379,33 +425,58 @@ function widget:Initialize()
             end
 
             function entry:Layout(...)
+                if self.text:GetRawString() == "" then
+                    textStack.members[2] = self.placeholder
+                else
+                    textStack.members[2] = nil
+                end
                 return selectionDetector:Layout(...)
             end
 
             function entry:Draw(x, y)
                 selectionDetector:Draw(x, y)
 
-                if focused and not self.hideSelection then
-
+                if (focused or selectFrom) and not self.hideSelection then
                     -- this will be drawn after the background but before text, because we don't have our own TextGroup
-                    local font = self.text._readOnly_font
-                    local string = self.text:GetString()
-                    local stringBeforeInsertion = string:sub(1, self.selectionBegin - 1)
 
+                    local font = self.text._readOnly_font
                     local textX, textY, _, textHeight = self.text:Geometry()
 
-                    local highlightBeginXOffset = font.glFont:GetTextWidth(stringBeforeInsertion) * font:ScaledSize()
+                    local trueLineHeight = self.text._readOnly_font.glFont.lineheight * font:ScaledSize()
 
-                    if self.selectionBegin < self.selectionEnd then
-                        local highlightedString = string:sub(self.selectionBegin, self.selectionEnd - 1)
+                    local displayString = self.text:GetDisplayString()
+                    local lines, lineStarts, lineEnds = displayString:lines()
 
-                        local highlightEndXOffset = font.glFont:GetTextWidth(highlightedString) * font:ScaledSize() + highlightBeginXOffset
+                    local translatedSelectionBegin = self.text:RawIndexToDisplayIndex(self.selectionBegin)
+                    local translatedSelectionEnd = self.text:RawIndexToDisplayIndex(self.selectionEnd)
+                    
+                    for i = 1, #lines do
+                        local line = lines[i]
+                        local lineStart = lineStarts[i]
+                        local lineEnd = lineEnds[i]
 
-                        hoverColor:Set()
-                        gl.Rect(textX + highlightBeginXOffset, textY, textX + highlightEndXOffset, textY + textHeight)
-                    else
-                        hoverColor:Set()
-                        gl.Rect(textX + highlightBeginXOffset - 0.5, textY, textX + highlightBeginXOffset + 0.5, textY + textHeight)
+                        if translatedSelectionBegin <= lineEnd + 1 and translatedSelectionEnd >= lineStart then
+                            local highlightYOffset = i * trueLineHeight
+                            local highlightBeginIndex = math.max(translatedSelectionBegin + 1 - lineStart, 1)
+                            local highlightEndIndex = math.min(translatedSelectionEnd + 1 - lineStart, lineEnd + 1)
+
+                            local stringBeforeInsertion = line:sub(1, highlightBeginIndex - 1)
+
+                            local highlightBeginXOffset = font.glFont:GetTextWidth(stringBeforeInsertion) * font:ScaledSize()
+
+                            local lineY = textY + textHeight - highlightYOffset
+
+                            if self.selectionBegin == self.selectionEnd then
+                                hoverColor:Set()
+                                gl.Rect(textX + highlightBeginXOffset - 0.5, lineY, textX + highlightBeginXOffset + 0.5, lineY + trueLineHeight)
+                                return
+                            else
+                                local highlightedString = line:sub(highlightBeginIndex, highlightEndIndex - 1)
+                                local highlightEndXOffset = font.glFont:GetTextWidth(highlightedString) * font:ScaledSize() + highlightBeginXOffset
+
+                                gl.Rect(textX + highlightBeginXOffset, lineY, textX + highlightEndXOffset, lineY + trueLineHeight)
+                            end
+                        end
                     end
                 end
             end
