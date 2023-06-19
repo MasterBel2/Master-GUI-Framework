@@ -153,6 +153,8 @@ function widget:Initialize()
         groupSpacing = framework:Dimension(5)
 	}
 
+	framework.defaultFont = framework:Font("FreeSansBold.otf", 12)
+
     local viewSizeX, viewSizeY = Spring.GetViewGeometry()
 	frameworkInternal.updateScreenEnvironment(viewSizeX, viewSizeY, framework.relativeScaleFactor)
 
