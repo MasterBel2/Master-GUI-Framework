@@ -112,7 +112,7 @@ function framework:OffsettedViewport(body, autoWidth, autoHeight)
     )
 
     function viewport:Layout(availableWidth, availableHeight)
-        local _width, _height = textGroup:Layout(availableWidth, availableHeight)
+        local _width, _height = textGroup:Layout(math.huge, math.huge)
         self.contentWidth = _width
         self.contentHeight = _height
 
