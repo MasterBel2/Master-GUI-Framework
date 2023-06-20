@@ -124,6 +124,8 @@ function framework:WrappingText(string, color, font, maxLines)
 	end
 
 	function wrappingText:Layout(availableWidth, availableHeight)
+		availableWidth = math.min(availableWidth, 2147483647) -- if we allow math.huge, `glFont:WrapText()` will fail. 
+		availableHeight = math.min(availableHeight, 2147483647)
 		local coloredText = self:ColoredString(string)
 
 		local trueLineHeight = font:ScaledSize() * font.glFont.lineheight
