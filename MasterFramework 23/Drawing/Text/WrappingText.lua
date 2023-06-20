@@ -130,8 +130,12 @@ function framework:WrappingText(string, color, font, maxLines)
 
 		local trueLineHeight = font:ScaledSize() * font.glFont.lineheight
 		local maxHeight = math.min(availableHeight, maxLines * trueLineHeight)
-		wrappedText, lineCount = font.glFont:WrapText(coloredText, availableWidth, maxHeight, font:ScaledSize()) -- Apparently this adds an extra character ("\r") even when line breaks already
-		cachedWidth = font.glFont:GetTextWidth(wrappedText) * font:ScaledSize()
+
+		-- `glFont:WrapText()` appears to consistently return a number (SLIGHTLY!) greater than availableWidth, probably due to floating-point math.
+		-- Providing it an extra 0.1 width doesn't allow any extra characters through, but prevents the rounding error from messing us up.
+		-- We won't report any this extra width to our parent, by clamping at availableWidth.
+		wrappedText, lineCount = font.glFont:WrapText(coloredText, availableWidth + 0.1, maxHeight, font:ScaledSize()) -- Apparently this adds an extra character ("\r") even when line breaks already
+		cachedWidth = math.min(font.glFont:GetTextWidth(wrappedText) * font:ScaledSize(), availableWidth)
 		cachedHeight = math.min(maxHeight, lineCount * trueLineHeight)
 
 		addedCharacters = {}
