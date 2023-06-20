@@ -3,6 +3,7 @@ Internal.fonts = {}
 
 local ceil = Include.math.ceil
 local gl_LoadFont = Include.gl.LoadFont
+local gl_DeleteFont = Include.gl.DeleteFont
 
 local function round(number)
 	return ceil(number - 0.5)
