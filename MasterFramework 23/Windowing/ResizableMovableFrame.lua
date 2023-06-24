@@ -177,7 +177,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         local control = {}
         function control:Layout(availableWidth, availableHeight)
             width, height = child:Layout(width, height)
-            return child:Layout(width, height)
+            return width, height
         end
         function control:Draw(...)
             return child:Draw(...)
