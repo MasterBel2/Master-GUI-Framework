@@ -15,7 +15,6 @@ function framework:FrameOfReference(xAnchor, yAnchor, body)
 	end
 
 	function frame:Draw(x, y)
-        LogDrawCall("FrameOfReference")
 		self.body:Draw(x + floor((width - rectWidth) * self.xAnchor), y + floor((height - rectHeight) * self.yAnchor))
 	end
 

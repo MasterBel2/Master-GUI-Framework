@@ -11,7 +11,6 @@ function framework:RectAnchor(rectToAnchorTo, anchoredRect, xAnchor, yAnchor)
 	end
 
 	function rectAnchor:Draw(x, y)
-		LogDrawCall("RectAnchor")
 		local rectToAnchorTo = self.rectToAnchorTo
 		local anchoredRect = self.anchoredRect
 		rectToAnchorTo:Draw(x, y)

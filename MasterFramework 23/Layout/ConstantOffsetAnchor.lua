@@ -8,7 +8,6 @@ function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, y
 	end
 
 	function anchor:Draw(x, y)
-		LogDrawCall("ConstantOffsetAnchor")
         self.rectToAnchorTo:Draw(x, y)
         self.anchoredRect:Draw(x + self.xOffset, y + self.yOffset)
 	end

@@ -22,7 +22,6 @@ function framework:Responder(rect, event, action)
 	end
 
 	function responder:Draw(x, y)
-		LogDrawCall("Responder")
 
 		-- Parent keeps track of the order of responders, and use that to decide who gets the interactions first
 		local previousActiveResponder = Internal.activeResponders[event]

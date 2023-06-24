@@ -8,7 +8,6 @@ function framework:Rect(width, height, cornerRadius, decorations)
 	end
 
 	function rect:Draw(x, y)
-		LogDrawCall("Rect")
 		local decorations = self.decorations
 		for i = 1, #decorations do
 			decorations[i]:Draw(self, x, y, width(), height())

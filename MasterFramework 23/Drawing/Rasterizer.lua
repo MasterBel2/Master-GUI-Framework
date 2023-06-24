@@ -55,7 +55,6 @@ function framework:Rasterizer(providedBody)
 	end
 
 	function rasterizer:Draw(x, y)
-		LogDrawCall("Rasterizer")
 		if recalculatingRasterizer or Internal.drawDebug then
 			-- Display lists cannot be nested, so we'll skip using one while we're creating one.
 			_body:Draw(x, y)
@@ -66,7 +65,6 @@ function framework:Rasterizer(providedBody)
 			if framesCalculatedInARow > 0 then
 				Log("Recalculated " .. (self.name or "unnamed") .. " " .. framesCalculatedInARow .. " frame(s) in a row")
 			end
-			LogDrawCall("Rasterizer (Recompile)")
 
 			-- Cache responders that won't be drawn
 			for _, event in pairs(events) do

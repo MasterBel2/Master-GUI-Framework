@@ -37,7 +37,6 @@ function framework:PrimaryFrame(body)
 	end
 
 	function primaryFrame:Draw(x, y)
-		LogDrawCall("PrimaryFrame")
 		_body:Draw(x, y)
 		Internal.activeElement.primaryFrame = self
 		cachedX = x

@@ -28,7 +28,6 @@ function framework:Tooltip(rect, description)
 	end
 	
 	function tooltip:Draw(x, y)
-		LogDrawCall("Tooltip")
 		local previousActiveTooltip = Internal.activeTooltip
 		local parent = self.parent
 		if previousActiveTooltip ~= parent then

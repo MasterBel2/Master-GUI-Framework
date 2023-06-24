@@ -22,7 +22,6 @@ function framework:Image(fileName, tintColor)
 	end
 
 	function image:Draw(rect, x, y, width, height)
-		LogDrawCall("Image")
 		self.tintColor:Set()
 		gl_Texture(self.fileName)
 		

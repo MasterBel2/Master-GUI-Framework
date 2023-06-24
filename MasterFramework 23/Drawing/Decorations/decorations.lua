@@ -17,7 +17,6 @@ local function newSinTheta(cornerRadius)
 end
 
 function Internal.DrawRoundedRect(width, height, cornerRadius, drawFunction, shouldSquareBottomLeft, shouldSquareBottomRight, shouldSquareTopRight, shouldSquareTopLeft, ...)
-	LogDrawCall("DrawRoundedRect")
 
 	local centerTopY = height - cornerRadius
 	local centerRightX = width - cornerRadius
@@ -64,7 +63,6 @@ function Internal.DrawRoundedRect(width, height, cornerRadius, drawFunction, sho
 end
 
 function Internal.DrawRectVertices(width, height, drawFunction)
-	LogDrawCall("DrawRectVertices")
 	drawFunction(0, 0)
 	drawFunction(width, 0)
 	drawFunction(width, height)
@@ -73,6 +71,5 @@ end
 
 
 function Internal.DrawRect(drawFunction, x, y, width, height)
-	LogDrawCall("DrawRect")
 	drawFunction(x, y, x + width, y + height)
 end

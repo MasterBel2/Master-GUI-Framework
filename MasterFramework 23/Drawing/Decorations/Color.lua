@@ -16,7 +16,6 @@ function framework:Color(r, g, b, a)
 	local color = { r = r, g = g, b = b, a = a }
 
 	function color:Set()
-		LogDrawCall("Color (Set)")
 		gl_Color(self.r, self.g, self.b, self.a)
 	end
 

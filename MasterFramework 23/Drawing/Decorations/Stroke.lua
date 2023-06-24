@@ -9,7 +9,6 @@ local Internal = Internal
 
 -- Draws a border around an object. NOTE: DOES NOT CURRENTLY WORK PROPERLY
 function framework:Stroke(width, color, inside)
-	Log("framework:Stroke.color: " .. tostring(color))
 
 	local DrawRoundedRect = Internal.DrawRoundedRect
 	local DrawRectVertices = Internal.DrawRectVertices
