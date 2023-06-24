@@ -18,13 +18,19 @@ function framework:WrappingText(string, color, font, maxLines)
 
 	local wrappedText, lineCount
 	local cachedX, cachedY, cachedWidth, cachedHeight
+	local cachedAvailableWidth, cachedAvailableHeight, cachedFontKey, cachedFontScaledSize, cachedFontScaledSize
 	local addedCharacters = {}
+
+	local stringChanged = true
 
 	-- Sets the raw string.
 	-- 
 	-- If a nil value is provided, an empty string will be set.
 	function wrappingText:SetString(newString)
-		string = newString or ""
+		if newString ~= string then
+			string = newString or ""
+			stringChanged = true
+		end
 	end
 	-- Returns the string that was provided to `WrappingText`, unmodified. 
 	-- 
@@ -126,16 +132,25 @@ function framework:WrappingText(string, color, font, maxLines)
 	function wrappingText:Layout(availableWidth, availableHeight)
 		availableWidth = math.min(availableWidth, 2147483647) -- if we allow math.huge, `glFont:WrapText()` will fail. 
 		availableHeight = math.min(availableHeight, 2147483647)
+		local fontScaledSize = font:ScaledSize()
+		if availableWidth == cachedAvailableWidth and availableHeight == cachedAvailableHeight and not stringChanged and fontScaledSize == cachedFontScaledSize and font.key == cachedFontKey then
+			return cachedWidth, cachedHeight
+		end
+		cachedFontScaledSize = fontScaledSize
+		cachedFontKey = font.key
+		stringChanged = false
+
+		cachedAvailableWidth, cachedAvailableHeight = availableWidth, availableHeight
 		local coloredText = self:ColoredString(string)
 
-		local trueLineHeight = font:ScaledSize() * font.glFont.lineheight
+		local trueLineHeight = cachedFontScaledSize * font.glFont.lineheight
 		local maxHeight = math.min(availableHeight, maxLines * trueLineHeight)
 
 		-- `glFont:WrapText()` appears to consistently return a number (SLIGHTLY!) greater than availableWidth, probably due to floating-point math.
 		-- Providing it an extra 0.1 width doesn't allow any extra characters through, but prevents the rounding error from messing us up.
 		-- We won't report any this extra width to our parent, by clamping at availableWidth.
-		wrappedText, lineCount = font.glFont:WrapText(coloredText, availableWidth + 0.1, maxHeight, font:ScaledSize()) -- Apparently this adds an extra character ("\r") even when line breaks already
-		cachedWidth = math.min(font.glFont:GetTextWidth(wrappedText) * font:ScaledSize(), availableWidth)
+		wrappedText, lineCount = font.glFont:WrapText(coloredText, availableWidth + 0.1, maxHeight, cachedFontScaledSize) -- Apparently this adds an extra character ("\r") even when line breaks already
+		cachedWidth = math.min(font.glFont:GetTextWidth(wrappedText) * cachedFontScaledSize, availableWidth)
 		cachedHeight = math.min(maxHeight, lineCount * trueLineHeight)
 
 		addedCharacters = {}
