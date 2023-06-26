@@ -22,11 +22,11 @@ function Log(string)
 end
 
 
-function LogDrawCall(caller)
-	if Internal.debugMode.draw then
-		Internal.drawCalls[caller] = (Internal.drawCalls[caller] or 0) + 1
-		Log(caller)
-	end
+function LogDrawCall(caller, isEnd)
+	-- if Internal.debugMode.draw then
+	-- 	local tag = caller .. (isEnd and "(End)" or "(Begin)")
+	-- 	Internal.drawCalls[tag] = (Internal.drawCalls[tag] or 0) + 1
+	-- end
 end
 
 -- Logs a formatted error. Provide details as strings, they will be appeneded with the separator " - "
@@ -72,15 +72,20 @@ function endProfile()
 	-- Log("Profiled " .. profileName .. ": " .. Spring_DiffTimers(Spring_GetTimer(), startTimer) * 1000 .. " microseconds")
 end
 
-function Internal.SetDebugMode(general, draw)
+function framework:GetDebugMode()
+	return Internal.debugMode.general, Internal.debugMode.draw, Internal.debugMode.noRasterizer 
+end
+
+function Internal.SetDebugMode(general, draw, noRasterizer)
 	if Internal.debugMode.initialised then return end
 	Internal.debugMode.initialised = true
 
 	general = general or draw
-	Internal.debugMode = { general = general, draw = draw }
+	Internal.debugMode = { general = general, draw = draw, noRasterizer = noRasterizer }
 
 	if not general then return end
 
+	local nextUniqueIdentifier = 1
 	for key, value in pairs(framework) do
 		if type(value) == "function" then
 			framework[key] = function(...)
@@ -90,25 +95,33 @@ function Internal.SetDebugMode(general, draw)
 					if draw then
 						if temp[1].Draw then
 							local cachedDraw = temp[1].Draw
+							-- local drawTag = key .. ":Draw"
+							-- local _LogDrawCall = LogDrawCall
 							temp[1].Draw = function(...)
-								LogDrawCall(key .. ":Draw (Begin)")
+								LogDrawCall(key .. ":Draw", false)
 								cachedDraw(...)
-								LogDrawCall(key .. ":Draw (End)")
+								LogDrawCall(key .. ":Draw", true)
 							end
 						end
 						if temp[1].Layout then
 							local cachedLayout = temp[1].Layout
+							-- local layoutTag = key .. ":Layout"
+							-- local _LogDrawCall = LogDrawCall
 							temp[1].Layout = function(...)
-								LogDrawCall(key .. ":Layout (Begin)")
+								LogDrawCall(key .. ":Layout", false)
 								local result = { cachedLayout(...) }
-								LogDrawCall(key .. ":Layout (End)")
+								-- local width, height = cachedLayout(...)
+								LogDrawCall(key .. ":Layout", true)
+								-- return width, height
 								return unpack(result)
 							end
 						end
 					end
 
 					if general then
-						temp[1]._debugIdentifier = key
+						temp[1]._debugTypeIdentifier = key
+						temp[1]._debugUniqueIdentifier = nextUniqueIdentifier
+						nextUniqueIdentifier = nextUniqueIdentifier + 1
 					end
 				end
 

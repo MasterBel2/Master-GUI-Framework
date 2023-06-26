@@ -4,7 +4,7 @@
 
 -- https://github.com/MasterBel2/Master-GUI-Framework
 
-local compatabilityVersion = 26
+local compatabilityVersion = 27
 
 function widget:GetInfo()
 	return {
@@ -56,7 +56,8 @@ local frameworkInternal = {
 	-- 
 	-- Please - each component should store their data under in a table keyed into `ConfigData` with their component name
 	-- - e.g. `framework.Internal.ConfigData.MovableFrame`.
-	ConfigData = {}
+	ConfigData = {},
+	DebugInfo = {}
 }
 local framework = {
     compatabilityVersion = compatabilityVersion,
@@ -158,14 +159,19 @@ function widget:Initialize()
 	framework.defaultFont = framework:Font("FreeSansBold.otf", 12)
 
     local viewSizeX, viewSizeY = Spring.GetViewGeometry()
+
 	frameworkInternal.updateScreenEnvironment(viewSizeX, viewSizeY, framework.relativeScaleFactor)
 
-	frameworkInternal.SetDebugMode(true, false)
+	frameworkInternal.SetDebugMode(false, false, false)
 
     isAboveThing = frameworkInternal.IsAboveWatcher()
 
     framework.Internal = nil
     framework.Include = nil
+end
+
+function widget:DebugInfo()
+	return frameworkInternal.DebugInfo
 end
 
 function widget:GetTooltip(x, y)
@@ -297,11 +303,11 @@ function widget:DrawScreen()
 		element:Draw()
 	end
 	framework.viewportDidChange = false
-	if frameworkInternal.drawDebug then
-		framework.Log("####")
-		for caller, callCount in pairs(frameworkInternal.drawCalls) do
-			framework.Log(caller .. ": " .. callCount)
-		end
+	if frameworkInternal.debugMode.draw then
+		-- framework.Log("####")
+		-- for caller, callCount in pairs(frameworkInternal.drawCalls) do
+		-- 	framework.Log(caller .. ": " .. callCount)
+		-- end
 		frameworkInternal.drawCalls = {}
 	end
 	-- endProfile()

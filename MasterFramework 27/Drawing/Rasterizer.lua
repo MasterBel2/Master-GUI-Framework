@@ -55,7 +55,7 @@ function framework:Rasterizer(providedBody)
 	end
 
 	function rasterizer:Draw(x, y)
-		if recalculatingRasterizer or Internal.drawDebug then
+		if recalculatingRasterizer or Internal.debugMode.noRasterizer then
 			-- Display lists cannot be nested, so we'll skip using one while we're creating one.
 			_body:Draw(x, y)
 			return
