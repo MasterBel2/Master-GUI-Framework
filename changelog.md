@@ -1,13 +1,11 @@
 # Changelog
 
 ## CV 28: `KeyPress`, `KeyRelease` and `TextInput` callin updates
-
 - Rename `char` to `utf8char` in `TextInput`
 - Rename `unicode` to `utf32char` in `KeyPress` and `KeyRelease`
 - Add `scanCode` and `actionList` arguments in `KeyPress` and `KeyRelease`
 
 ## CV 27: Debug improvements
-
 - added `Internal.debugMode.noRasterizer` to specifically disable rasterizers
 - Disabled `LogDrawCall` default print spam; instead, we'll rely on external debugging tools overriding this call.
 - Rename `component._debugIdentifier` to `component._debugTypeIdentifier`
@@ -16,23 +14,18 @@
 - Default to all debug modes off. PLEASE DO NOT COMMIT ANY CHANGES THAT SET ANY DEBUG MODES TRUE, AS THEY SIGNIFICANTLY IMPACT PERFORMANCE.
 
 ## CV 26: Improve background rasterizing for `framework:MarginAroundRect`
-
 Now auto-invalidates on resize, move, and correctly invalidates on viewportDidChange.
 
 ## CV 25: Add scaling support for `framework:Stroke`
-
 Uses `framework:Dimension` for `stroke.width`
 
 ## CV 24: Expose elements & element drawing to aid profiling
-
 Call `framework:GetElement(key)` and `element:Draw()` to get an element and draw it, respectively.
 
 ## CV 23: Correctly handle space-grabbing components: HungryStacks
-
 Removed the trickery in `HorizontalStack` & `VerticalStack`: Hungry Stacks allow positioning of predictably-sized views before and after a component of unbounded size, and layout the unbounded component last, making sure it always knows exactly how much space it's got.
 
 ## CV 22: File reorg + nice-to-haves
-
 Versioning is now more thorough: you can drag-and-drop multiple frameworks in beside each other and have them (mostly) work. They won't be able to steal focus from each other, for example, but it's a start. Ideally you won't have to constantly bump the versions on all the widgets, but I haven't figured out something to resolve that just yet.
 
 (Almost) every component is now in its own file, to make navigating & adding new stuff a bunch easier.
@@ -51,7 +44,6 @@ Debug:
 - Debug mode is now enabled by calling `Internal.SetDebugMode(general, draw)` directly after framework initialisation. This includes a new and improved identifier system that automatically adds a debugIdentifier with a table's type, and also automatically adds reporting for draw and layout calls. 
 
 ## CV 21: Wrapping Text
-
 Added `framework:WrappingText`! `WrappingText` stores a `rawString` and displays a `displayString`, with an interface to convert character between them. Text colouring is also supported: override `WrappingText:ColoredString(string)` to annotate the raw string (e.g. for code syntax highlighting). Support for return-based newlines was added (`wrappingText:editReturn()`) and indices for delete + backspace were fixed.
 
 `framework:TextEntry` now wraps a `WrappingText`. Provide `1` as a value for `maxLines` to prevent wrapping. Click-and-drag selection is now supported, and block selection is now shown while deselected.
@@ -66,19 +58,15 @@ Added `string:lines()`, `string:inserting(newString, index)`, `string:unEscaped(
 ...
 
 ## CV 9
-
 View elements no longer take a number for constant dimensions; instead, they accept a function which will return a value. Further internal optimisations to be made, and possibly allowance for providing element-specific scalings. Currently, scaling is provided based on a single constant, and relative to 1080p.
 Also tweaked changelog formatting because why not :)
 
 ## CV 8
-
 Added `framework:Blending`; wraps decorations (which execute GL calls) in a gl.Blending call, resetting to default after.
 
 ## CV 7
-
 Improved mouse over handling to provide calls for enter & leave
 
 ## CV 6
-
 Added TextGroups
 Rasterizer & PrimaryFrame body restricted to `element:SetBody(newBody)`
