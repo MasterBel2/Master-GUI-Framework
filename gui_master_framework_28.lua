@@ -4,7 +4,7 @@
 
 -- https://github.com/MasterBel2/Master-GUI-Framework
 
-local compatabilityVersion = 27
+local compatabilityVersion = 28
 
 function widget:GetInfo()
 	return {
@@ -184,10 +184,10 @@ end
 function widget:TweakGetTooltip(x, y)
 end
 
-function widget:TextInput(char)
+function widget:TextInput(utf8char)
     if not frameworkInternal.focusTarget then return end
 
-	local success, errorMessage = pcall(frameworkInternal.focusTarget.TextInput, frameworkInternal.focusTarget, char)
+	local success, errorMessage = pcall(frameworkInternal.focusTarget.TextInput, frameworkInternal.focusTarget, utf8char)
 	if not success then 
 		framework.Error("widget:TextInput", "focusTarget:TextInput", errorMessage)
 	end
@@ -195,10 +195,10 @@ function widget:TextInput(char)
     return true
 end
 
-function widget:KeyPress(key, mods, isRepeat, label, unicode)
+function widget:KeyPress(key, mods, isRepeat, label, utf32char, scanCode, actionList)
     if not frameworkInternal.focusTarget then return end
 
-    local success, errorMessage = pcall(frameworkInternal.focusTarget.KeyPress, frameworkInternal.focusTarget, key, mods, isRepeat, label, unicode)
+	local success, errorMessage = pcall(frameworkInternal.focusTarget.KeyPress, frameworkInternal.focusTarget, key, mods, isRepeat, label, utf32char, scanCode, actionList)
 	if not success then 
 		framework.Error("widget:KeyPress", "focusTarget:KeyPress", errorMessage)
 	end
@@ -206,10 +206,10 @@ function widget:KeyPress(key, mods, isRepeat, label, unicode)
     return true
 end
 
-function widget:KeyRelease(key, mods, label, unicode)
+function widget:KeyRelease(key, mods, label, utf32char, scanCode, actionList)
 	if not frameworkInternal.focusTarget then return end
 	
-	local success, errorMessage = pcall(frameworkInternal.focusTarget.KeyRelease, frameworkInternal.focusTarget, key, mods, label, unicode)
+	local success, errorMessage = pcall(frameworkInternal.focusTarget.KeyRelease, frameworkInternal.focusTarget, key, mods, label, utf32char, scanCode, actionList)
 	if not success then 
 		framework.Error("widget:KeyRelease", "focusTarget:KeyRelease", errorMessage)
 	end
