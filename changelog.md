@@ -1,5 +1,32 @@
 # Changelog
 
+## CV 28: `KeyPress`, `KeyRelease` and `TextInput` callin updates
+
+- Rename `char` to `utf8char` in `TextInput`
+- Rename `unicode` to `utf32char` in `KeyPress` and `KeyRelease`
+- Add `scanCode` and `actionList` arguments in `KeyPress` and `KeyRelease`
+
+## CV 27: Debug improvements
+
+- added `Internal.debugMode.noRasterizer` to specifically disable rasterizers
+- Disabled `LogDrawCall` default print spam; instead, we'll rely on external debugging tools overriding this call.
+- Rename `component._debugIdentifier` to `component._debugTypeIdentifier`
+- Add `component._debugUniqueIdentifier`, which will be a unique integer identifying the component.
+- Add `Internal.DebugInfo`, returned by `widget:DebugInfo()` that allows components to report debug information. Please only do so when debug mode is enabled.
+- Default to all debug modes off. PLEASE DO NOT COMMIT ANY CHANGES THAT SET ANY DEBUG MODES TRUE, AS THEY SIGNIFICANTLY IMPACT PERFORMANCE.
+
+## CV 26: Improve background rasterizing for `framework:MarginAroundRect`
+
+Now auto-invalidates on resize, move, and correctly invalidates on viewportDidChange.
+
+## CV 25: Add scaling support for `framework:Stroke`
+
+Uses `framework:Dimension` for `stroke.width`
+
+## CV 24: Expose elements & element drawing to aid profiling
+
+Call `framework:GetElement(key)` and `element:Draw()` to get an element and draw it, respectively.
+
 ## CV 23: Correctly handle space-grabbing components: HungryStacks
 
 Removed the trickery in `HorizontalStack` & `VerticalStack`: Hungry Stacks allow positioning of predictably-sized views before and after a component of unbounded size, and layout the unbounded component last, making sure it always knows exactly how much space it's got.
