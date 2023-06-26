@@ -7,6 +7,10 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 	local rasterizer
 
 	local width, height
+	local lastRasterizedWidth
+	local lastRasterizedHeight
+	local lastRasterizedX
+	local lastRasterizedY
 
 	local function getWidth() return width end
 	local function getHeight() return height end
@@ -16,10 +20,15 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 		rasterizer = framework:Rasterizer(rasterizableRect)
 
 		function margin:Draw(x, y)
-			if self.shouldInvalidateRasterizer or viewportDidChange then
+			if self.shouldInvalidateRasterizer or viewportDidChange or lastRasterizedWidth ~= width or lastRasterizedHeight ~= height or lastRasterizedX ~= x or lastRasterizedY ~= y then
 				rasterizableRect.cornerRadius = self.cornerRadius
 				rasterizableRect.decorations = self.decorations
-				rasterizer.invalidated = self.shouldInvalidateRasterizer
+				rasterizer.invalidated = true
+
+				lastRasterizedX = x
+				lastRasterizedY = y
+				lastRasterizedWidth = width
+				lastRasterizedHeight = height
 				self.shouldInvalidateRasterizer = false
 			end
 			rasterizer:Draw(x, y)
