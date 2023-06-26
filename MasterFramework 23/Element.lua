@@ -1,6 +1,8 @@
 local pairs = Include.pairs
 local ipairs = Include.ipairs
 local table = Include.table
+local clear = Include.clear
+local pcall = Include.pcall
 local Internal = Internal
 
 ------------------------------------------------------------------------------------------------------------
@@ -48,6 +50,9 @@ layerRequest = {
 local elementOrder = {}
 Internal.elementOrder = elementOrder
 Internal.elements = {}
+
+-- TODO: Conflicts Per Name!
+local conflicts = {}
 
 -- Returns the index of the layer that
 local function WantedLayer(layerRequest)
@@ -115,9 +120,6 @@ local function UniqueKey(preferredKey)
 		return key
 	end
 end
-
--- TODO: Conflicts Per Name!
-local conflicts = {}
 
 local function nullFunction() end
 
