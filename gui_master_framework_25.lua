@@ -4,7 +4,7 @@
 
 -- https://github.com/MasterBel2/Master-GUI-Framework
 
-local compatabilityVersion = 24
+local compatabilityVersion = 25
 
 function widget:GetInfo()
 	return {
@@ -144,7 +144,7 @@ function widget:Initialize()
 	}
 	
 	framework.stroke = {
-		defaultBorder = framework:Stroke(1, framework.color.hoverColor)
+		defaultBorder = framework:Stroke(framework:Dimension(1), framework.color.hoverColor)
 	}
 
 	framework.dimension = {

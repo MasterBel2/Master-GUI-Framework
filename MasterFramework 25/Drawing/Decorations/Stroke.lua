@@ -27,7 +27,7 @@ function framework:Stroke(width, color, inside)
 	end
 
 	function stroke:Draw(rect, x, y, width, height)
-		local strokeWidth = self.width
+		local strokeWidth = self.width()
 
 		self.color:Set()
 		gl_LineWidth(strokeWidth)

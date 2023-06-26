@@ -18,7 +18,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
     local selectFrom
 
-    local selectedStroke = framework:Stroke(2, framework.color.hoverColor)
+    local selectedStroke = framework:Stroke(framework:Dimension(2), framework.color.hoverColor)
     local textStack = framework:StackInPlace({ entry.text, entry.placeholder }, 0, 0)
     local background = framework:MarginAroundRect(
         textStack,
