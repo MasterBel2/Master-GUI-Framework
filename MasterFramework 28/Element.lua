@@ -115,7 +115,7 @@ end
 
 local function UniqueKey(preferredKey)
 	if Internal.elements[preferredKey] == nil then
-		Log("Creating element with preferred key: " .. preferredKey)
+		Log("Creating element with preferred key: \"" .. preferredKey .. "\"")
 		return preferredKey
 	else
 		conflicts[preferredKey] = (conflicts[preferredKey] or 0) + 1

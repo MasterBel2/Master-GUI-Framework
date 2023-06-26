@@ -64,10 +64,6 @@ function framework:WrappingText(string, color, font, maxLines)
 			if breakIndex == displayIndex then
 				for i = 1, #addedCharacters - breakNumber do
 					return breakIndex - breakNumber + 1, true
-					-- Spring.Echo("Invalid index: adding " .. i)
-					-- if addedCharacters[breakNumber + i] - i ~= displayIndex  then
-					-- 	return breakIndex + i - breakNumber + i
-					-- end
 				end
 			elseif breakIndex > displayIndex then
 				return displayIndex - (breakNumber - 1)
