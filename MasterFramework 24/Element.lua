@@ -51,6 +51,10 @@ local elementOrder = {}
 Internal.elementOrder = elementOrder
 Internal.elements = {}
 
+function framework:GetElement(key)
+	return Internal.elements[key]
+end
+
 -- TODO: Conflicts Per Name!
 local conflicts = {}
 
@@ -148,12 +152,37 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	end
 
 	local element = { 
-		body = body, 
+		body = body,
 		primaryFrame = nil, 
 		tooltips = {}, 
 		baseResponders = {},
 		deselect = deselectAction or function() end
 	}
+
+	function element:Draw()
+		Internal.activeElement = element
+		Internal.activeTooltip = element
+		Internal.activeResponders = element.baseResponders
+		for _, responder in pairs(Internal.activeResponders) do
+			clear(responder.responders)
+		end
+
+		startProfile(self.key .. ":Layout()")
+		local success, _error = pcall(body.Layout, body, viewportWidth, viewportHeight)
+		if not success then
+			Error("widget:DrawScreen", "Element: " .. self.key, "elementBody:Layout", _error)
+			framework:RemoveElement(self.key)
+		end
+		endProfile()
+
+		startProfile(self.key .. ":Draw()")
+		local success, _error = pcall(body.Draw, body, 0, 0)
+		if not success then
+			Error("widget:DrawScreen", "Element: " .. self.key, "elementBody:Draw", _error)
+			framework:RemoveElement(self.key)
+		end
+		endProfile()
+	end
 
 	for _, event in pairs(events) do
 		element.baseResponders[event] = { responders = {}, action = nullFunction }

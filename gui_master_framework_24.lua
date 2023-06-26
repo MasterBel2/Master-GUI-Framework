@@ -4,7 +4,7 @@
 
 -- https://github.com/MasterBel2/Master-GUI-Framework
 
-local compatabilityVersion = 23
+local compatabilityVersion = 24
 
 function widget:GetInfo()
 	return {
@@ -293,36 +293,8 @@ function widget:DrawScreen()
 		local key = frameworkInternal.elementOrder[index]
 		index = index - 1
 		local element = frameworkInternal.elements[key]
-		frameworkInternal.activeElement = element
-		frameworkInternal.activeTooltip = element
-		frameworkInternal.activeResponders = element.baseResponders
-		for _, responder in pairs(frameworkInternal.activeResponders) do
-			clear(responder.responders)
-		end
-		local elementBody = element.body
-		-- startProfile("Layout")
-		-- for i = 0,500 do
-		framework.startProfile(key..":Layout()")
-		local success, _error = pcall(elementBody.Layout, elementBody, framework.viewportWidth, framework.viewportHeight)
-		if not success then
-			framework.Error("widget:DrawScreen", "Element: " .. key, "elementBody:Layout", _error)
-			framework:RemoveElement(key)
-		end
-		framework.endProfile()
-		-- end
-		-- endProfile()
-		-- startProfile("Draw")
-		-- for i = 0,500 do
-		framework.startProfile(key..":Draw()")
-		local success, _error = pcall(elementBody.Draw, elementBody, 0, 0)
-		if not success then
-			framework.Error("widget:DrawScreen", "Element: " .. key, "elementBody:Draw", _error)
-			framework:RemoveElement(key)
-		end
-		framework.endProfile()
-				
-		-- end
-		-- endProfile()
+
+		element:Draw()
 	end
 	framework.viewportDidChange = false
 	if frameworkInternal.drawDebug then
