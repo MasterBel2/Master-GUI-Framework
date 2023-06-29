@@ -1,5 +1,9 @@
 # Changelog
 
+## CV 29 Floating Menus
+
+Adds `Menu`, `MenuAnchor`, `RightClickMenuAnchor`, `MultiOptionBox`, `CelledVerticalStack`, and `Cell`. See in-code documentation for more details.
+
 ## CV 28: `KeyPress`, `KeyRelease` and `TextInput` callin updates
 - Rename `char` to `utf8char` in `TextInput`
 - Rename `unicode` to `utf32char` in `KeyPress` and `KeyRelease`
