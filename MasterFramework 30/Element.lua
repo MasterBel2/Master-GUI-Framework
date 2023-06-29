@@ -154,7 +154,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	local element = { 
 		body = body,
 		primaryFrame = nil, 
-		tooltips = {}, 
+		tooltips = {},
 		baseResponders = {},
 		deselect = deselectAction or function() end
 	}
