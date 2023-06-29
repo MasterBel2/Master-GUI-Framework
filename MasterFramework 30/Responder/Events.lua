@@ -75,7 +75,7 @@ local function SearchDownResponderTree(responder, x, y, ...)
 			end
 		end
 	end
-	return nil
+	return Event(responder, x, y, ...)
 end
 Internal.SearchDownResponderTree = SearchDownResponderTree
 

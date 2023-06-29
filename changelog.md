@@ -1,8 +1,12 @@
 # Changelog
 
-## CV 29 Floating Menus
+## CV 30 Claim un-handled events within the bounds of `PrimaryFrame`
+Leaving unhandled events unclaimed made for a poor interaction experience, when the cursor was clearly over the element.
+All base responders now return `true` by default, and events that fail to find a child now trigger for the initial responder they were provided.
 
-Adds `Menu`, `MenuAnchor`, `RightClickMenuAnchor`, `MultiOptionBox`, `CelledVerticalStack`, and `Cell`. See in-code documentation for more details.
+## CV 29 Floating Menus
+Adds `Menu`, `MenuAnchor`, `RightClickMenuAnchor`, `MultiOptionBox`, `CelledVerticalStack`, and `Cell`. 
+See in-code documentation for more details.
 
 ## CV 28: `KeyPress`, `KeyRelease` and `TextInput` callin updates
 - Rename `char` to `utf8char` in `TextInput`

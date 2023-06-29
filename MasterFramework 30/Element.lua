@@ -125,7 +125,7 @@ local function UniqueKey(preferredKey)
 	end
 end
 
-local function nullFunction() end
+local function nullFunction() return true end
 
 -- Adds an element to be drawn.
 --
@@ -187,6 +187,9 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	for _, event in pairs(events) do
 		element.baseResponders[event] = { responders = {}, action = nullFunction }
 	end
+	element.baseResponders[events.mousePress].MouseMove = nullFunction
+	element.baseResponders[events.mouseOver].MouseEnter = nullFunction
+	element.baseResponders[events.mouseOver].MouseLeave = nullFunction
 
 	-- Create key
 
