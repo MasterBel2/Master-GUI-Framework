@@ -18,6 +18,8 @@ function framework:VerticalHungryStack(viewAbove, hungryView, viewBelow, xAnchor
         widthBelow, heightBelow = viewBelow:Layout(availableWidth, availableHeight - heightAbove)
         hungryWidth, hungryHeight = hungryView:Layout(availableWidth, availableHeight - heightAbove - heightBelow)
 
+        hungryHeight = max(hungryHeight, 0)
+
         maxWidth = max(widthAbove, widthBelow, hungryWidth)
 
         return maxWidth, hungryHeight + heightAbove + heightBelow
