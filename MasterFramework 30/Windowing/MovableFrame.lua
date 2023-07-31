@@ -84,8 +84,8 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
     end
 
     function frame:SetOffset(x, y)
-        xOffset = math.max(x, 0)
-        yOffset = math.max(y, 5)
+        xOffset = math.min(math.max(x, 0), framework.viewportWidth - 5)
+        yOffset = math.min(math.max(y, 5), framework.viewportHeight)
 
         if key then
             ConfigData.framePositionCache[key].xOffset = x / oldScale
