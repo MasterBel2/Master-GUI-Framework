@@ -13,16 +13,8 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
     local xOffset = defaultX -- offsets are to top left corner
     local yOffset = defaultY
 
-    if key then
-        if ConfigData.framePositionCache[key] then
-            xOffset = ConfigData.framePositionCache[key].xOffset or xOffset
-            yOffset = ConfigData.framePositionCache[key].yOffset or yOffset
-        else
-            ConfigData.framePositionCache[key] = { xOffset = xOffset, yOffset = yOffset }
-        end
-    end
-
     local scale = framework:Dimension(1)
+    local oldScale = scale() -- Maybe cache this?
 
     local handleDecorations = { unhighlightedColor }
 
@@ -62,20 +54,18 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
         if xOffset > availableWidth - 5 then
             xOffset = availableWidth - 5
             if key then
-                ConfigData.framePositionCache[key].xOffset = xOffset
+                ConfigData.framePositionCache[key].xOffset = xOffset / oldScale
             end
         end
         if yOffset > availableHeight then
             yOffset = availableHeight
             if key then
-                ConfigData.framePositionCache[key].yOffset = yOffset
+                ConfigData.framePositionCache[key].yOffset = yOffset / oldScale
             end
         end
             
         return width, height
     end
-
-    local oldScale = scale() -- Maybe cache this?
 
     function frame:Draw(x, y)
         local currentScale = scale()
@@ -98,8 +88,19 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
         yOffset = math.max(y, 5)
 
         if key then
-            ConfigData.framePositionCache[key].xOffset = x
-            ConfigData.framePositionCache[key].yOffset = y
+            ConfigData.framePositionCache[key].xOffset = x / oldScale
+            ConfigData.framePositionCache[key].yOffset = y / oldScale
+        end
+    end
+
+    if key then
+        if ConfigData.framePositionCache[key] then
+            frame:SetOffset(
+                (ConfigData.framePositionCache[key].xOffset * oldScale) or xOffset, 
+                (ConfigData.framePositionCache[key].yOffset * oldScale) or yOffset
+            )
+        else
+            ConfigData.framePositionCache[key] = { xOffset = xOffset / oldScale, yOffset = yOffset / oldScale }
         end
     end
 

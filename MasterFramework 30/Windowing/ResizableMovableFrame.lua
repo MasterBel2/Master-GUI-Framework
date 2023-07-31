@@ -21,17 +21,17 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
     local dragStartWidth
     local dragStartHeight
 
-    if key then
-        if ConfigData.frameSizeCache[key] then
-            width = ConfigData.frameSizeCache[key].width or width
-            height = ConfigData.frameSizeCache[key].height or width
-        else
-            ConfigData.frameSizeCache[key] = { width = width, height = height }
-        end
-    end
-
     local scale = framework:Dimension(1)
     local oldScale = scale()
+
+    if key then
+        if ConfigData.frameSizeCache[key] then
+            width = (ConfigData.frameSizeCache[key].width * oldScale) or width
+            height = (ConfigData.frameSizeCache[key].height * oldScale) or width
+        else
+            ConfigData.frameSizeCache[key] = { width = width / oldScale, height = height / oldScale }
+        end
+    end
 
     local movableFrame -- value set below responders
 
@@ -134,8 +134,8 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
             movableFrame:SetOffset(dragStartX + _dx, dragStartY + _dy)
 
             if key then
-                ConfigData.frameSizeCache[key].width = width
-                ConfigData.frameSizeCache[key].height = height
+                ConfigData.frameSizeCache[key].width = width / oldScale
+                ConfigData.frameSizeCache[key].height = height / oldScale
             end
         end,
         function(responder, x, y)
