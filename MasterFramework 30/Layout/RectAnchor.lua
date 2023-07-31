@@ -1,3 +1,5 @@
+local floor = Include.math.floor
+
 -- Positions a rect relative to another rect, with no impact on the layout of the original rect.
 function framework:RectAnchor(rectToAnchorTo, anchoredRect, xAnchor, yAnchor)
 	local rectAnchor = { rectToAnchorTo = rectToAnchorTo, anchoredRect = anchoredRect, xAnchor = xAnchor, yAnchor = yAnchor, type = "RectAnchor" }
