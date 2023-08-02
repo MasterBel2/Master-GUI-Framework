@@ -26,8 +26,10 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
 
     if key then
         if ConfigData.frameSizeCache[key] then
-            width = (ConfigData.frameSizeCache[key].width * oldScale) or width
-            height = (ConfigData.frameSizeCache[key].height * oldScale) or width
+            local cachedWidth = ConfigData.frameSizeCache[key].width
+            local cachedHeight = ConfigData.frameSizeCache[key].height
+            width = (cachedHeight and (cachedHeight * oldScale)) or width
+            height = (cachedHeight and (cachedHeight * oldScale)) or width
         else
             ConfigData.frameSizeCache[key] = { width = width / oldScale, height = height / oldScale }
         end
