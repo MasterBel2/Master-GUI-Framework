@@ -95,9 +95,11 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
 
     if key then
         if ConfigData.framePositionCache[key] then
+            local cachedXOffset = ConfigData.framePositionCache[key].xOffset
+            local cachedYOffset = ConfigData.framePositionCache[key].yOffset
             frame:SetOffset(
-                (ConfigData.framePositionCache[key].xOffset * oldScale) or xOffset, 
-                (ConfigData.framePositionCache[key].yOffset * oldScale) or yOffset
+                (cachedXOffset and (cachedXOffset * oldScale)) or xOffset, 
+                (cachedYOffset and (cachedYOffset * oldScale)) or yOffset
             )
         else
             ConfigData.framePositionCache[key] = { xOffset = xOffset / oldScale, yOffset = yOffset / oldScale }
