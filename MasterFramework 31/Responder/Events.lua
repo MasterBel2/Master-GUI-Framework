@@ -54,7 +54,9 @@ Internal.Event = Event
 
 -- Calls an action on the top-most responder containing the specified point, failingover to its parent responder. Returns the responder that calls the action.
 local function SearchDownResponderTree(responder, x, y, ...)
-	for _, childResponder in pairs(responder.responders) do
+	if not (x and y) then
+		Error("SearchDownResponderTree", "childResponder:Geometry", "x or y is nil: " .. (x or "nil") .. ", " .. (y or "nil"))
+	end
 	local childResponderCount = #responder.responders
 	for i = 0, childResponderCount - 1 do
 		local childResponder = responder.responders[childResponderCount - i]
@@ -64,8 +66,8 @@ local function SearchDownResponderTree(responder, x, y, ...)
 			Error("SearchDownResponderTree", "childResponder:Geometry", responderX)
 			break
 		end
-		if not (x and y and responderX and responderY and responderWidth and responderHeight) then
-			Error("SearchDownResponderTree", "childResponder:Geometry is incomplete: " .. (responderX or "nil") .. ", " .. (responderY or "nil") .. ", " .. (responderWidth or "nil") .. ", " .. (responderHeight or "nil"))
+		if not (responderX and responderY and responderWidth and responderHeight) then
+			Error("SearchDownResponderTree", "childResponder:Geometry is incomplete: " .. (responderX or "nil") .. ", " .. (responderY or "nil") .. ", " .. (responderWidth or "nil") .. ", " .. (responderHeight or "nil"), responder._debugTypeIdentifier or "nil", (responder.rect and responder.rect._debugTypeIdentifier) or "nil", (responder._isDebugResponder and "true") or "false", (responder.noRect and "true") or "fasle")
 			break
 		end
 
