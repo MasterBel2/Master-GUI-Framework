@@ -1,41 +1,41 @@
 function framework:Button(visual, action)
     local defaultMargin = framework.dimension.defaultMargin
     local button = { visual = visual }
-    local margin = framework:MarginAroundRect(visual, defaultMargin, defaultMargin, defaultMargin, defaultMargin, {}, marginDimension, false)
+    local cell = framework:Cell(visual, {}, framework:Dimension(3))
 
     local highlightColor = framework.color.hoverColor
     button.action = action
 
     local responder = framework:MouseOverChangeResponder(
         framework:MousePressResponder(
-            margin,
+            cell,
             function(self, x, y, button)
                 if button ~= 1 then return false end
                 if framework.PointIsInRect(x, y, self:Geometry()) then
-                    margin.decorations = { [1] = framework.color.pressColor }
+                    cell.decorations = { [1] = framework.color.pressColor }
                 else
-                    margin.decorations = {}
+                    cell.decorations = {}
                 end
                 return true
             end,
             function(self, x, y, dx, dy)
                 if framework.PointIsInRect(x, y, self:Geometry()) then
-                    margin.decorations = { [1] = framework.color.pressColor }
+                    cell.decorations = { [1] = framework.color.pressColor }
                 else
-                    margin.decorations = {}
+                    cell.decorations = {}
                 end
             end, 
             function(self, x, y)
                 if framework.PointIsInRect(x, y, self:Geometry()) then
-                    margin.decorations[1] = highlightColor
+                    cell.decorations[1] = highlightColor
                     button.action(button)
                 else
-                    margin.decorations = {}
+                    cell.decorations = {}
                 end
             end
         ),
         function(isInside)
-            margin.decorations[1] = (isInside and highlightColor) or unhighlightedColor
+            cell.decorations[1] = (isInside and highlightColor) or unhighlightedColor
         end
     )
 
@@ -46,7 +46,7 @@ function framework:Button(visual, action)
         responder:Draw(...)
     end
 
-    button.margin = margin
+    button.cell = cell
 
     return button
 end
