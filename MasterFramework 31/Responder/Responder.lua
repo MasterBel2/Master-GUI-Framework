@@ -25,7 +25,7 @@ function framework:Responder(rect, event, action)
 
 		-- Parent keeps track of the order of responders, and use that to decide who gets the interactions first
 		local previousActiveResponder = Internal.activeResponders[event]
-		insert(previousActiveResponder.responders, 1, self)
+		insert(previousActiveResponder.responders, self)
 		self.parent = previousActiveResponder
 
 		Internal.activeResponders[event] = self
