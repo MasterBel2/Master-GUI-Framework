@@ -55,6 +55,9 @@ Internal.Event = Event
 -- Calls an action on the top-most responder containing the specified point, failingover to its parent responder. Returns the responder that calls the action.
 local function SearchDownResponderTree(responder, x, y, ...)
 	for _, childResponder in pairs(responder.responders) do
+	local childResponderCount = #responder.responders
+	for i = 0, childResponderCount - 1 do
+		local childResponder = responder.responders[childResponderCount - i]
 		local success, responderX, responderY, responderWidth, responderHeight = pcall(childResponder.Geometry, childResponder)
 		if not success then
 			-- responderX contains the error if this fails
