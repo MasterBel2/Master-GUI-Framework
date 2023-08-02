@@ -1,5 +1,8 @@
 # Changelog
 
+## CV 32: Swap button's margin for a cell
+This delegates the padding, which makes it more flexible.
+
 ## CV 31: Invert/fix ordering for responders
 - iterate v.s. pairs should be faster and have a predictable ordering
 - tasking the `SearchDownResponderTree` with the array invert turns out to be save work when reusing, and be a little more predictable.
