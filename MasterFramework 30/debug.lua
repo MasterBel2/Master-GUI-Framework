@@ -56,7 +56,7 @@ function debugDescriptionString(table, name, indentation)
 end
 
 function debugDescription(...)
-	Spring.Echo(debugDescriptionString(...))
+	Spring_Echo(debugDescriptionString(...))
 end
 
 function startProfile(_profileName)
