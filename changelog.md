@@ -11,11 +11,11 @@ This delegates the padding, which makes it more flexible.
 - iterate v.s. pairs should be faster and have a predictable ordering
 - tasking the `SearchDownResponderTree` with the array invert turns out to be save work when reusing, and be a little more predictable.
 
-## CV 30 Claim un-handled events within the bounds of `PrimaryFrame`
+## CV 30: Claim un-handled events within the bounds of `PrimaryFrame`
 Leaving unhandled events unclaimed made for a poor interaction experience, when the cursor was clearly over the element.
 All base responders now return `true` by default, and events that fail to find a child now trigger for the initial responder they were provided.
 
-## CV 29 Floating Menus
+## CV 29: Floating Menus
 Adds `Menu`, `MenuAnchor`, `RightClickMenuAnchor`, `MultiOptionBox`, `CelledVerticalStack`, and `Cell`. 
 See in-code documentation for more details.
 
