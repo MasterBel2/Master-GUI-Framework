@@ -4,7 +4,7 @@
 
 -- https://github.com/MasterBel2/Master-GUI-Framework
 
-local compatabilityVersion = 32
+local compatabilityVersion = 33
 
 function widget:GetInfo()
 	return {
@@ -270,6 +270,15 @@ local isAbove
 local isAboveChecked = false
 function widget:IsAbove(x, y)
 	if isAboveChecked then return end
+
+	if frameworkInternal.debugMode.draw then
+		frameworkInternal.DebugInfo.elementBelowMouse = {}
+		for _, element in pairs(frameworkInternal.elements) do
+			frameworkInternal.SearchDownResponderTree(element.activeDebugResponder, x, y)
+			
+		end
+	end
+
 	-- startProfile("IsAbove")
 	local isAbove
 	-- for i=0,1000 do
@@ -299,6 +308,11 @@ function widget:DrawScreen()
 		local key = frameworkInternal.elementOrder[index]
 		index = index - 1
 		local element = frameworkInternal.elements[key]
+
+		if frameworkInternal.debugMode.draw then
+			element.activeDebugResponder.responders = {}
+			frameworkInternal._debug_currentElementKey = key
+		end
 
 		element:Draw()
 	end

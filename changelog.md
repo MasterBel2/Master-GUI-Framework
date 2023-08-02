@@ -1,5 +1,9 @@
 # Changelog
 
+## CV 33: New component debugging system
+Displays component borders on-screen, and shows debug info about the component under mouse.
+Call `frameworkInternal.SetDebugMode(?, false, ?)` in the framework's initialiser to enable.
+
 ## CV 32: Swap button's margin for a cell
 This delegates the padding, which makes it more flexible.
 

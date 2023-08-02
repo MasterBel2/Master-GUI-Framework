@@ -4,6 +4,7 @@ local table = Include.table
 local clear = Include.clear
 local pcall = Include.pcall
 local Internal = Internal
+local Spring_Echo = Include.Spring.Echo
 
 ------------------------------------------------------------------------------------------------------------
 -- Layers
@@ -194,6 +195,25 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	-- Create key
 
 	local key = UniqueKey(preferredKey)
+
+	if Internal.debugMode.draw then
+		element.activeDebugResponder = {
+			_debugTypeIdentifier = "",
+			responders = {},
+			Geometry = function() return 0, 0, viewportWidth, viewportHeight end,
+			action = function(self)
+				local cachedX, cachedY, cachedWidth, cachedHeight = self:Geometry()
+				Internal.DebugInfo.elementBelowMouse[key] = {
+					type = "Base",
+					cachedX = cachedX,
+					cachedY = cachedY,
+					cachedWidth = cachedWidth,
+					cachedHeight = cachedHeight,
+					_debugTypeIdentifier = "Base Debug Responder for \"" .. key .. "\""  
+				}
+			end
+		}
+	end
 
 	element.key = key 
 	Internal.elements[key] = element
