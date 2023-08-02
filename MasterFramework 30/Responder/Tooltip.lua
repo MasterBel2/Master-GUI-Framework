@@ -1,4 +1,5 @@
 local pcall = Include.pcall
+local pairs = Include.pairs
 local Internal = Internal
 
 local tooltipID = 0
