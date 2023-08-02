@@ -64,7 +64,7 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
             end
         end
             
-        return width, height
+        return availableWidth, availableHeight
     end
 
     function frame:Draw(x, y)
