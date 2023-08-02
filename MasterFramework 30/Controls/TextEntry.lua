@@ -241,16 +241,22 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     function entry:KeyPress(key, mods, isRepeat)
         if key == 0x08 then
             self:editBackspace()
+            return true
         elseif key == 0x7F then 
             self:editDelete()
+            return true
         elseif key == 0x1B then 
             self:editEscape()
+            return true
         elseif key == 0x113 then
             self:editNext(mods.shift, mods.ctrl)
+            return true
         elseif key == 0x114 then
             self:editPrevious(mods.shift, mods.ctrl)
+            return true
         elseif key == 0x0D or key == 0x10F then
             self:editReturn(mods.ctrl)
+            return true
         end
     end
 
