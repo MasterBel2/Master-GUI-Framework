@@ -36,7 +36,7 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 
 		for i = 1, #members do
 			local member = members[i]
-			member:Draw(x + floor((maxWidth - member.stackInPlaceCachedWidth) * xAnchor), y + floor((maxHeight - member.stackInPlaceCachedHeight) * yAnchor))
+			member:Draw(x + (maxWidth - member.stackInPlaceCachedWidth) * xAnchor, y + (maxHeight - member.stackInPlaceCachedHeight) * yAnchor)
 		end
 	end
 	return stackInPlace
