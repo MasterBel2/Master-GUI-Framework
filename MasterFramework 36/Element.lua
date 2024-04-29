@@ -126,7 +126,8 @@ local function UniqueKey(preferredKey)
 	end
 end
 
-local function nullFunction() return true end
+local function nullFunctionTrue() return true end
+local function nullFunctionFalse() return false end
 
 -- Adds an element to be drawn.
 --
@@ -143,7 +144,7 @@ local function nullFunction() return true end
 --
 -- Returns a key (derived from preferredKey) that can be used to remove the element from the interface. 
 -- The element will NOT be automatically removed. See `framework:RemoveElement()` for more detail.
-function framework:InsertElement(body, preferredKey, layerRequest, deselectAction)
+function framework:InsertElement(body, preferredKey, layerRequest, deselectAction, allowInteractionBehind)
 	-- Create element
 
 	preferredKey = preferredKey or "Unknown"
@@ -154,10 +155,10 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 
 	local element = { 
 		body = body,
-		primaryFrame = nil, 
+		primaryFrame = nil,
 		tooltips = {},
 		baseResponders = {},
-		deselect = deselectAction or function() end
+		deselect = deselectAction or nullFunctionTrue
 	}
 	local drawingGroup = framework:DrawingGroup(body)
 
@@ -193,6 +194,8 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		end
 		endProfile()
 	end
+
+	local nullFunction = allowInteractionBehind and nullFunctionFalse or nullFunctionTrue
 
 	for _, event in pairs(events) do
 		element.baseResponders[event] = { responders = {}, action = nullFunction, _debugIdentifier = "Base responder for " .. event, _event = event }
