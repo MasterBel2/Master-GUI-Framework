@@ -4,6 +4,12 @@ local gl = Include.gl
 local table_insert = Include.table.insert
 local os_clock = Include.os.clock
 
+local gl_Rect = gl.Rect
+
+local math_max = math.max
+local math_min = math.min
+local math_floor = math.floor
+
 local Spring_GetClipboard = Include.Spring.GetClipboard
 local Spring_SetClipboard = Include.Spring.SetClipboard
 -- Selection indices ranges from 1 (before the first character) to string:len() + 1 (after the last character)
@@ -13,8 +19,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     local entry = {
         text = framework:WrappingText(string, color, font, maxLines),
         placeholder = framework:Text(placeholderString, framework:Color(color.r, color.g, color.b, 0.3), font, 1),
-        selectionBegin = string:len() + 1, 
-        selectionEnd = string:len() + 1, 
+        selectionBegin = string:len() + 1, -- index of character after selection begin
+        selectionEnd = string:len() + 1, -- index of character after selection end
         canLoseFocus = false,
 
         undoSingleCharAppendable = false,
@@ -206,17 +212,17 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             local reversedSelectionEnd = stringEnd - self.selectionEnd
 
             if selectFrom == "end" then
-                local newReversedPointerLocation = math.max(reversed:find("[%s]", reversedSelectionEnd) or reversedStringEnd, reversedStringEnd)
+                local newReversedPointerLocation = math_max(reversed:find("[%s]", reversedSelectionEnd) or reversedStringEnd, reversedStringEnd)
                 self.selectionEnd = stringEnd - newReversedPointerLocation
             else
-                local newReversedPointerLocation = math.max(reversed:find("[%s]", reversedSelectionBegin) or reversedStringEnd, reversedStringEnd)
+                local newReversedPointerLocation = math_max(reversed:find("[%s]", reversedSelectionBegin) or reversedStringEnd, reversedStringEnd)
                 self.selectionBegin = stringEnd - newReversedPointerLocation
             end
         elseif isShift or not selectFrom then
             if selectFrom == "end" then
-                self.selectionEnd = math.max(self.selectionEnd - 1, 1)                        
+                self.selectionEnd = math_max(self.selectionEnd - 1, 1)                        
             else
-                self.selectionBegin = math.max(self.selectionBegin - 1, 1)
+                self.selectionBegin = math_max(self.selectionBegin - 1, 1)
             end
         end
 
@@ -249,15 +255,15 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
         if isCtrl then
             if selectFrom == "begin" then
-                self.selectionBegin = math.min(stringEnd, string:find("[%s]", self.selectionBegin) or stringEnd)
+                self.selectionBegin = math_min(stringEnd, string:find("[%s]", self.selectionBegin) or stringEnd)
             else
-                self.selectionEnd = math.min(stringEnd, string:find("[%s]", self.selectionEnd) or stringEnd)
+                self.selectionEnd = math_min(stringEnd, string:find("[%s]", self.selectionEnd) or stringEnd)
             end
         elseif isShift or not selectFrom then
             if selectFrom == "begin" then
-                self.selectionBegin = math.min(stringEnd, self.selectionBegin + 1)
+                self.selectionBegin = math_min(stringEnd, self.selectionBegin + 1)
             else
-                self.selectionEnd = math.min(stringEnd, self.selectionEnd + 1)
+                self.selectionEnd = math_min(stringEnd, self.selectionEnd + 1)
             end
         end
 
@@ -448,45 +454,61 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             -- this will be drawn after the background but before text, because we don't have our own TextGroup
 
             local font = self.text._readOnly_font
-            local textX, textY, _, textHeight = self.text:Geometry()
+            local textX, textY, textWidth, textHeight = self.text:Geometry()
 
-            local trueLineHeight = self.text._readOnly_font.glFont.lineheight * font:ScaledSize()
+            local trueLineHeight = font.glFont.lineheight * font:ScaledSize()
 
             local displayString = self.text:GetDisplayString()
-            local lines, lineStarts, lineEnds = displayString:lines()
-
-            local translatedSelectionBegin = self.text:RawIndexToDisplayIndex(self.selectionBegin)
-            local translatedSelectionEnd = self.text:RawIndexToDisplayIndex(self.selectionEnd)
+            local lineStarts, lineEnds = displayString:lines_MasterFramework()
             
-            for i = 1, #lines do
-                local line = lines[i]
+            local displayIndexOfCharacterAfterSelectionBegin, addedCharactersIndex, removedSpacesIndex, computedOffset, _ = self.text:RawIndexToDisplayIndex(self.selectionBegin)
+            local displayIndexOfCharacterAfterSelectionEnd = self.text:RawIndexToDisplayIndex(self.selectionEnd, addedCharactersIndex, removedSpacesIndex, computedOffset)
+            
+            local fontScaledSize = font:ScaledSize()
+
+            for i = 1, #lineStarts do
                 local lineStart = lineStarts[i]
                 local lineEnd = lineEnds[i]
 
-                if translatedSelectionBegin <= lineEnd + 1 and translatedSelectionEnd >= lineStart then
+                if displayIndexOfCharacterAfterSelectionBegin <= lineEnd + 1 and displayIndexOfCharacterAfterSelectionEnd >= lineStart then
                     local highlightYOffset = i * trueLineHeight
-                    local highlightBeginIndex = math.max(translatedSelectionBegin + 1 - lineStart, 1)
-                    local highlightEndIndex = math.min(translatedSelectionEnd + 1 - lineStart, lineEnd + 1)
+                    -- clamp selection to line
+                    local highlightBeginIndex = math_max(displayIndexOfCharacterAfterSelectionBegin, lineStart)
+                    -- Allow an index that specifies the first character of the next line; 
+                    -- Selection end indices give the index of the first character excluded from the selection,
+                    -- So this correctly includes the newline in the drawn selection, without incorrectly measuring
+                    -- any characters from the next line.
+                    --
+                    -- highlightEndIndex is used for generating the substring, so we subtract one to specify the 
+                    -- character within the selection, rather than the character without the selection.
+                    local highlightEndIndex = math_min(displayIndexOfCharacterAfterSelectionEnd, lineEnd + 2) - 1
 
-                    local stringBeforeInsertion = line:sub(1, highlightBeginIndex - 1)
+                    local stringBeforeInsertion = displayString:sub(lineStart, highlightBeginIndex - 1)
 
-                    local highlightBeginXOffset = font.glFont:GetTextWidth(stringBeforeInsertion) * font:ScaledSize()
+                    local highlightBeginXOffset = font.glFont:GetTextWidth(stringBeforeInsertion) * fontScaledSize
 
                     local lineY = textY + textHeight - highlightYOffset
 
                     framework.color.hoverColor:Set()
 
                     if self.selectionBegin == self.selectionEnd then
-                        if math.floor(os_clock() - selectionChangedClock) % 2 == 0 then
-                            gl.Rect(textX + highlightBeginXOffset - 0.5, lineY, textX + highlightBeginXOffset + 0.5, lineY + trueLineHeight)
+                        if math_floor(os_clock() - selectionChangedClock) % 2 == 0 then
+                            gl_Rect(textX + highlightBeginXOffset - 0.5, lineY, textX + highlightBeginXOffset + 0.5, lineY + trueLineHeight)
                         end
                         return
                     else
-                        local highlightedString = line:sub(highlightBeginIndex, highlightEndIndex - 1)
-                        local highlightEndXOffset = font.glFont:GetTextWidth(highlightedString) * font:ScaledSize() + highlightBeginXOffset
+                        local highlightEndXOffset
+                        if highlightEndIndex == lineEnd + 1 then
+                            highlightEndXOffset = textWidth
+                        else
+                            local highlightedString = displayString:sub(highlightBeginIndex, highlightEndIndex)
+                            highlightEndXOffset = font.glFont:GetTextWidth(highlightedString) * fontScaledSize + highlightBeginXOffset
+                        end
 
-                        gl.Rect(textX + highlightBeginXOffset, lineY, textX + highlightEndXOffset, lineY + trueLineHeight)
+                        gl_Rect(textX + highlightBeginXOffset, lineY, textX + highlightEndXOffset, lineY + trueLineHeight)
                     end
+                elseif displayIndexOfCharacterAfterSelectionEnd <= lineStart then
+                    break
                 end
             end
         end

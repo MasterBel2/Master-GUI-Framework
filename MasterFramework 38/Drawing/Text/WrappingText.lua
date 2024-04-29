@@ -52,11 +52,11 @@ function framework:WrappingText(string, color, font, maxLines)
 	-- Returns the index of the matching character in the display string.
 	-- If we were provided the index of a removed space, we'll return a second result - `true` - to indicate as such.
 	-- Reminder, some characters might be changed (e.g. " " to "\n") and they won't be flagged.
-	function wrappingText:RawIndexToDisplayIndex(rawIndex)
-		local addedCharactersIndex = 1
-		local removedSpacesIndex = 1
+	function wrappingText:RawIndexToDisplayIndex(rawIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
+		local addedCharactersIndex = addedCharactersIndex or 1
+		local removedSpacesIndex = removedSpacesIndex or 1
 
-		local computedOffset = 0
+		local computedOffset = computedOffset or 0
 
 		while (addedCharacters[addedCharactersIndex] <= rawIndex + computedOffset) or (removedSpaces[removedSpacesIndex] <= rawIndex) do
 			if addedCharacters[addedCharactersIndex] < removedSpaces[removedSpacesIndex] then
@@ -72,7 +72,7 @@ function framework:WrappingText(string, color, font, maxLines)
 			end
 		end
 
-		return rawIndex + computedOffset, rawIndex == removedSpaces[removedSpacesIndex - 1]
+		return rawIndex + computedOffset, addedCharactersIndex, removedSpacesIndex, computedOffset, rawIndex == removedSpaces[removedSpacesIndex - 1]
 	end
 
 	-- Returns the index of the matching character in the raw string. 
@@ -111,31 +111,26 @@ function framework:WrappingText(string, color, font, maxLines)
 		local glFont = font.glFont
 		local scaledFontSize = font:ScaledSize()
 
-		local lines, lineStarts, lineEnds = wrappedText:lines()
+		local lineStarts, lineEnds = wrappedText:lines_MasterFramework()
 
-		local lineIndex = math_min(#lines, math_max(1, #lines - math_floor(yOffset / (glFont.lineheight * scaledFontSize))))
+		local lineIndex = math_min(#lineStarts, math_max(1, #lineStarts - math_floor(yOffset / (glFont.lineheight * scaledFontSize))))
 		
 		if lineIndex == 0 then return 1 end
 
-		local line = lines[lineIndex]
 		local lineStart = lineStarts[lineIndex]
 		local lineEnd = lineEnds[lineIndex]
 
 		local elapsedWidth = 0
 
-		local i = 1
-		while i <= line:len() do
-			local character = line:sub(i, i)
+		local i = 0
+		while i <= (lineEnd - lineStart) do
+			local character = wrappedText:sub(lineStart + i, lineStart + i)
 			if character == "\255" then
 				i = i + 4
 			else
 				local characterWidth = glFont:GetTextWidth(character) * scaledFontSize
-				if elapsedWidth + characterWidth > xOffset then
-					if xOffset - elapsedWidth > characterWidth / 2 then
-						return lineStart + i
-					else
-						return lineStart + i - 1
-					end
+				if (characterWidth > 0) and (elapsedWidth + characterWidth / 2 > xOffset) then
+					return lineStart + i
 				end
 
 				elapsedWidth = elapsedWidth + characterWidth
@@ -143,7 +138,7 @@ function framework:WrappingText(string, color, font, maxLines)
 			end
 		end
 
-		return lineEnd + 1
+		return lineEnd + 1 -- index before line break; see string:lines_MasterFramework for more details on how the indices are generated
 	end
 
 	-- Converts a screen coordinate to an index in the raw string.

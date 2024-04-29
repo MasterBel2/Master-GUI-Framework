@@ -149,25 +149,26 @@ end
 -- Returns information about the lines (separated by "\n").
 --
 -- Return values:
--- - _lines:     an array of the string value of each line (not including its "\n" character)
 -- - lineStarts: an array of the indices in the original string of the first character of each line
 -- - lineEnds:   an array of the indices in the original string of the last character of each line
+-- - lines:      an optional array of the string value of each line (not including its "\n" character). Provide a `true` argument to `string:lines_MasterFramework` to gather the substrings.
 -- 
 -- for example:
 -- ```
 -- local originalString = "testing123\ntesting456\ntesting789"
--- local lines, lineStarts, lineEnds = originalString:lines()
+-- local lineStarts, lineEnds, lines = originalString:lines_MasterFramework(true)
 -- Spring.Echo(lines[2]) -- outputs "testing456"
 -- Spring.Echo(originalString:sub(lineStarts[2], lineEnds[2])) -- outputs "testing456"
 -- ```
 --
 -- "\r" is not treated as a special character, and will remain in the resulting string.
-function string:lines()
+function string:lines_MasterFramework(shouldGatherLines)
     local searchIndex = 1
-    local _lines = {}
     local lineStarts = {}
     local lineEnds = {}
+    local lines = shouldGatherLines and {}
 
+    local lineCount = 0
     while searchIndex <= self:len() + 1 do
         local lineBreakIndex, _ = self:find("\n", searchIndex)
         
@@ -175,14 +176,17 @@ function string:lines()
             lineBreakIndex = self:len() + 1
         end
 
-        table.insert(_lines, self:sub(searchIndex, lineBreakIndex - 1))
-        table.insert(lineStarts, searchIndex)
-        table.insert(lineEnds, lineBreakIndex - 1)
+        lineCount = lineCount + 1
+        lineStarts[lineCount] = searchIndex -- searchIndex == lineBreakIndex if we have two newlines in a row
+        lineEnds[lineCount] = lineBreakIndex - 1
+        if shouldGatherLines then
+            lines[lineCount] = self:sub(searchIndex, lineBreakIndex - 1)
+        end
 
         searchIndex = lineBreakIndex + 1
     end
 
-    return _lines, lineStarts, lineEnds
+    return lineStarts, lineEnds, lines
 end
 
 -- Inserts a new string such that it starts at the given index.
