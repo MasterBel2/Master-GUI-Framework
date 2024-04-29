@@ -2,6 +2,7 @@ local math = Include.math
 local Internal = Internal
 local gl = Include.gl
 local table_insert = Include.table.insert
+local os_clock = Include.os.clock
 
 -- Selection indices ranges from 1 (before the first character) to string:len() + 1 (after the last character)
 -- Consider that to changing to 0 (before the first character) to string:len() (after the first character)
@@ -18,6 +19,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     local focused
 
     local selectFrom
+    local selectionChangedClock = os_clock()
 
     local selectedStroke = framework:Stroke(framework:Dimension(2), framework.color.hoverColor)
     local textStack = framework:StackInPlace({ entry.text, entry.placeholder }, 0, 0)
@@ -42,6 +44,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
             selectedStroke.color = framework.color.pressColor
             background.decorations[2] = selectedStroke
+
+            selectionChangedClock = os_clock()
             
             return true
         end,
@@ -62,6 +66,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
                     selectFrom = "begin"
                 end
             end
+
+            selectionChangedClock = os_clock()
             
             -- if framework.PointIsInRect(mouseX, mouseY, responder:Geometry()) then
             --     selectedStroke.color = pressColor
@@ -240,6 +246,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     end
 
     function entry:KeyPress(key, mods, isRepeat)
+        selectionChangedClock = os_clock()
+
         if key == 0x08 then
             self:editBackspace()
             return true
@@ -334,7 +342,9 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
                     framework.color.hoverColor:Set()
 
                     if self.selectionBegin == self.selectionEnd then
-                        gl.Rect(textX + highlightBeginXOffset - 0.5, lineY, textX + highlightBeginXOffset + 0.5, lineY + trueLineHeight)
+                        if math.floor(os_clock() - selectionChangedClock) % 2 == 0 then
+                            gl.Rect(textX + highlightBeginXOffset - 0.5, lineY, textX + highlightBeginXOffset + 0.5, lineY + trueLineHeight)
+                        end
                         return
                     else
                         local highlightedString = line:sub(highlightBeginIndex, highlightEndIndex - 1)

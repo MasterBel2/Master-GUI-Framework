@@ -104,6 +104,7 @@ function widget:Initialize()
         unpack = unpack,
         loadstring = loadstring,
         setfenv = setfenv,
+		os = os,
 
         widgetHandler = widgetHandler,
 
