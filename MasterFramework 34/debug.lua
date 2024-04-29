@@ -42,17 +42,23 @@ function Error(...)
 	Spring_Echo(errorString)
 end
 
-function debugDescriptionString(table, name, indentation)
+function debugDescriptionString(table, name, indentation, describedTables)
+	describedTables = describedTables or {}
 	local description = ""
-    indentation = indentation or 0
+	indentation = indentation or 0
 	description = "\255\100\100\100" .. string.rep("| ", indentation) .. "\255\001\255\001Table: " .. tostring(name)
-    for key, value in pairs(table) do
-        if type(value) == "table" then
-            description = description .. "\n" .. debugDescriptionString(value, key, indentation + 1)
-        else
-            description = description .. "\n\255\100\100\100" .. string.rep("| ", indentation + 1) .. "\255\255\255\255" .. tostring(key) .. "\255\100\100\100:\255\255\255\255 " .. tostring(value)
-        end
-    end
+	if describedTables[table] then
+		description = description .. "\255\255\001\001(Previously described)"
+	else
+		describedTables[table] = true
+		for key, value in pairs(table) do
+			if type(value) == "table" then
+				description = description .. "\n" .. debugDescriptionString(value, key, indentation + 1)
+			else
+				description = description .. "\n\255\100\100\100" .. string.rep("| ", indentation + 1) .. "\255\255\255\255" .. tostring(key) .. "\255\100\100\100:\255\255\255\255 " .. tostring(value)
+			end
+		end
+	end
 
 	return description
 end
