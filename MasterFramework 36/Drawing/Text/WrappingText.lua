@@ -1,4 +1,8 @@
 local math = Include.math
+local math_floor = Include.math.floor
+local math_huge = Include.math.huge
+local math_max = Include.math.max
+local math_min = Include.math.min
 local table = Include.table
 local ipairs = Include.ipairs
 local Internal = Internal
@@ -8,7 +12,7 @@ local Internal = Internal
 --
 -- Note that raw/display index conversion updates only on layout, so between when the raw string is updated and layout occurs, index conversion to or from the display string will be invalid.
 function framework:WrappingText(string, color, font, maxLines)
-	maxLines = maxLines or math.huge
+	maxLines = maxLines or math_huge
 	font = font or framework.defaultFont
 	local wrappingText = {
 		color = color or framework.color.white,
@@ -82,7 +86,7 @@ function framework:WrappingText(string, color, font, maxLines)
 
 		local computedOffset = 0
 
-		while math.min(addedCharacters[addedCharactersIndex], removedSpaces[removedSpacesIndex] - computedOffset) <= displayIndex do
+		while math_min(addedCharacters[addedCharactersIndex], removedSpaces[removedSpacesIndex] - computedOffset) <= displayIndex do
 			if addedCharacters[addedCharactersIndex] < removedSpaces[removedSpacesIndex] then
 				computedOffset = computedOffset - 1
 				addedCharactersIndex = addedCharactersIndex + 1
@@ -104,9 +108,12 @@ function framework:WrappingText(string, color, font, maxLines)
 		local xOffset = x - cachedX
 		local yOffset = y - cachedY
 
+		local glFont = font.glFont
+		local scaledFontSize = font:ScaledSize()
+
 		local lines, lineStarts, lineEnds = wrappedText:lines()
 
-		local lineIndex = math.min(#lines, math.max(1, #lines - math.floor(yOffset / (font.glFont.lineheight * font:ScaledSize()))))
+		local lineIndex = math_min(#lines, math_max(1, #lines - math_floor(yOffset / (glFont.lineheight * scaledFontSize))))
 		
 		if lineIndex == 0 then return 1 end
 
@@ -122,7 +129,7 @@ function framework:WrappingText(string, color, font, maxLines)
 			if character == "\255" then
 				i = i + 4
 			else
-				local characterWidth = font.glFont:GetTextWidth(character) * font:ScaledSize()
+				local characterWidth = glFont:GetTextWidth(character) * scaledFontSize
 				if elapsedWidth + characterWidth > xOffset then
 					if xOffset - elapsedWidth > characterWidth / 2 then
 						return lineStart + i
@@ -152,9 +159,10 @@ function framework:WrappingText(string, color, font, maxLines)
 	end
 
 	function wrappingText:Layout(availableWidth, availableHeight)
-		availableWidth = math.min(availableWidth, 2147483647) -- if we allow math.huge, `glFont:WrapText()` will fail. 
-		availableHeight = math.min(availableHeight, 2147483647)
+		availableWidth = math_min(availableWidth, 2147483647) -- if we allow math.huge, `glFont:WrapText()` will fail. 
+		availableHeight = math_min(availableHeight, 2147483647)
 		local fontScaledSize = font:ScaledSize()
+		local glFont = font.glFont
 		if availableWidth == cachedAvailableWidth and availableHeight == cachedAvailableHeight and not stringChanged and fontScaledSize == cachedFontScaledSize and font.key == cachedFontKey then
 			return cachedWidth, cachedHeight
 		end
@@ -165,15 +173,15 @@ function framework:WrappingText(string, color, font, maxLines)
 		cachedAvailableWidth, cachedAvailableHeight = availableWidth, availableHeight
 		local coloredText = self:ColoredString(string)
 
-		local trueLineHeight = cachedFontScaledSize * font.glFont.lineheight
-		local maxHeight = math.min(availableHeight, maxLines * trueLineHeight)
+		local trueLineHeight = cachedFontScaledSize * glFont.lineheight
+		local maxHeight = math_min(availableHeight, maxLines * trueLineHeight)
 
 		-- `glFont:WrapText()` appears to consistently return a number (SLIGHTLY!) greater than availableWidth, probably due to floating-point math.
 		-- Providing it an extra 0.1 width doesn't allow any extra characters through, but prevents the rounding error from messing us up.
 		-- We won't report any this extra width to our parent, by clamping at availableWidth.
-		wrappedText, lineCount = font.glFont:WrapText(coloredText, availableWidth + 0.1, maxHeight, cachedFontScaledSize) -- Apparently this adds an extra character ("\r") even when line breaks already
-		cachedWidth = math.min(font.glFont:GetTextWidth(wrappedText) * cachedFontScaledSize, availableWidth)
-		cachedHeight = math.min(maxHeight, lineCount * trueLineHeight)
+		wrappedText, lineCount = glFont:WrapText(coloredText, availableWidth + 0.1, maxHeight, cachedFontScaledSize) -- Apparently this adds an extra character ("\r") even when line breaks already
+		cachedWidth = math_min(glFont:GetTextWidth(wrappedText) * cachedFontScaledSize, availableWidth)
+		cachedHeight = math_min(maxHeight, lineCount * trueLineHeight)
 
 		local addedCharacterCount = 0
 		addedCharacters = {}
@@ -199,8 +207,8 @@ function framework:WrappingText(string, color, font, maxLines)
 			end
 		end
 
-		addedCharacters[addedCharacterCount + 1] = math.huge -- for iteration purposes
-		removedSpaces[removedSpacesCount + 1] = math.huge -- for iteration purposes
+		addedCharacters[addedCharacterCount + 1] = math_huge -- for iteration purposes
+		removedSpaces[removedSpacesCount + 1] = math_huge -- for iteration purposes
 
 		self.addedCharacters = addedCharacters -- display indices
 		self.removedSpaces = removedSpaces -- display indices
