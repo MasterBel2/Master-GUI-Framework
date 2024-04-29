@@ -296,8 +296,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     function entry:Position(_x, _y)
         x = _x
         y = _y
-        table_insert(activeDrawingGroup.drawTargets, self)
         selectionDetector:Position(x, y)
+        table_insert(activeDrawingGroup.drawTargets, self)
     end
 
     function entry:Draw()
@@ -331,8 +331,9 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
                     local lineY = textY + textHeight - highlightYOffset
 
+                    framework.color.hoverColor:Set()
+
                     if self.selectionBegin == self.selectionEnd then
-                        framework.color.hoverColor:Set()
                         gl.Rect(textX + highlightBeginXOffset - 0.5, lineY, textX + highlightBeginXOffset + 0.5, lineY + trueLineHeight)
                         return
                     else
