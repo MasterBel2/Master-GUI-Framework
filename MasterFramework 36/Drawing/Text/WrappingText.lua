@@ -46,31 +46,57 @@ function framework:WrappingText(string, color, font, maxLines)
 	end
 
 	-- Returns the index of the matching character in the display string.
+	-- If we were provided the index of a removed space, we'll return a second result - `true` - to indicate as such.
+	-- Reminder, some characters might be changed (e.g. " " to "\n") and they won't be flagged.
 	function wrappingText:RawIndexToDisplayIndex(rawIndex)
-		for breakNumber, breakIndex in ipairs(addedCharacters) do
-			if breakIndex - breakNumber >= rawIndex then
-				return rawIndex + (breakNumber - 1)
+		local addedCharactersIndex = 1
+		local removedSpacesIndex = 1
+
+		local computedOffset = 0
+
+		while (addedCharacters[addedCharactersIndex] <= rawIndex + computedOffset) or (removedSpaces[removedSpacesIndex] <= rawIndex) do
+			if addedCharacters[addedCharactersIndex] < removedSpaces[removedSpacesIndex] then
+				computedOffset = computedOffset + 1
+				addedCharactersIndex = addedCharactersIndex + 1
+			elseif addedCharacters[addedCharactersIndex] == removedSpaces[removedSpacesIndex] then
+				-- count them as swapped, no change to offset
+				addedCharactersIndex = addedCharactersIndex + 1
+				removedSpacesIndex = removedSpacesIndex + 1
+			elseif addedCharacters[addedCharactersIndex] > removedSpaces[removedSpacesIndex] then
+				computedOffset = computedOffset - 1
+				removedSpacesIndex = removedSpacesIndex + 1
 			end
 		end
-		return rawIndex + #addedCharacters
+
+		return rawIndex + computedOffset, rawIndex == removedSpaces[removedSpacesIndex - 1]
 	end
+
 	-- Returns the index of the matching character in the raw string. 
 	-- 
 	-- If the detected character was added, we'll just return the next character that wasn't added.
-	-- If we provide the index of an added character, we'll return a second result - `true` - to indicate as such.
+	-- If we were provided provide the index of an added character, we'll return a second result - `true` - to indicate as such.
 	-- Reminder, some characters might be changed (e.g. " " to "\n") and they won't be flagged.
 	function wrappingText:DisplayIndexToRawIndex(displayIndex)
-		for breakNumber, breakIndex in ipairs(addedCharacters) do
-			if breakIndex == displayIndex then
-				for i = 1, #addedCharacters - breakNumber do
-					return breakIndex - breakNumber + 1, true
-				end
-			elseif breakIndex > displayIndex then
-				return displayIndex - (breakNumber - 1)
+		local addedCharactersIndex = 1
+		local removedSpacesIndex = 1
+
+		local computedOffset = 0
+
+		while math.min(addedCharacters[addedCharactersIndex], removedSpaces[removedSpacesIndex] - computedOffset) <= displayIndex do
+			if addedCharacters[addedCharactersIndex] < removedSpaces[removedSpacesIndex] then
+				computedOffset = computedOffset - 1
+				addedCharactersIndex = addedCharactersIndex + 1
+			elseif addedCharacters[addedCharactersIndex] == removedSpaces[removedSpacesIndex] then
+				-- count them as swapped, no change to offset
+				addedCharactersIndex = addedCharactersIndex + 1
+				removedSpacesIndex = removedSpacesIndex + 1
+			elseif addedCharacters[addedCharactersIndex] > removedSpaces[removedSpacesIndex] then
+				computedOffset = computedOffset + 1
+				removedSpacesIndex = removedSpacesIndex + 1
 			end
 		end
-		-- We hit this if the last character was not an added character
-		return displayIndex - #addedCharacters, (#addedCharacters > 0)
+
+		return displayIndex + computedOffset, addedCharacters[addedCharactersIndex - 1] == displayIndex
 	end
 
 	-- Converts a screen coordinate to an index in the display string. 
@@ -149,16 +175,35 @@ function framework:WrappingText(string, color, font, maxLines)
 		cachedWidth = math.min(font.glFont:GetTextWidth(wrappedText) * cachedFontScaledSize, availableWidth)
 		cachedHeight = math.min(maxHeight, lineCount * trueLineHeight)
 
+		local addedCharacterCount = 0
 		addedCharacters = {}
+		local removedSpacesCount = 0
+		removedSpaces = {}
 		for i = 1, wrappedText:len() do
 			local displayCharacter = wrappedText:sub(i, i)
-			local rawCharacter = string:sub(i - #addedCharacters, i - #addedCharacters)
-			if displayCharacter ~= rawCharacter and not (displayCharacter == "\n" and rawCharacter == " ") then
-				table.insert(addedCharacters, i)
+
+			for j = i - #addedCharacters + #removedSpaces, #string do
+				local rawCharacter = string:sub(j, j)
+				if displayCharacter ~= rawCharacter then
+					if rawCharacter == " " then
+						removedSpacesCount = removedSpacesCount + 1
+						removedSpaces[removedSpacesCount] = j
+					else
+						addedCharacterCount = addedCharacterCount + 1
+						addedCharacters[addedCharacterCount] = i
+						break
+					end
+				else
+					break
+				end
 			end
 		end
 
-		self.addedCharacters = addedCharacters
+		addedCharacters[addedCharacterCount + 1] = math.huge -- for iteration purposes
+		removedSpaces[removedSpacesCount + 1] = math.huge -- for iteration purposes
+
+		self.addedCharacters = addedCharacters -- display indices
+		self.removedSpaces = removedSpaces -- display indices
 		
 		return cachedWidth, cachedHeight
 	end
