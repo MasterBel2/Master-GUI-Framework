@@ -4,6 +4,8 @@ local gl = Include.gl
 local table_insert = Include.table.insert
 local os_clock = Include.os.clock
 
+local Spring_GetClipboard = Include.Spring.GetClipboard
+local Spring_SetClipboard = Include.Spring.SetClipboard
 -- Selection indices ranges from 1 (before the first character) to string:len() + 1 (after the last character)
 -- Consider that to changing to 0 (before the first character) to string:len() (after the first character)
 function framework:TextEntry(string, placeholderString, color, font, maxLines)
@@ -13,8 +15,17 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         placeholder = framework:Text(placeholderString, framework:Color(color.r, color.g, color.b, 0.3), font, 1),
         selectionBegin = string:len() + 1, 
         selectionEnd = string:len() + 1, 
-        canLoseFocus = false
+        canLoseFocus = false,
+
+        undoSingleCharAppendable = false,
+
     }
+
+    local undoLog = {}
+    local redoLog = {}
+
+    local undoOffset = 0
+    local redoOffset = -1
 
     local focused
 
@@ -95,33 +106,89 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
     function entry:editBackspace(isCtrl)
         local string = self.text:GetRawString()
-        
-        if self.selectionBegin == self.selectionEnd then -- Point select
-            if self.selectionBegin == 1 then return true end
-            string = string:sub(1, self.selectionBegin - 2)  .. string:sub(self.selectionEnd, string:len())
-    
-            self.selectionBegin = self.selectionBegin - 1
-        else -- Block select
-            string = string:sub(1, self.selectionBegin - 1) .. string:sub(self.selectionEnd, string:len())
+
+        local selectionBegin = self.selectionBegin
+        local selectionEnd = self.selectionEnd
+
+        local deletedText
+        if selectionBegin == selectionEnd then
+            deletedText = string:sub(selectionBegin - 1, selectionBegin - 1)
+        else
+            deletedText = string:sub(selectionBegin, selectionEnd - 1)
         end
-        
-        self.selectionEnd = self.selectionBegin
+
+        local function redoAction()
+            local string = entry.text:GetRawString()
+
+            if selectionBegin == selectionEnd then
+                if selectionBegin == 1 then return true end
+                string = string:sub(1, selectionBegin - 2) .. string:sub(selectionEnd)
+                self.selectionBegin = selectionBegin - 1
+            else
+                string = string:sub(1, selectionBegin - 1) .. string:sub(selectionEnd)
+                self.selectionBegin = selectionBegin
+            end
     
-        self.text:SetString(string)
+            self.selectionEnd = self.selectionBegin
+
+            entry.text:SetString(string)
+        end
+
+        self:InsertUndoAction(function()
+            local string = entry.text:GetRawString()
+            if selectionBegin == selectionEnd then
+                entry.text:SetString(string:sub(1, selectionBegin - 2) .. deletedText .. string:sub(selectionBegin - 1))
+                entry.selectionBegin = selectionBegin
+            else
+                entry.text:SetString(string:sub(1, selectionBegin - 1) .. deletedText .. string:sub(selectionBegin))
+                entry.selectionBegin = selectionBegin + deletedText:len()
+            end
+
+            
+            entry.selectionEnd = entry.selectionBegin
+        end, redoAction)
+
+        redoAction()
     end
     
     function entry:editDelete(isCtrl)
-        local string = self.text:GetRawString()
-    
-        if self.selectionBegin == self.selectionEnd then
-            string = string:sub(1, self.selectionBegin - 1) .. string:sub(self.selectionEnd + 1, string:len())
+        local string = entry.text:GetRawString()
+
+        local selectionBegin = self.selectionBegin
+        local selectionEnd = self.selectionEnd
+
+        local deletedText
+        if selectionBegin == selectionEnd then
+            deletedText = string:sub(selectionBegin, selectionBegin)
         else
-            string = string:sub(1, self.selectionBegin - 1) .. string:sub(self.selectionEnd, string:len())
+            deletedText = string:sub(selectionBegin, selectionEnd - 1)
         end
 
-        self.selectionEnd = self.selectionBegin
+        local function redoAction()
+            local string = entry.text:GetRawString()
 
-        self.text:SetString(string)
+            if selectionBegin == selectionEnd then
+                string = string:sub(1, selectionBegin - 1) .. string:sub(selectionEnd + 1)
+            else
+                string = string:sub(1, selectionBegin - 1) .. string:sub(selectionEnd)
+            end
+    
+            self.selectionBegin = selectionBegin
+            self.selectionEnd = self.selectionBegin
+
+            entry.text:SetString(string)
+        end
+
+        self:InsertUndoAction(function()
+            local string = entry.text:GetRawString()
+
+            entry.text:SetString(string:sub(1, selectionBegin - 1) .. deletedText .. string:sub(selectionBegin))
+
+            entry.selectionBegin = selectionBegin
+            entry.selectionEnd = entry.selectionBegin
+        end, redoAction)
+
+        redoAction()
     end
 
     function entry:editPrevious(isShift, isCtrl)
@@ -215,34 +282,55 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     -- function entry:editNextWord() --[[Not implemented]] end
 
     function entry:editReturn(isCtrl)
-        local string = self.text:GetRawString()
-        
-        if self.selectionBegin == self.selectionEnd then -- Point select
-            if self.selectionBegin == 1 then return true end
-            string = string:sub(1, self.selectionBegin) .. "\n".. string:sub(self.selectionEnd + 1, string:len())
-    
-            self.selectionBegin = self.selectionBegin + 1
-        else -- Block select
-            string = string:sub(1, self.selectionBegin) .. "\n" .. string:sub(self.selectionEnd, string:len())
-        end
-        
-        self.selectionEnd = self.selectionBegin
-    
-        self.text:SetString(string)
+        self:InsertText("\n")
     end
     
     function entry:editEscape()
         self:ReleaseFocus()
     end
 
-    function entry:TextInput(char)
+    function entry:InsertUndoAction(undoAction, redoAction)
+        local undoLogLength = #undoLog
+        for i = 1, undoOffset do
+            undoLog[#undoLog - undoOffset + i] = nil
+            redoLog[#redoLog - undoOffset + i] = nil
+        end
+        
+        undoOffset = 0
+
+        undoLog[#undoLog + 1] = undoAction
+        redoLog[#redoLog + 1] = redoAction
+    end
+
+    function entry:InsertText(newText)
+        local selectionBegin = self.selectionBegin
+        local selectionEnd = self.selectionEnd
+
         local string = self.text:GetRawString()
+        
+        local replacedText = string:sub(selectionBegin, selectionEnd - 1)
 
-        string = string:sub(1, self.selectionBegin - 1) .. char .. string:sub(self.selectionEnd)
-        self.text:SetString(string)
+        local function redoAction()
+            local string = entry.text:GetRawString()
+            entry.text:SetString(string:sub(1, selectionBegin - 1) .. newText .. string:sub(selectionEnd))
 
-        self.selectionBegin = self.selectionBegin + char:len()
-        self.selectionEnd = self.selectionBegin
+            entry.selectionBegin = selectionBegin + newText:len()
+            entry.selectionEnd = entry.selectionBegin
+        end
+
+        self:InsertUndoAction(function()
+            local string = entry.text:GetRawString()
+            entry.text:SetString(string:sub(1, selectionBegin - 1) .. replacedText .. string:sub(selectionBegin + newText:len()))
+            
+            entry.selectionBegin = selectionBegin + replacedText:len()
+            entry.selectionEnd = entry.selectionBegin
+        end, redoAction)
+        
+        redoAction()
+    end
+
+    function entry:TextInput(char)
+        entry:InsertText(char)
     end
 
     function entry:KeyPress(key, mods, isRepeat)
@@ -266,6 +354,53 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         elseif key == 0x0D or key == 0x10F then
             self:editReturn(mods.ctrl)
             return true
+        elseif key == 0x0D or key == 0x10F then
+            self:editReturn(mods.ctrl)
+            return true
+        elseif key == 0x63 and mods.ctrl then 
+            self:editCopy()
+            return true
+        elseif key == 0x78 and mods.ctrl then
+            self:editCut()
+            return true
+        elseif key == 0x76 and mods.ctrl then
+            self:editPaste()
+            return true
+        elseif key == 0x7A and mods.ctrl and not mods.shift then
+            self:editUndo()
+            return true
+        elseif key == 0x7A and mods.ctrl and mods.shift then
+            self:editRedo()
+            return true
+        end
+    end
+
+    function entry:editCopy()
+        if self.selectionBegin ~= self.selectionEnd then
+            Spring_SetClipboard(self.text:GetRawString():sub(self.selectionBegin, self.selectionEnd - 1))
+        end
+    end
+    function entry:editPaste()
+        self:InsertText(Spring_GetClipboard())
+    end
+    function entry:editCut()
+        if self.selectionBegin ~= self.selectionEnd then
+            Spring_SetClipboard(self.text:GetRawString():sub(self.selectionBegin, self.selectionEnd - 1))
+            self:InsertText("")
+        end
+    end
+    function entry:editUndo()
+        local currentUndo = undoLog[#undoLog - undoOffset]
+        if currentUndo then
+            currentUndo()
+            undoOffset = undoOffset + 1
+        end
+    end
+    function entry:editRedo()
+        local currentRedo = redoLog[#redoLog - (undoOffset - 1)]
+        if currentRedo then
+            currentRedo()
+            undoOffset = undoOffset - 1
         end
     end
 
