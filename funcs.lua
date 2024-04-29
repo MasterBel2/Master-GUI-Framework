@@ -168,7 +168,7 @@ function string:lines()
     local lineStarts = {}
     local lineEnds = {}
 
-    while searchIndex < self:len() do
+    while searchIndex <= self:len() + 1 do
         local lineBreakIndex, _ = self:find("\n", searchIndex)
         
         if not lineBreakIndex then
