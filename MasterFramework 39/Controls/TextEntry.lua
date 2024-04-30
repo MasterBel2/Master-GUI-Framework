@@ -10,6 +10,9 @@ local math_max = math.max
 local math_min = math.min
 local math_floor = math.floor
 
+local forwardCtrlSkipPattern = "[%s\n]*[^%s\n]+[%s\n]"
+local reverseCtrlSkipPattern = "[%s\n][^%s\n]+[%s\n]*$"
+
 local Spring_GetClipboard = Include.Spring.GetClipboard
 local Spring_SetClipboard = Include.Spring.SetClipboard
 -- Selection indices ranges from 1 (before the first character) to string:len() + 1 (after the last character)
@@ -118,7 +121,13 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
         local deletedText
         if selectionBegin == selectionEnd then
-            deletedText = string:sub(selectionBegin - 1, selectionBegin - 1)
+            if selectionBegin == 1 then return true end
+            if isCtrl then
+                local begin = self.text:GetRawString():sub(1, self.selectionBegin - 1):find(reverseCtrlSkipPattern)
+                deletedText = string:sub(begin + 1, selectionBegin - 1)
+            else
+                deletedText = string:sub(selectionBegin - 1, selectionBegin - 1)
+            end
         else
             deletedText = string:sub(selectionBegin, selectionEnd - 1)
         end
@@ -127,9 +136,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             local string = entry.text:GetRawString()
 
             if selectionBegin == selectionEnd then
-                if selectionBegin == 1 then return true end
-                string = string:sub(1, selectionBegin - 2) .. string:sub(selectionEnd)
-                self.selectionBegin = selectionBegin - 1
+                string = string:sub(1, selectionBegin - 1 - deletedText:len()) .. string:sub(selectionBegin)
+                self.selectionBegin = selectionBegin - deletedText:len()
             else
                 string = string:sub(1, selectionBegin - 1) .. string:sub(selectionEnd)
                 self.selectionBegin = selectionBegin
@@ -143,7 +151,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         self:InsertUndoAction(function()
             local string = entry.text:GetRawString()
             if selectionBegin == selectionEnd then
-                entry.text:SetString(string:sub(1, selectionBegin - 2) .. deletedText .. string:sub(selectionBegin - 1))
+                entry.text:SetString(string:sub(1, selectionBegin - 1 - deletedText:len()) .. deletedText .. string:sub(selectionBegin - deletedText:len()))
                 entry.selectionBegin = selectionBegin
             else
                 entry.text:SetString(string:sub(1, selectionBegin - 1) .. deletedText .. string:sub(selectionBegin))
@@ -165,7 +173,12 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
         local deletedText
         if selectionBegin == selectionEnd then
-            deletedText = string:sub(selectionBegin, selectionBegin)
+            if isCtrl then
+                local _, blockEnd = string:find(forwardCtrlSkipPattern, selectionBegin)
+                deletedText = string:sub(selectionBegin, (blockEnd and (blockEnd - 1) or entry.text:GetRawString():len()))
+            else
+                deletedText = string:sub(selectionBegin, selectionBegin)
+            end
         else
             deletedText = string:sub(selectionBegin, selectionEnd - 1)
         end
@@ -174,7 +187,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             local string = entry.text:GetRawString()
 
             if selectionBegin == selectionEnd then
-                string = string:sub(1, selectionBegin - 1) .. string:sub(selectionEnd + 1)
+                string = string:sub(1, selectionBegin - 1) .. string:sub(selectionEnd + deletedText:len())
             else
                 string = string:sub(1, selectionBegin - 1) .. string:sub(selectionEnd)
             end
@@ -204,19 +217,12 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         end
 
         if isCtrl then
-            local string = self.text:GetRawString()
-            local reversedStringEnd = string:len()
-            local stringEnd = reversedStringEnd + 1
-            local reversed = string:reverse()
-            local reversedSelectionBegin = stringEnd - self.selectionBegin -- TODO: Check!
-            local reversedSelectionEnd = stringEnd - self.selectionEnd
-
             if selectFrom == "end" then
-                local newReversedPointerLocation = math_max(reversed:find("[%s]", reversedSelectionEnd) or reversedStringEnd, reversedStringEnd)
-                self.selectionEnd = stringEnd - newReversedPointerLocation
+                local begin = self.text:GetRawString():sub(1, self.selectionEnd - 1):find(reverseCtrlSkipPattern)
+                self.selectionEnd = (begin or 0) + 1
             else
-                local newReversedPointerLocation = math_max(reversed:find("[%s]", reversedSelectionBegin) or reversedStringEnd, reversedStringEnd)
-                self.selectionBegin = stringEnd - newReversedPointerLocation
+                local begin = self.text:GetRawString():sub(1, self.selectionBegin - 1):find(reverseCtrlSkipPattern)
+                self.selectionBegin = (begin or 0) + 1
             end
         elseif isShift or not selectFrom then
             if selectFrom == "end" then
@@ -255,9 +261,11 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
         if isCtrl then
             if selectFrom == "begin" then
-                self.selectionBegin = math_min(stringEnd, string:find("[%s]", self.selectionBegin) or stringEnd)
+                local _, matchEnd = string:find(forwardCtrlSkipPattern, self.selectionBegin)
+                self.selectionBegin = matchEnd or stringEnd
             else
-                self.selectionEnd = math_min(stringEnd, string:find("[%s]", self.selectionEnd) or stringEnd)
+                local _, matchEnd = string:find(forwardCtrlSkipPattern, self.selectionEnd)
+                self.selectionEnd = matchEnd or stringEnd
             end
         elseif isShift or not selectFrom then
             if selectFrom == "begin" then
@@ -343,10 +351,10 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         selectionChangedClock = os_clock()
 
         if key == 0x08 then
-            self:editBackspace()
+            self:editBackspace(mods.ctrl)
             return true
         elseif key == 0x7F then 
-            self:editDelete()
+            self:editDelete(mods.ctrl)
             return true
         elseif key == 0x1B then 
             self:editEscape()
@@ -356,9 +364,6 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             return true
         elseif key == 0x114 then
             self:editPrevious(mods.shift, mods.ctrl)
-            return true
-        elseif key == 0x0D or key == 0x10F then
-            self:editReturn(mods.ctrl)
             return true
         elseif key == 0x0D or key == 0x10F then
             self:editReturn(mods.ctrl)
