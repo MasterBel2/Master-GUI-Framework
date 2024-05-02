@@ -17,13 +17,18 @@ function framework:WrappingText(string, color, font, maxLines)
 	local wrappingText = {
 		color = color or framework.color.white,
 		_readOnly_font = font,
-		type = "Wrapping Text"
+		type = "Wrapping Text",
+
+		addedCharacters = {},
+		removedSpaces = {}
 	}
 
+	local coloredString
 	local wrappedText, lineCount
 	local cachedX, cachedY, cachedWidth, cachedHeight
 	local cachedAvailableWidth, cachedAvailableHeight, cachedFontKey, cachedFontScaledSize, cachedFontScaledSize
-	local addedCharacters = {}
+	local addedCharacters = wrappingText.addedCharacters
+	local removedSpaces = wrappingText.removedSpaces
 
 	local stringChanged = true
 
@@ -153,7 +158,7 @@ function framework:WrappingText(string, color, font, maxLines)
 		return rawString
 	end
 
-	function wrappingText:Layout(availableWidth, availableHeight)
+	function wrappingText:Layout(availableWidth, availableHeight, profile)
 		availableWidth = math_min(availableWidth, 2147483647) -- if we allow math.huge, `glFont:WrapText()` will fail. 
 		availableHeight = math_min(availableHeight, 2147483647)
 		local fontScaledSize = font:ScaledSize()
@@ -161,52 +166,64 @@ function framework:WrappingText(string, color, font, maxLines)
 		if availableWidth == cachedAvailableWidth and availableHeight == cachedAvailableHeight and not stringChanged and fontScaledSize == cachedFontScaledSize and font.key == cachedFontKey then
 			return cachedWidth, cachedHeight
 		end
+
+		if stringChanged then
+			coloredString = self:ColoredString(string)
+		end
+
 		cachedFontScaledSize = fontScaledSize
 		cachedFontKey = font.key
 		stringChanged = false
 
 		cachedAvailableWidth, cachedAvailableHeight = availableWidth, availableHeight
-		local coloredText = self:ColoredString(string)
 
 		local trueLineHeight = cachedFontScaledSize * glFont.lineheight
 		local maxHeight = math_min(availableHeight, maxLines * trueLineHeight)
 
-		-- `glFont:WrapText()` appears to consistently return a number (SLIGHTLY!) greater than availableWidth, probably due to floating-point math.
-		-- Providing it an extra 0.1 width doesn't allow any extra characters through, but prevents the rounding error from messing us up.
-		-- We won't report any this extra width to our parent, by clamping at availableWidth.
-		wrappedText, lineCount = glFont:WrapText(coloredText, availableWidth + 0.1, maxHeight, cachedFontScaledSize) -- Apparently this adds an extra character ("\r") even when line breaks already
+		wrappedText, lineCount = glFont:WrapText(coloredString, availableWidth + 0.1, maxHeight, cachedFontScaledSize) -- Apparently this adds an extra character ("\r") even when line breaks already
 		cachedWidth = math_min(glFont:GetTextWidth(wrappedText) * cachedFontScaledSize, availableWidth)
 		cachedHeight = math_min(maxHeight, lineCount * trueLineHeight)
 
 		local addedCharacterCount = 0
-		addedCharacters = {}
 		local removedSpacesCount = 0
-		removedSpaces = {}
-		for i = 1, wrappedText:len() do
-			local displayCharacter = wrappedText:sub(i, i)
 
-			for j = i - #addedCharacters + #removedSpaces, #string do
-				local rawCharacter = string:sub(j, j)
-				if displayCharacter ~= rawCharacter then
-					if rawCharacter == " " then
-						removedSpacesCount = removedSpacesCount + 1
-						removedSpaces[removedSpacesCount] = j
-					else
-						addedCharacterCount = addedCharacterCount + 1
-						addedCharacters[addedCharacterCount] = i
-						break
-					end
+		local i = 1
+		local j = 1
+		local string_sub = string.sub
+		local rawCharacter = string_sub(string, i, i)
+		local displayCharacter = string_sub(wrappedText, j, j)
+		local rawLength = string:len()
+		local displayLength = wrappedText:len()
+		while i <= rawLength and j <= displayLength do
+			if rawCharacter ~= displayCharacter then
+				if rawCharacter == " " then
+					removedSpacesCount = removedSpacesCount + 1
+					removedSpaces[removedSpacesCount] = i
+					i = i + 1
+					rawCharacter = string_sub(wrappedText, i, i)
 				else
-					break
+					addedCharacterCount = addedCharacterCount + 1
+					addedCharacters[addedCharacterCount] = j
+					j = j + 1
+					displayCharacter = string_sub(wrappedText, j, j)
 				end
+			else
+				i = i + 1
+				rawCharacter = string_sub(string, i, i)
+				j = j + 1
+				displayCharacter = string_sub(wrappedText, j, j)
 			end
 		end
 
 		addedCharacters[addedCharacterCount + 1] = math_huge -- for iteration purposes
 		removedSpaces[removedSpacesCount + 1] = math_huge -- for iteration purposes
 
-		self.addedCharacters = addedCharacters -- display indices
-		self.removedSpaces = removedSpaces -- display indices
+		for i = addedCharacterCount + 2, #addedCharacters do
+			addedCharacters[i] = nil
+		end
+		for i = removedSpacesCount + 2, #removedSpaces do
+			removedSpaces[i] = nil
+		end
 		
 		return cachedWidth, cachedHeight
 	end
