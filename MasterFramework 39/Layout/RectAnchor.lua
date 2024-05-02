@@ -6,6 +6,15 @@ function framework:RectAnchor(rectToAnchorTo, anchoredRect, xAnchor, yAnchor)
 
 	local rectToAnchorToWidth,rectToAnchorToHeight,anchoredRectWidth,anchoredRectHeight
 
+	local cachedAnchorTo
+	local cachedAnchoredRect
+	local cachedXAnchor
+	local cachedYAnchor
+
+	function anchor:NeedsLayout()
+		return cachedAnchorTo ~= self.rectToAnchorTo or cachedAnchoredRect ~= self.anchoredRect or cachedXAnchor ~= self.xAnchor or cachedYAnchor ~= self.yAnchor or cachedAnchorTo:NeedsLayout() or cachedAnchoredRect:NeedsLayout()
+	end
+
 	function rectAnchor:Layout(availableWidth, availableHeight)
 		anchoredRectWidth, anchoredRectHeight = self.anchoredRect:Layout(availableWidth, availableHeight)
 		rectToAnchorToWidth, rectToAnchorToHeight = self.rectToAnchorTo:Layout(availableWidth, availableHeight)
@@ -15,8 +24,10 @@ function framework:RectAnchor(rectToAnchorTo, anchoredRect, xAnchor, yAnchor)
 	function rectAnchor:Position(x, y)
 		local rectToAnchorTo = self.rectToAnchorTo
 		local anchoredRect = self.anchoredRect
+		cachedXAnchor = self.xAnchor
+		cachedYAnchor = self.yAnchor
 		rectToAnchorTo:Position(x, y)
-		anchoredRect:Position(x + floor((rectToAnchorToWidth - anchoredRectWidth) * self.xAnchor), y + floor((rectToAnchorToHeight - anchoredRectHeight) * self.yAnchor))
+		anchoredRect:Position(x + floor((rectToAnchorToWidth - anchoredRectWidth) * cachedXAnchor), y + floor((rectToAnchorToHeight - anchoredRectHeight) * cachedYAnchor))
 	end
 	return rectAnchor
 end

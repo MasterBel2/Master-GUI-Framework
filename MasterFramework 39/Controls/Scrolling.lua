@@ -8,7 +8,7 @@ framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL = 1
 framework.OFFSETED_VIEWPORT_MODE_VERTICAL = 2
 
 function framework:OffsettedViewport(body, mode)
-    local viewport = { yOffset = 0, xOffset = 0, contentHeight = 0, contentWidth = 0 }
+    local viewport = { contentHeight = 0, contentWidth = 0 }
 
     if (not mode) or mode < 0 or mode > 2 then
         error("OffsettedViewport mode must be one of `framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL_VERTICAL`, `framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL`, and `framework.OFFSETED_VIEWPORT_MODE_VERTICAL`")
@@ -28,12 +28,30 @@ function framework:OffsettedViewport(body, mode)
     local height = 0
     local _x = 0
     local _y = 0
+    local xOffset = 0
+    local yOffset = 0
+
+    local offsetsUpdated = true
+
+    function viewport:GetOffsets()
+        return xOffset, yOffset
+    end
+
+    function viewport:SetXOffset(_xOffset)
+        xOffset = _xOffset
+        offsetsUpdated = true
+    end
+    function viewport:SetYOffset(_yOffset)
+        yOffset = _yOffset
+        offsetsUpdated = true
+    end
 
     local draggingVertical = false
     local draggingHorizontal = false
 
     local scrollbarThickness = framework:Dimension(2)
-
+    local cachedScrollbarThickness
+    
     local scrollStartMouse
     local scrollStartOffset
 
@@ -45,17 +63,17 @@ function framework:OffsettedViewport(body, mode)
                 horizontalScrollbarRect.decorations[1] = framework.color.pressColor
                 draggingHorizontal = true
                 scrollStartMouse = x
-                scrollStartOffset = viewport.xOffset
+                scrollStartOffset = xOffset
                 return true
             end,
             function(responder, x, y, dx, dy)
-                viewport.xOffset = math.max(
+                viewport:SetXOffset(math.max(
                     math.min(
                         scrollStartOffset + (x - scrollStartMouse) * (viewport.contentWidth / width),
                         viewport.contentWidth - width -- Must not leave any unneccessary blank space at the bottom of the scroll box
                     ),
                     0  -- Must not leave any unneccessary blank space at the top of the scroll box
-                )
+                ))
             end,
             function(responder, x, y)
                 horizontalScrollbarRect.decorations[1] = framework.color.hoverColor
@@ -82,17 +100,17 @@ function framework:OffsettedViewport(body, mode)
                 draggingVertical = true
                 verticalScrollbarRect.decorations[1] = framework.color.pressColor
                 scrollStartMouse = y
-                scrollStartOffset = viewport.yOffset
+                scrollStartOffset = yOffset
                 return true
             end,
             function(responder, x, y, dx, dy)
-                viewport.yOffset = math.max(
+                viewport:SetYOffset(math.max(
                     math.min(
                         scrollStartOffset - (y - scrollStartMouse) * (viewport.contentHeight / height),
                         viewport.contentHeight - height -- Must not leave any unneccessary blank space at the bottom of the scroll box
                     ),
                     0  -- Must not leave any unneccessary blank space at the top of the scroll box
-                )
+                ))
             end,
             function(responder, x, y)
                 verticalScrollbarRect.decorations[1] = framework.color.hoverColor
@@ -117,7 +135,13 @@ function framework:OffsettedViewport(body, mode)
         "Offsetted Viewport"
     )
 
+    function viewport:NeedsLayout()
+        return offsetsUpdated or textGroup:NeedsLayout() or cachedScrollbarThickness ~= scrollbarThickness()
+    end
+
     function viewport:Layout(availableWidth, availableHeight)
+        offsetsUpdated = false
+        cachedScrollbarThickness = scrollbarThickness()
         local _width, _height = textGroup:Layout(allowHorizontalScrolling and math.huge or availableWidth, allowVerticalScrolling and math.huge or availableHeight)
         self.contentWidth = _width
         self.contentHeight = _height
@@ -134,6 +158,7 @@ function framework:OffsettedViewport(body, mode)
 
         return width, height
     end
+    
     function viewport:Position(x, y)
         _x = x
         _y = y
@@ -144,16 +169,16 @@ function framework:OffsettedViewport(body, mode)
         local previousDrawingGroup = activeDrawingGroup -- Capture drawing, so can happen within scissor
         self.drawTargets = {}
         activeDrawingGroup = self
-        textGroup:Position(x - self.xOffset, y + self.yOffset + height - self.contentHeight)
+        textGroup:Position(x - xOffset, y + yOffset + height - self.contentHeight)
         activeDrawingGroup = previousDrawingGroup
 
 
         if width < self.contentWidth then
-            horizontalScrollbar:Position(x + width / viewport.contentWidth * viewport.xOffset, y)
+            horizontalScrollbar:Position(x + width / viewport.contentWidth * xOffset, y)
         end
         if height < self.contentHeight then
             local relativeHeight = height / viewport.contentHeight
-            verticalScrollbar:Position(x + width - scrollbarThickness(), y + height - relativeHeight * viewport.yOffset - height * relativeHeight)
+            verticalScrollbar:Position(x + width - cachedScrollbarThickness, y + height - relativeHeight * yOffset - height * relativeHeight)
         end
     end
 
@@ -166,11 +191,11 @@ function framework:OffsettedViewport(body, mode)
         local clipY = _y
 
         if height < self.contentHeight then
-            clipWidth = clipWidth - scrollbarThickness()
+            clipWidth = clipWidth - cachedScrollbarThickness
         end
         if width < self.contentWidth then
-            clipHeight = clipHeight - scrollbarThickness()
-            clipY = clipY + scrollbarThickness()
+            clipHeight = clipHeight - cachedScrollbarThickness
+            clipY = clipY + cachedScrollbarThickness
         end
         
         gl.Scissor(_x, clipY, clipWidth, clipHeight)
@@ -204,13 +229,14 @@ function framework:VerticalScrollContainer(body)
     local viewport = self:OffsettedViewport(body, framework.OFFSETED_VIEWPORT_MODE_VERTICAL)
     local container =  framework:Responder(framework:ResponderScopeWrap(viewport), framework.events.mouseWheel, function(responder, x, y, up, value)
         local _, responderHeight = responder:Size()
-        viewport.yOffset = math.max(
+        local _, yOffset = viewport:GetOffsets()
+        viewport:SetYOffset(math.max(
             math.min(
-                viewport.yOffset - value * 20,
+                yOffset - value * 20,
                 viewport.contentHeight - responderHeight -- Must not leave any unneccessary blank space at the bottom of the scroll box
             ),
             0  -- Must not leave any unneccessary blank space at the top of the scroll box
-        )
+        ))
         return true
     end)
 
@@ -221,13 +247,14 @@ function framework:HorizontalScrollContainer(body)
 
     local container = framework:Responder(framework:ResponderScopeWrap(viewport), framework.events.mouseWheel, function(responder, x, y, up, value)
         local responderWidth, _ = responder:Size()
-        viewport.xOffset = math.max(
+        local xOffset, _ = viewport:GetOffsets()
+        viewport:SetXOffset(math.max(
             math.min(
-                viewport.xOffset - value * 20,
+                xOffset - value * 20,
                 viewport.contentWidth - responderWidth -- Must not leave any unneccessary blank space at the bottom of the scroll box
             ),
             0  -- Must not leave any unneccessary blank space at the top of the scroll box
-        )
+        ))
         return true
     end)
 

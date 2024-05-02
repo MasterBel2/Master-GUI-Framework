@@ -24,6 +24,9 @@ function framework:Rect(width, height, cornerRadius, decorations)
 		activeDrawingGroup.drawTargets[#activeDrawingGroup.drawTargets + 1] = self
 	end
 
+	function rect:NeedsLayout()
+		return cachedWidth ~= width() or cachedHeight ~= height()
+	end
 	function rect:Layout()
 		cachedWidth = width()
 		cachedHeight = height()

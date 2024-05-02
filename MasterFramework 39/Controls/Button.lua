@@ -39,6 +39,10 @@ function framework:Button(visual, action)
         end
     )
 
+    function button:NeedsLayout()
+        return cell:NeedsLayout()
+    end
+
     function button:Layout(...)
         return responder:Layout(...)
     end
@@ -46,6 +50,8 @@ function framework:Button(visual, action)
         responder:Position(...)
     end
 
+    button.visual = visual
+    button.action = action
     button.cell = cell
 
     return button

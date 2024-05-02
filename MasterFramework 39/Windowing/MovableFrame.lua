@@ -22,6 +22,8 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
 
     local selected = false
 
+    local moved = true
+
     local handleHoverDetector = framework:MouseOverChangeResponder(
         handle,
         function(isOver)
@@ -59,7 +61,12 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
         }
     end
 
+    function frame:NeedsLayout()
+        return moved or zStack:NeedsLayout()
+    end
+
     function frame:Layout(availableWidth, availableHeight)
+        moved = false
         width, height = zStack:Layout(availableWidth, availableHeight)
         if xOffset > availableWidth - 5 then
             xOffset = availableWidth - 5
@@ -94,6 +101,7 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
     end
 
     function frame:SetOffset(x, y)
+        moved = true
         xOffset = math.min(math.max(x, 0), framework.viewportWidth - 5)
         yOffset = math.min(math.max(y, 5), framework.viewportHeight)
 

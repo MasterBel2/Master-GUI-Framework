@@ -4,6 +4,7 @@ local clear = Include.clear
 local gl_DeleteList = Include.gl.DeleteList
 local gl_CreateList = Include.gl.CreateList
 local gl_CallList = Include.gl.CallList
+local os_clock = Include.os.clock
 
 local Internal = Internal
 
@@ -43,29 +44,29 @@ function framework:Rasterizer(providedBody)
 		invalidated = true
 	end
 
+	local cachedNeedsLayout
+	function rasterizer:NeedsLayout()
+		if cachedNeedsLayout then return true end
+		cachedNeedsLayout = drawingGroup:NeedsLayout()
+		return cachedNeedsLayout
+	end
+
+	local cachedAvailableWidth, cachedAvailableHeight
 	function rasterizer:Layout(availableWidth, availableHeight)
-		if self.invalidated or not drawList or viewportDidChange then
+		self.invalidated = self.invalidated or self:NeedsLayout() or viewportDidChange or availableWidth ~= cachedAvailableWidth or availableHeight ~= availableHeight
+		cachedNeedsLayout = false
+		if self.invalidated then
 			width, height = drawingGroup:Layout(availableWidth, availableHeight)
+			cachedAvailableWidth = availableWidth 
+			cachedAvailableHeight = availableHeight
 		end
 		return width, height 
 	end
 
+	local cachedX, cachedY
 	function rasterizer:Position(x, y)
-		drawingGroup:Position(x, y)
-	end
-
-	function rasterizer:Draw()
-		if recalculatingRasterizer or Internal.debugMode.noRasterizer then
-			-- Display lists cannot be nested, so we'll skip using one while we're creating one.
-			drawingGroup:Draw()
-			return
-		elseif self.invalidated or not drawList or viewportDidChange then
-			-- Log("Recalculating rasterizer " .. self._readOnly_elementID)
-			recalculatingRasterizer = true
-			if framesCalculatedInARow > 0 then
-				Log("Recalculated " .. (self.name or "unnamed") .. " " .. framesCalculatedInARow .. " frame(s) in a row")
-			end
-
+		self.invalidated = self.invalidated or cachedX ~= x or cachedY ~= y
+		if self.invalidated then
 			-- Cache responders that won't be drawn
 			for _, event in pairs(events) do
 				-- activeResponderCache[event].responders = {}
@@ -75,17 +76,25 @@ function framework:Rasterizer(providedBody)
 			local previousResponders = Internal.activeResponders
 			Internal.activeResponders = activeResponderCache
 
-			gl_DeleteList(drawList)
-			drawList = gl_CreateList(drawingGroup.Draw, drawingGroup)
+			-- Display lists cannot be nested, so well record child rasterizers and draw them on top of ourselves
+			local previousActiveRasterizer = activeRasterizer
+			activeRasterizer = self
+			self.childRasterizers = {}
 
+			drawingGroup:Position(x, y)
+
+			activeRasterizer = previousActiveRasterizer
 			-- Reset  things
 			Internal.activeResponders = previousResponders
-			
-			self.invalidated = false
-			recalculatingRasterizer = false
-			framesCalculatedInARow = framesCalculatedInARow + 1
-		else
-			framesCalculatedInARow = 0
+
+			if activeRasterizer then
+				activeRasterizer.childRasterizers[#activeRasterizer.childRasterizers] = self
+			else
+				activeDrawingGroup.drawTargets[#activeDrawingGroup.drawTargets] = self
+			end
+
+			cachedX = x
+			cachedY = y
 		end
 
 		for _, event in pairs(events) do
@@ -100,8 +109,33 @@ function framework:Rasterizer(providedBody)
 				cachedResponder.parent = parentResponder
 			end
 		end
+	end
+
+	function rasterizer:Draw()
+		if Internal.debugMode.noRasterizer then
+			drawingGroup:Draw()
+			return
+		elseif self.invalidated --[[or drawingGroup:NeedsRedraw()]] then
+			Log("Recalculating rasterizer (" .. os_clock() .. ")")
+			recalculatingRasterizer = true
+			if framesCalculatedInARow > 0 then
+				Log("Recalculated " .. (self.name or "unnamed") .. " " .. framesCalculatedInARow .. " frame(s) in a row")
+			end
+
+			gl_DeleteList(drawList)
+			drawList = gl_CreateList(drawingGroup.Draw, drawingGroup)
+			
+			self.invalidated = false
+			framesCalculatedInARow = framesCalculatedInARow + 1
+		else
+			framesCalculatedInARow = 0
+		end
 
 		gl_CallList(drawList)
+
+		for i = 1, #self.childRasterizers do
+			self.childRasterizers[i]:Draw()
+		end
 	end
 
 	return rasterizer

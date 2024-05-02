@@ -1,5 +1,5 @@
 function framework:CheckBox(scale, action)
-    local checkbox = {}
+    local checkbox
     local dimension = framework:Dimension(scale)
     local radius = framework:Dimension(scale / 2)
     
@@ -10,7 +10,7 @@ function framework:CheckBox(scale, action)
 
     local rect = framework:Rect(dimension, dimension, radius, { unhihlightedColor })
     
-    local body = framework:MouseOverChangeResponder(
+    checkbox = framework:MouseOverChangeResponder(
         framework:MousePressResponder(
             rect,
             function(self, x, y, button)
@@ -32,12 +32,9 @@ function framework:CheckBox(scale, action)
             rect.decorations[1] = (isInside and highlightColor) or unhighlightedColor
         end
     )
-     
-    function checkbox:Position(...)
-        body:Position(...)
-    end
-    function checkbox:Layout(...)
-        return body:Layout(...)
+
+    function checkbox:NeedsLayout()
+        return viewportDidChange -- checkbox's rect only updates on scale change
     end
 
     function checkbox:SetChecked(newChecked)

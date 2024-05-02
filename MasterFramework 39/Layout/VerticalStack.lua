@@ -10,12 +10,28 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 
 	local maxWidth
 
+	local cachedXAnchor
+	local cachedMemberCount
+
+	function verticalStack:NeedsLayout()
+		local members = self.members
+		if #members ~= cachedMemberCount or cachedXAnchor ~= self.xAnchor then 
+			return true
+		end
+		for i = 1, cachedMemberCount do
+			local member = members[cachedMemberCount - (i - 1)]
+			if i ~= member.vStackCachedIndex or member:NeedsLayout() then
+				return true
+			end
+		end
+	end
+
 	function verticalStack:Layout(availableWidth, availableHeight)
 
 		local members = self.members
-		local memberCount = #members
+		cachedMemberCount = #members
 		
-		if memberCount == 0 then
+		if cachedMemberCount == 0 then
 			return 0, 0
 		end
 
@@ -23,9 +39,10 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 	 	maxWidth = 0
 		local spacing = self.spacing()
 		
-		for i = 1, memberCount do
-			local member = members[memberCount - (i - 1)]
+		for i = 1, cachedMemberCount do
+			local member = members[cachedMemberCount - (i - 1)]
 			local memberWidth, memberHeight = member:Layout(availableWidth, availableHeight - elapsedDistance)
+			member.vStackCachedIndex = i
 			member.vStackCachedY = elapsedDistance
 			member.vStackCachedWidth = memberWidth
 			elapsedDistance = elapsedDistance + memberHeight + spacing
@@ -37,11 +54,11 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 
 	function verticalStack:Position(x, y)
 		local members = self.members
-		local xAnchor = self.xAnchor
+		cachedXAnchor = self.xAnchor
 
-		for i = 1, #members do 
+		for i = 1, cachedMemberCount do
 			local member = members[i]
-			member:Position(x + floor((maxWidth - member.vStackCachedWidth) * xAnchor), y + member.vStackCachedY)
+			member:Position(x + floor((maxWidth - member.vStackCachedWidth) * cachedXAnchor), y + member.vStackCachedY)
 		end
 	end
 

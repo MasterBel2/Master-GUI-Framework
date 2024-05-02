@@ -437,6 +437,10 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         background.decorations[2] = nil
     end
 
+    function entry:NeedsLayout()
+        return selectionDetector:NeedsLayout() or self.text:NeedsLayout()
+    end
+
     function entry:Layout(...)
         if self.text:GetRawString() == "" then
             textStack.members[2] = self.placeholder

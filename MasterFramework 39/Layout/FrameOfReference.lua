@@ -6,8 +6,16 @@ function framework:FrameOfReference(xAnchor, yAnchor, body)
 	local width, height
 	local rectWidth, rectHeight
 
+	local cachedXAnchor
+	local cachedYAnchor
+	local cachedBody
+	function frame:NeedsLayout()
+		return cachedXAnchor ~= self.xAnchor or cachedYAnchor ~= self.yAnchor or cachedBody ~= self.body or cachedBody:NeedsLayout()
+	end
+
 	function frame:Layout(availableWidth, availableHeight)
-		rectWidth, rectHeight = self.body:Layout(availableWidth, availableHeight)
+		cachedBody = self.body
+		rectWidth, rectHeight = cachedBody:Layout(availableWidth, availableHeight)
 		width = availableWidth
 		height = availableHeight
 
@@ -15,7 +23,9 @@ function framework:FrameOfReference(xAnchor, yAnchor, body)
 	end
 
 	function frame:Position(x, y)
-		self.body:Position(x + floor((width - rectWidth) * self.xAnchor), y + floor((height - rectHeight) * self.yAnchor))
+		cachedXAnchor = self.xAnchor
+		cachedYAnchor = self.yAnchor
+		cachedBody:Position(x + floor((width - rectWidth) * cachedXAnchor), y + floor((height - rectHeight) * cachedYAnchor))
 	end
 
 	return frame

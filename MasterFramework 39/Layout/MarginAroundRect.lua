@@ -17,22 +17,35 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 	local function getWidth() return width end
 	local function getHeight() return height end
 
+	local cachedLeft
+	local cachedRight
+	local cachedTop
+	local cachedBottom
+	local cachedRect
+
+	function margin:NeedsLayout()
+		return cachedLeft ~= left() or cachedRight ~= right() or cachedTop ~= top() or cachedBottom ~= bottom() or cachedRect ~= self.rect or cachedRect:NeedsLayout()
+	end
+
 	if shouldRasterize then
 		rasterizableRect = framework:Rect(getWidth, getHeight, cornerRadius, decorations)
 		rasterizer = framework:Rasterizer(rasterizableRect)
 
 		function margin:Layout(availableWidth, availableHeight)
-			if self.shouldInvalidateRasterizer or viewportDidChange or lastRasterizedWidth ~= width or lastRasterizedHeight ~= height then
-				lastRasterizedWidth = width
-				lastRasterizedHeight = height
-
+			if self.shouldInvalidateRasterizer then
 				rasterizer.invalidated = true
 			end
 
-			local horizontal = left() + right() -- May be more performant to do left right top bottom – not sure though
-			local vertical = top() + bottom()
+			cachedLeft = left()
+			cachedRight = right()
+			cachedTop = top()
+			cachedBottom = bottom()
+			cachedRect = self.rect
 
-			local rectWidth, rectHeight = self.rect:Layout(availableWidth - horizontal, availableHeight - vertical)
+			local horizontal = cachedLeft + cachedRight
+			local vertical = cachedTop + cachedBottom
+
+			local rectWidth, rectHeight = cachedRect:Layout(availableWidth - horizontal, availableHeight - vertical)
 			width = rectWidth + horizontal
 			height = rectHeight + vertical
 
@@ -42,24 +55,29 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 		end
 
 		function margin:Position(x, y)
-			if self.shouldInvalidateRasterizer or lastRasterizedX ~= x or lastRasterizedY ~= y then
+			if self.shouldInvalidateRasterizer then
 				rasterizableRect.cornerRadius = self.cornerRadius
 				rasterizableRect.decorations = self.decorations
-				lastRasterizedX = x
-				lastRasterizedY = y
+
 				rasterizer.invalidated = true
 			end
 			rasterizer:Position(x, y)
 			self.shouldInvalidateRasterizer = false
 
-			self.rect:Position(x + left(), y + bottom())
+			cachedRect:Position(x + cachedLeft, y + cachedBottom)
 		end
 	else
 		function margin:Layout(availableWidth, availableHeight)
-			local horizontal = left() + right() -- May be more performant to do left right top bottom – not sure though
-			local vertical = top() + bottom()
+			cachedLeft = left()
+			cachedRight = right()
+			cachedTop = top()
+			cachedBottom = bottom()
+			cachedRect = self.rect
+
+			local horizontal = cachedLeft + cachedRight
+			local vertical = cachedTop + cachedBottom
 	
-			local rectWidth, rectHeight = self.rect:Layout(availableWidth - horizontal, availableHeight - vertical)
+			local rectWidth, rectHeight = cachedRect:Layout(availableWidth - horizontal, availableHeight - vertical)
 			width = rectWidth + horizontal
 			height = rectHeight + vertical
 			return width, height
@@ -74,7 +92,7 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 			cachedX = x
 			cachedY = y
 	
-			self.rect:Position(cachedX + left(), cachedY + bottom())
+			cachedRect:Position(cachedX + cachedLeft, cachedY + cachedBottom)
 		end
 
 		function margin:Draw()

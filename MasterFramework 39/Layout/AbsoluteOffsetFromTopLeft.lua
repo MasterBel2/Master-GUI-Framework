@@ -3,14 +3,22 @@ function framework:AbsoluteOffsetFromTopLeft(body, xOffset, yOffset)
 	local width, height
 	local _availableHeight
 
+	local cachedXOffset
+	local cachedYOffset
+	function absoluteOffset:NeedsLayout()
+		return body:NeedsLayout() or cachedXOffset ~= self.xOffset or cachedYOffset ~= self.yOffset
+	end
+
 	function absoluteOffset:Layout(availableWidth, availableHeight)
 		_availableHeight = availableHeight
-		width, height = body:Layout(availableWidth - self.xOffset, availableHeight - self.yOffset)
-		return width + self.xOffset, height + (availableHeight - self.yOffset)
+		cachedXOffset = self.xOffset
+		cachedYOffset = self.yOffset
+		width, height = body:Layout(availableWidth - cachedXOffset, availableHeight - cachedYOffset)
+		return width + cachedXOffset, height + (availableHeight - cachedYOffset)
 	end
 
 	function absoluteOffset:Position(x, y)
-		body:Position(x + self.xOffset, y + _availableHeight - self.yOffset - height)
+		body:Position(x + cachedXOffset, y + _availableHeight - cachedYOffset - height)
 	end
 
 	return absoluteOffset

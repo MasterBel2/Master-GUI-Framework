@@ -163,28 +163,57 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	local drawingGroup = framework:DrawingGroup(body)
 
 	function element:Draw()
-		Internal.activeElement = element
-		Internal.activeTooltip = element
-		Internal.activeResponders = element.baseResponders
-		for _, responder in pairs(Internal.activeResponders) do
-			clear(responder.responders)
-		end
+		startProfile(self.key)
+		Internal._debug_currentElementKey = self.key
 
-		startProfile(self.key .. ":Layout()")
-		local success, _error = pcall(drawingGroup.Layout, drawingGroup, viewportWidth, viewportHeight)
-		if not success then
-			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Layout", _error)
-			framework:RemoveElement(self.key)
+		startProfile(self.key .. ":NeedsLayout()")
+		local needsLayout
+		if viewportDidChange then
+			needsLayout = true
+		else
+			local success, needsLayoutOrError = pcall(drawingGroup.NeedsLayout)
+			if not success then
+				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:NeedsLayout", needsLayoutOrError)
+				framework:RemoveElement(self.key)
+			else
+				needsLayout = needsLayoutOrError
+			end
 		end
-		endProfile()
+		endProfile(self.key .. ":NeedsLayout()")
 
-		startProfile(self.key .. ":Position()")
-		local success, _error = pcall(drawingGroup.Position, drawingGroup, 0, 0)
-		if not success then
-			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Position", _error)
-			framework:RemoveElement(self.key)
+		Internal.DebugInfo[self.key .. ":NeedsLayout()"] = needsLayout
+
+		if needsLayout then
+		
+			startProfile(self.key .. ":Layout()")
+			local success, _error = pcall(drawingGroup.Layout, drawingGroup, viewportWidth, viewportHeight)
+			if not success then
+				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Layout", _error)
+				framework:RemoveElement(self.key)
+			end
+			endProfile(self.key .. ":Layout()")
+
+			startProfile(self.key .. ":Position()")
+
+
+			Internal.activeElement = element
+			Internal.activeTooltip = element
+			Internal.activeResponders = element.baseResponders
+			for _, responder in pairs(Internal.activeResponders) do
+				clear(responder.responders)
+			end
+			if Internal.debugMode.draw then
+				element.activeDebugResponder.responders = {}
+			end
+
+			local success, _error = pcall(drawingGroup.Position, drawingGroup, 0, 0)
+			if not success then
+				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Position", _error)
+				framework:RemoveElement(self.key)
+			end
+			endProfile(self.key .. ":Position()")
+
 		end
-		endProfile()
 
 		startProfile(self.key .. ":Draw()")
 		local success, _error = pcall(drawingGroup.Draw, drawingGroup, 0, 0)
@@ -192,7 +221,9 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Draw", _error)
 			framework:RemoveElement(self.key)
 		end
-		endProfile()
+		endProfile(self.key .. ":Draw()")
+
+		endProfile(self.key)
 	end
 
 	local nullFunction = allowInteractionBehind and nullFunctionFalse or nullFunctionTrue

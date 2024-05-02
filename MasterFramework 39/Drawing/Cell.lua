@@ -25,6 +25,13 @@ function framework:Cell(body, decorations, cornerRadius)
 
     local width, height
     local cachedX, cachedY
+    local cachedOverrideWidth
+    local cachedOverrideHeight
+
+    function cell:NeedsLayout()
+        return body:NeedsLayout() or cachedOverrideWidth ~= self.overrideWidth or cachedOverrideHeight ~= self.overrideHeight
+    end
+
     function cell:Layout(availableWidth, availableHeight)
         width, height = body:Layout(availableWidth, availableHeight)
         return width, height

@@ -24,6 +24,8 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
     local scale = framework:Dimension(1)
     local oldScale = scale()
 
+    local resized = true
+
     if key then
         if ConfigData.frameSizeCache[key] then
             local cachedWidth = ConfigData.frameSizeCache[key].width
@@ -141,6 +143,8 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
                 _dy = newFinalHeight - dragStartHeight
             end
 
+            resized = true
+
             movableFrame:SetOffset(dragStartX + _dx, dragStartY + _dy)
 
             if key then
@@ -185,6 +189,9 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
 
     local function SizeControl(child)
         local control = {}
+        function control:NeedsLayout()
+            return child:NeedsLayout()
+        end
         function control:Layout(availableWidth, availableHeight)
             width, height = child:Layout(width, height)
             return width, height
@@ -200,6 +207,9 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         defaultX, defaultY
     )
 
+    function frame:NeedsLayout()
+        return resized or movableFrame:NeedsLayout()
+    end
     function frame:Layout(availableWidth, availableHeight)
         local currentScale = scale()
         if currentScale ~= oldScale then
@@ -215,6 +225,8 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         --     width = math.max(childWidth, width)
         --     height = math.max(childHeight, height)
         -- end
+
+        resized = false
 
         return availableWidth, availableHeight
     end

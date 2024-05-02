@@ -10,6 +10,7 @@ function framework:Tooltip(rect, description)
 
 	local width, height
 	local cachedX, cachedY
+	local cachedRect
 
 	function tooltip:Size()
 		return width, height
@@ -23,8 +24,13 @@ function framework:Tooltip(rect, description)
 		return cachedX, cachedY, width, height
 	end
 
+	function tooltip:NeedsLayout()
+		return cachedRect ~= self.rect or cachedRect:NeedsLayout()
+	end
+
 	function tooltip:Layout(...)
-		width, height = self.rect:Layout(...)
+		cachedRect = self.rect
+		width, height = cachedRect:Layout(...)
 		return width, height
 	end
 	
@@ -40,7 +46,7 @@ function framework:Tooltip(rect, description)
 		end
 		Internal.activeTooltip = self
 
-		self.rect:Position(x, y)
+		cachedRect:Position(x, y)
 		Internal.activeTooltip = previousActiveTooltip
 		
 		cachedX = x

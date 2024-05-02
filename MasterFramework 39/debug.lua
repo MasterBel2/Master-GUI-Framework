@@ -67,16 +67,20 @@ function debugDescription(...)
 	Spring_Echo(debugDescriptionString(...))
 end
 
-function startProfile(_profileName)
-	profileName = _profileName
-	startTimer = Spring_GetTimerMicros()
+local profileTimers = {}
+function startProfile(profileName)
+	profileTimers[profileName] = Spring_GetTimerMicros()
 	-- startTimer = Spring_GetTimer()
 end
 
-function endProfile()
+function endProfile(profileName, recordMax)
 	-- local time = Spring_DiffTimers(Spring_GetTimer(), startTimer, nil)
-	local time = Spring_DiffTimers(Spring_GetTimerMicros(), startTimer, nil, true)
-	framework.stats[profileName] = time
+	if profileTimers[profileName] then
+		local time = Spring_DiffTimers(Spring_GetTimerMicros(), profileTimers[profileName], nil, true)
+		if not recordMax or ((framework.stats[profileName] or 0) < time) then
+			framework.stats[profileName] = time
+		end
+	end
 	-- Log("Profiled " .. profileName .. ": " .. Spring_DiffTimers(Spring_GetTimer(), startTimer) * 1000 .. " microseconds")
 end
 
@@ -120,7 +124,7 @@ function EnableDebugMode(target)
 					nextUniqueIdentifier = nextUniqueIdentifier + 1
 
 					if draw then
-						local cachedX, cachedY, cachedWidth, cachedHeight
+						local cachedX, cachedY, cachedWidth, cachedHeight, needsLayout
 						local elementKey
 
 						if temp[1].Position and temp[1].Layout then
@@ -149,6 +153,8 @@ function EnableDebugMode(target)
 										cachedHeight = cachedHeight,
 										x = x,
 										y = y,
+
+										needsLayout = needsLayout,
 	
 										_debugTypeIdentifier = temp[1]._debugTypeIdentifier,
 										_debugUniqueIdentifier = temp[1]._debugUniqueIdentifier
@@ -168,6 +174,16 @@ function EnableDebugMode(target)
 						if temp[1].Position then
 							temp[1]._debug_cachedPosition = temp[1]._debug_cachedPosition or temp[1].Position
 							temp[1].Position = function(...)
+								if not temp[1].laidOut then
+									-- local x = temp[1]._debug_mouseOverResponder.parent
+									-- local path = temp[1]._debugTypeIdentifier
+									-- for i = 1, 1000 do
+									-- 	if not x then break end
+									-- 	path = (x._debugTypeIdentifier or "Unknown") .. "/" .. path
+									-- 	x = x.parent
+									-- end
+									Log("Position called before Layout for " .. temp[1]._debugTypeIdentifier .. " " .. temp[1]._debugUniqueIdentifier)
+								end
 								LogDrawCall(key .. ":Position", false)
 								elementKey = Internal._debug_currentElementKey
 
@@ -191,7 +207,20 @@ function EnableDebugMode(target)
 								LogDrawCall(key .. ":Position", true)
 							end
 						end
+						if temp[1].NeedsLayout then
+							temp[1]._debug_cachedNeedsLayout = temp[1]._debug_cachedNeedsLayout or temp[1].NeedsLayout
+							temp[1].NeedsLayout = function(...)
+									needsLayout = temp[1]._debug_cachedNeedsLayout(...) or false
+									temp[1]._debug_needsLayout = needsLayout
+								return needsLayout
+							end
+						end
+						
 						if temp[1].Layout then
+							temp[1].laidOut = true
+							if temp[1]._debug_cachedLayout then
+								Log("Overriding layout for " .. temp[1]._debugTypeIdentifier .. " " .. temp[1]._debugUniqueIdentifier)
+							end
 							temp[1]._debug_cachedLayout = temp[1]._debug_cachedLayout or temp[1].Layout
 							temp[1].Layout = function(...)
 								LogDrawCall(key .. ":Layout", false)

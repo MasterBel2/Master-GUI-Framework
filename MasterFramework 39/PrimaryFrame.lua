@@ -6,10 +6,12 @@ function framework:PrimaryFrame(body)
 
 	local cachedX, cachedY
 	local width, height
+	local bodyChanged
 
 	local _body
 
 	function primaryFrame:SetBody()
+		bodyChanged = true
 		_body = framework:TextGroup(body)
 	end
 
@@ -31,7 +33,12 @@ function framework:PrimaryFrame(body)
 		end
 	end
 
+	function primaryFrame:NeedsLayout()
+		return bodyChanged or body:NeedsLayout()
+	end
+
 	function primaryFrame:Layout(availableWidth, availableHeight)
+		bodyChanged = false
 		width, height = _body:Layout(availableWidth, availableHeight)
 		return width, height
 	end

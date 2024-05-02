@@ -7,6 +7,7 @@ function framework:TakeFocus(newFocusTarget)
 	end
 	if widgetHandler:OwnText() then
 		Internal.focusTarget = newFocusTarget
+		Internal.focusTargetElementKey = Internal._debug_currentElementKey
 		return true
 	end
 end
@@ -16,6 +17,7 @@ end
 function framework:ReleaseFocus(requestingFocusTarget)
 	if requestingFocusTarget == Internal.focusTarget then
 		Internal.focusTarget = nil
+		Internal.focusTargetElementKey = nil
 		return widgetHandler:DisownText()
 	end
 end

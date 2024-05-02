@@ -158,6 +158,10 @@ function framework:WrappingText(string, color, font, maxLines)
 		return rawString
 	end
 
+	function wrappingText:NeedsLayout()
+		return stringChanged or font.key ~= cachedFontKey
+	end
+
 	function wrappingText:Layout(availableWidth, availableHeight, profile)
 		availableWidth = math_min(availableWidth, 2147483647) -- if we allow math.huge, `glFont:WrapText()` will fail. 
 		availableHeight = math_min(availableHeight, 2147483647)
@@ -227,7 +231,7 @@ function framework:WrappingText(string, color, font, maxLines)
 		
 		return cachedWidth, cachedHeight
 	end
-
+	
 	function wrappingText:Position(x, y)
 		cachedX = x
 		cachedY = y

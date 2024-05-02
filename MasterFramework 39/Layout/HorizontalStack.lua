@@ -16,12 +16,26 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 
 	local maxHeight
 
+	local cachedYAnchor
+	local cachedMemberCount
+	function horizontalStack:NeedsLayout()
+		local members = self.members
+		if #members ~= cachedMemberCount or cachedYAnchor ~= self.yAnchor then 
+			return true
+		end
+		for i = 1, cachedMemberCount do
+			if i ~= members[i].hStackCachedIndex or members[i]:NeedsLayout() then
+				return true
+			end
+		end
+	end
+
 	function horizontalStack:Layout(availableWidth, availableHeight)
 
 		local members = self.members
-		local memberCount = #members
+		cachedMemberCount = #members
 
-		if memberCount == 0 then
+		if cachedMemberCount == 0 then
 			return 0, 0
 		end
 
@@ -30,9 +44,10 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 
 		local spacing = self.spacing()
 
-		for i = 1, memberCount do
+		for i = 1, cachedMemberCount do
 			local member = members[i]
 			local memberWidth, memberHeight = member:Layout(availableWidth - elapsedDistance, availableHeight)
+			member.hStackCachedIndex = i
 			member.hStackCachedX = elapsedDistance
 			member.hStackCachedHeight = memberHeight
 			elapsedDistance = elapsedDistance + memberWidth + spacing
@@ -44,11 +59,11 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 
 	function horizontalStack:Position(x, y)
 		local members = self.members
-		local yAnchor = self.yAnchor
+		cachedYAnchor = self.yAnchor
 
-		for i = 1, #members do
+		for i = 1, cachedMemberCount do
 			local member = members[i]
-			member:Position(x + member.hStackCachedX, y + floor((maxHeight - member.hStackCachedHeight) * yAnchor))
+			member:Position(x + member.hStackCachedX, y + floor((maxHeight - member.hStackCachedHeight) * cachedYAnchor))
 		end
 	end
 	
