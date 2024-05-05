@@ -1,5 +1,69 @@
 # Changelog
 
+## CV 39: Fully implement ctrl-based delete/backspace and fix ctrl-move
+Simply implements the (ctrl) argument of `textEntry:editDelete(ctrl)`, `textEntry:editBackspace(ctrl)`, `textEntry:editLeft(ctrl)`, `textEntry:editRight(ctrl)`
+
+## CV 38: WrappingText, TextEntry & string:lines Performance Optimisations
+- rename `string:lines` to `string:lines_MasterFramework` to disambiguate from BAR's implementation
+- by default, don't extract a substring for each parsed line. Call `string:lines_MasterFramework(true) to return an array of strings containing each extracted line.
+
+WrappingText and TextEntry use this optimised lines function for better performance.
+
+- localize a few functions for speed
+- provided arguments for supplying a partial result to `wrappingText:RawIndexToDisplayIndex` to avoid repeated work
+- other minor tweak(s)
+
+- Also slightly improves selection box drawing, namely including an indication of whether the newline is selected
+
+## CV 37: TextEntry: support Undo / Redo / Cut / Copy / Paste
+Adds the following methods:
+- `textEntry:InsertUndoAction(undoAction, redoAction)`: Adds an undo action and an associated redo action to the undo/redo log.
+- `textEntry:InsertText(newText)`: Inserts the text at the current index. The insertin is added to the undo/redo log.
+- `textEntry:editCopy()`: For a point selection, noop. For a block selection, copies the current selection to clipboard. (Called for a Ctrl+C keypress.)
+- `textEntry:editPaste()`: For a point selection, inserts the contents of the pasteboard at the current selection. For a block selection, copies the current selection to clipboard. (Called for a Ctrl+V keypress.) The text addition is added to the undo/redo log.
+- `textEntry:editCut()`: For a point selection, noop. For a block selection, copies the current selection to clipboard, and removes it from the textEntry's text. (Called for a Ctrl+C keypress.) The text removal is added to the undo/redo log.
+- `textEntry:editUndo()`: Applies any undo action at the current index, and increases the index by one. (Called for a Ctrl+Z keypress.)
+- `textEntry:editRedo()`: Applies any redo action at the current index, and decreases the index by one. (Called for a Ctrl+Shift+Z keypress.)
+
+Editing clips the undo/redo log to the current index. Redo indices are offset by undo indices by one, such that a redo cannot be called until an undo has been performed, and once all undos have been performed, the last redo will still be available.
+
+## CV 36: Allow Click-through elements
+Specify `true` for `allowInteractionBehind` when calling `framework:InsertElement()` to allow click-through
+
+## CV 35: Better scrolling implementation
+API changes:
+ - Replace `autowidth` and `autoheight` arguments with `mode`
+   `mode` specifies which axes the content can exceed the viewport's dimensions.
+   `mode can be one of the following:
+    - `framework.OFFSETTED_VIEWPORT_MODE_HORIZONTAL_VERTICAL`
+    - `framework.OFFSETTED_VIEWPORT_MODE_HORIZONTAL`
+    - `framework.OFFSETTED_VIEWPORT_MODE_VERTICAL`
+   An error with a descriptive message will be provided if an invalid value is provided.
+
+Scrollbars will be provided in dimensions that exceed the viewport's bounds and have been clipped.
+`mode` is immutable.
+
+Bugs fixed:
+ - Viewport not clipping to its bounds
+ - Viewport scrollbars not receiving input when the content in the viewport is interactive
+
+## CV 34: Move Drawing to Groups
+- Draw to Position; all drawing components defer drawing to a `framework:DrawingGroup`
+- `framework:TextGroup` now calls `text:Draw` instead of `text:DrawForReal`
+- Many places that wrapped their children in a `framework:TextGroup` now wrap their children in a `framework:DrawingGroup`, since it also provides a text group
+
+Bugfixes:
+- Fixed missing include for `gl_Blending` that broke `framework:Blending`
+
+Misc debug changes:
+- Bugfix: No longer attempt to log nil messages
+- Displays message in console when debug mode is enabled
+- Provide debug information for `framework:ResizableMovableFrame`
+- Provide debug information for `framework:MovableFrame`
+- Store responder event in `responder._event`
+
+Also updated readme! :)
+
 ## CV 33: New component debugging system
 Displays component borders on-screen, and shows debug info about the component under mouse.
 Call `frameworkInternal.SetDebugMode(?, false, ?)` in the framework's initialiser to enable.
