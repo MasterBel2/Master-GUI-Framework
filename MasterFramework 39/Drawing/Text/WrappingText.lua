@@ -64,14 +64,14 @@ function framework:WrappingText(string, color, font, maxLines)
 		local computedOffset = computedOffset or 0
 
 		while (addedCharacters[addedCharactersIndex] <= rawIndex + computedOffset) or (removedSpaces[removedSpacesIndex] <= rawIndex) do
-			if addedCharacters[addedCharactersIndex] < removedSpaces[removedSpacesIndex] then
+			if addedCharacters[addedCharactersIndex] - computedOffset < removedSpaces[removedSpacesIndex] then
 				computedOffset = computedOffset + 1
 				addedCharactersIndex = addedCharactersIndex + 1
-			elseif addedCharacters[addedCharactersIndex] == removedSpaces[removedSpacesIndex] then
+			elseif addedCharacters[addedCharactersIndex] - computedOffset == removedSpaces[removedSpacesIndex] then
 				-- count them as swapped, no change to offset
 				addedCharactersIndex = addedCharactersIndex + 1
 				removedSpacesIndex = removedSpacesIndex + 1
-			elseif addedCharacters[addedCharactersIndex] > removedSpaces[removedSpacesIndex] then
+			elseif addedCharacters[addedCharactersIndex] - computedOffset > removedSpaces[removedSpacesIndex] then
 				computedOffset = computedOffset - 1
 				removedSpacesIndex = removedSpacesIndex + 1
 			end
@@ -92,14 +92,14 @@ function framework:WrappingText(string, color, font, maxLines)
 		local computedOffset = 0
 
 		while math_min(addedCharacters[addedCharactersIndex], removedSpaces[removedSpacesIndex] - computedOffset) <= displayIndex do
-			if addedCharacters[addedCharactersIndex] < removedSpaces[removedSpacesIndex] then
+			if addedCharacters[addedCharactersIndex] < removedSpaces[removedSpacesIndex] - computedOffset then
 				computedOffset = computedOffset - 1
 				addedCharactersIndex = addedCharactersIndex + 1
-			elseif addedCharacters[addedCharactersIndex] == removedSpaces[removedSpacesIndex] then
+			elseif addedCharacters[addedCharactersIndex] == removedSpaces[removedSpacesIndex] - computedOffset then
 				-- count them as swapped, no change to offset
 				addedCharactersIndex = addedCharactersIndex + 1
 				removedSpacesIndex = removedSpacesIndex + 1
-			elseif addedCharacters[addedCharactersIndex] > removedSpaces[removedSpacesIndex] then
+			elseif addedCharacters[addedCharactersIndex] > removedSpaces[removedSpacesIndex] - computedOffset then
 				computedOffset = computedOffset + 1
 				removedSpacesIndex = removedSpacesIndex + 1
 			end
@@ -200,7 +200,7 @@ function framework:WrappingText(string, color, font, maxLines)
 					removedSpacesCount = removedSpacesCount + 1
 					removedSpaces[removedSpacesCount] = i
 					i = i + 1
-					rawCharacter = string_sub(wrappedText, i, i)
+					rawCharacter = string_sub(string, i, i)
 				else
 					addedCharacterCount = addedCharacterCount + 1
 					addedCharacters[addedCharacterCount] = j
