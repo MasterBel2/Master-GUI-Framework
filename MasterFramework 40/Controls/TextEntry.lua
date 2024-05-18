@@ -1,9 +1,12 @@
-local math = Include.math
 local Internal = Internal
-local gl = Include.gl
+
+local math = Include.math
 local table_insert = Include.table.insert
 local os_clock = Include.os.clock
 
+local Spring_GetModKeyState = Include.Spring.GetModKeyState
+
+local gl = Include.gl
 local gl_Rect = gl.Rect
 
 local math_max = math.max
@@ -109,7 +112,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             if button ~= 1 then return false end
             
             -- TODO: selection matching, click & drag text if you drag where already selected??
-            entry:MoveCursor(entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY))
+            local _, _, _, shift = Spring_GetModKeyState()
+            entry:MoveCursor(entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY), shift)
             
             entry:TakeFocus()
 
