@@ -292,9 +292,6 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         end
     end
 
-    -- function entry:editPreviousWord() --[[Not implemented]] end
-    -- function entry:editNextWord() --[[Not implemented]] end
-
     function entry:editReturn(isCtrl)
         self:InsertText("\n")
     end
