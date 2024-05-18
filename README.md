@@ -15,30 +15,30 @@ A GUI framework for the Spring Engine. For support, MasterBel2 can be contacted 
 
 ### Installation
 
-Copy/symlink `funcs.lua` and `gui_master_framework_34.lua` to your Spring installation's `LuaUI/Widgets/` folder, and the `MasterFramework 34` folder to your `LuaUI/` folder, forming the path `LuaUI/MasterFramework 34/`.
+Copy/symlink `funcs.lua` and `gui_master_framework_40.lua` to your Spring installation's `LuaUI/Widgets/` folder, and the `MasterFramework 40` folder to your `LuaUI/` folder, forming the path `LuaUI/MasterFramework 40/`.
 
 As a result, your LuaUI directory should look like this:
 ```
 LuaUI/
-    MasterFramework 34/
+    MasterFramework 40/
     Widgets/
         funcs.lua
-        gui_master_framework_34.lua
+        gui_master_framework_40.lua
         ...
     ...
 ```
 
-Once installed, make sure you enable `MasterBel2's GUI Framework (34)` in Widget Selector. See [below](#Using-MasterFramework-to-build-your-UI) for how to use MasterFramework in your project.
+Once installed, make sure you enable `MasterBel2's GUI Framework (40)` in Widget Selector. See [below](#Using-MasterFramework-to-build-your-UI) for how to use MasterFramework in your project.
 
 ### Importing MasterFramework
 
 MasterFramework supports multiple installed versions, available in the table `WG.MasterFramework` after the widget handler calls `widget:Initialize()` on the framework.
-The framework version number is the table key for the instance of MasterFramework; e.g. MasterFramework 34 can be accessed via `WG.MasterFramework[34]`.
+The framework version number is the table key for the instance of MasterFramework; e.g. MasterFramework 40 can be accessed via `WG.MasterFramework[40]`.
 See the example below:
 
 ```lua
 local framework
-local requiredFrameworkVersion = 34
+local requiredFrameworkVersion = 40
 
 widget:Initialize()
     MasterFramework = WG.MasterFramework[requiredFrameworkVersion]
@@ -89,18 +89,18 @@ Layout components must implement two functions:
 
 You may consider that size is decided by the children, while position is decided by the parent. 
 
-See [https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2034/Layout] for examples.
+See [https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2040/Layout] for examples.
 
 ### Drawing
 
-While drawing can technically happen anywhere in layout/position calls, prefer to use groups (see [MasterFramework:DrawGroup](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2034/Drawing/DrawingGroup.lua), [MasterFramework:TextGroup](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2034/Drawing/Text/TextGroup.lua)). 
+While drawing can technically happen anywhere in layout/position calls, prefer to use groups (see [MasterFramework:DrawGroup](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2040/Drawing/DrawingGroup.lua), [MasterFramework:TextGroup](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2040/Drawing/Text/TextGroup.lua)). 
 MasterFramework's provided components rely on groups to provide greater control and performance; groups delay drawing of registered components, and thus drawing operations that happen outside of groups will be out-of-order.
 
 To draw in a group, register your component for drawing in `component:Position` - `table_insert(MasterFramework.activeDrawingGroup.drawTargets, self)` - and implement `component:Draw`, where you can perform your draw operations. 
-See [MasterFramework:Rect](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2034/Drawing/DrawingGroup.lua)
+See [MasterFramework:Rect](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2040/Drawing/DrawingGroup.lua)
 
 Text is grouped separately to other draw operations: use `MasterFramework.activeTextGroup:AddElement(self)` instead. 
-Text elements must also provide `textElement._readOnly_font` that stores an instance of [MasterFramework:Font](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2034/Drawing/Text/Font.lua). 
+Text elements must also provide `textElement._readOnly_font` that stores an instance of [MasterFramework:Font](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2040/Drawing/Text/Font.lua). 
 `textElement:Draw()` will be called between `glFont:Begin()` and `glFont:End()`, and be provided a reference to `glFont` for use in drawing.
 
 Every draw group also wraps its children in a text group, to ensure text is always drawn on top of UI components. If alternative behaviour is required, you will (currently) have to provide a custom implementation of DrawGroup.
@@ -109,11 +109,11 @@ Every draw group also wraps its children in a text group, to ensure text is alwa
 
 Many components are designed to automatically adapt to screen size changes. Rather than taking integer sizes, they require a function that will provide a scaled value on demand.
 
-The framework provides [MasterFramework:Dimension](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2034/scaling.lua) which automatically scales a provided constant with the screen size.
+The framework provides [MasterFramework:Dimension](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2040/scaling.lua) which automatically scales a provided constant with the screen size.
 
 ### Performance
 
-To avoid unnecessary re-drawing of components you know will not change every frame, wrap them in a [MasterFramework:Rasterizer](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2034/Drawing/Rasterizer.lua).
+To avoid unnecessary re-drawing of components you know will not change every frame, wrap them in a [MasterFramework:Rasterizer](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2040/Drawing/Rasterizer.lua).
 
 ### Debugging
 
@@ -131,7 +131,7 @@ function widget:GetInfo()
 end
 
 local MasterFramework
-local requiredFrameworkVersion = 34
+local requiredFrameworkVersion = 40
 
 local key
 
@@ -161,10 +161,10 @@ end
 
 ## Contributing to MasterFramework
 
-Some brief notes on the internal code of MasterFramework (i.e. within the `MasterFramework 34/` folder):
+Some brief notes on the internal code of MasterFramework (i.e. within the `MasterFramework 40/` folder):
 
-- The global environment (also the `framework` entry in the global environment) refers to the framework itself, that is registered in `WG.MasterFramework[34]`. 
+- The global environment (also the `framework` entry in the global environment) refers to the framework itself, that is registered in `WG.MasterFramework[40]`. 
 - A table `Internal` is provided in the global environment during framework initialisation only; this should be cached if needed. Post initialisation, it is removed from the global environment, to restrict access to users of the framework.
 - A table `Include` is provided in the global environment during framework initialisation only; this provides access to a portion of the standard global environment. This is also removed post-initialisation, to reduce unneccessary clutter.
-- Code is loaded in an unpredictable order; avoid top-level code in these files if at all possible. Instead, provide any necessary initialisation in [https://github.com/MasterBel2/Master-GUI-Framework/tree/main/gui_master_framework_34.lua] after the contents of [https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2034] have been loaded.
+- Code is loaded in an unpredictable order; avoid top-level code in these files if at all possible. Instead, provide any necessary initialisation in [https://github.com/MasterBel2/Master-GUI-Framework/tree/main/gui_master_framework_40.lua] after the contents of [https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2040] have been loaded.
 

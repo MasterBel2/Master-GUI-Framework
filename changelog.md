@@ -1,5 +1,16 @@
 # Changelog
 
+## CV 40: TextEntry - Cursor up/down support, fix cursor movement after mouse selection
+To make handling selection changes more graceful:
+- Added `entry:CurrentCursorIndex()` returns the current primary selection index - i.e. which one should be manipulated on a selection change (based on selectFrom).
+- Added `entry:MoveCursor(destinationIndex, isShift)` to handle all keyboard-based selection changes.
+
+All selection handling now uses `entry:MoveCursor()` to ensure that `selectFrom`, `selectionChangedClock`, and `entry.selectionEnd` are correctly updated. This also fixes some bugs with mouse selection where keyboard selection changes would be incorrect directly after a mouse selection.
+
+Adds `entry:editAbove()` and `entry:editBelow()` for moving cursor up/down. Use with ctrl to jump to the next raw (not visual) newline.
+
+TODO: `entry:editAbove()` and `entry:editBelow()` could remember the starting X coordinate, so as to not forget e.g. across a newline.
+
 ## CV 39: Fully implement ctrl-based delete/backspace and fix ctrl-move
 Simply implements the (ctrl) argument of `textEntry:editDelete(ctrl)`, `textEntry:editBackspace(ctrl)`, `textEntry:editLeft(ctrl)`, `textEntry:editRight(ctrl)`
 
