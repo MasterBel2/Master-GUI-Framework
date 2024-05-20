@@ -214,6 +214,8 @@ function framework:VerticalScrollContainer(body)
         return true
     end)
 
+    container.viewport = viewport
+
     return container
 end
 function framework:HorizontalScrollContainer(body)

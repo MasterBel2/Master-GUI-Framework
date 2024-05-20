@@ -1,5 +1,7 @@
 # Changelog
 
+## CV 41: Expose VerticalScrollContainer's viewport as `container.viewport`
+
 ## CV 40: TextEntry - Cursor up/down support, fix cursor movement after mouse selection
 To make handling selection changes more graceful:
 - Added `entry:CurrentCursorIndex()` returns the current primary selection index - i.e. which one should be manipulated on a selection change (based on selectFrom).
