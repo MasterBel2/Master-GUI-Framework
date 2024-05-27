@@ -4,7 +4,7 @@
 
 -- https://github.com/MasterBel2/Master-GUI-Framework
 
-local compatabilityVersion = 41
+local compatabilityVersion = 42
 
 function widget:GetInfo()
 	return {
@@ -66,15 +66,6 @@ local framework = {
 
 local isAboveThing
 
-local function clear(array)
-	for index = 1, #array do
-		remove(array)
-	end
-end
-
-if not WG.MasterFramework then WG.MasterFramework = {} end
-WG.MasterFramework[framework.compatabilityVersion] = framework
-
 function widget:SetConfigData(data)
 	frameworkInternal.ConfigData = data or {}
 end
@@ -84,9 +75,9 @@ function widget:GetConfigData()
 end
 
 function widget:Initialize()
-    local DIR = LUAUI_DIRNAME .. "MasterFramework " .. compatabilityVersion
+    local DIR = LUAUI_DIRNAME .. "MasterFramework " .. compatabilityVersion .. "/"
 
-    local fileTree = FileTree(DIR)
+	framework.DIR = DIR
 
     framework.Internal = frameworkInternal
 
@@ -117,47 +108,22 @@ function widget:Initialize()
 
         GL = GL,
         gl = gl,
-
-		-- custom
-		clear = clear,
     }
     framework.framework = framework
 
-    ForAllFiles(fileTree, function(filePath)
+	ForAllFiles(FileTree(DIR .. "Utils"), function(filePath)
         if filePath:find(".+%.lua") then
             VFS.Include(filePath, framework)
         end
     end)
 
-	-- I'd like these to move out somewhere... maybe
+    ForAllFiles(FileTree(DIR .. "Framework"), function(filePath)
+        if filePath:find(".+%.lua") then
+            VFS.Include(filePath, framework)
+        end
+    end)
 
-	framework.color = {
-		white = framework:Color(1, 1, 1, 1),
-		red = framework:Color(1, 0, 0, 1),
-		green = framework:Color(0, 1, 0, 1),
-		blue = framework:Color(0, 0, 1, 1),
-		black = framework:Color(0, 0, 0, 1),
-	
-		baseBackgroundColor = framework:Color(0, 0, 0, 0.66),
-	
-		selectedColor = framework:Color(0.66, 1, 1, 0.66),
-		pressColor    = framework:Color(0.66, 0.66, 1, 0.66),
-		hoverColor    = framework:Color(1, 1, 1, 0.33) -- previously, this was 1, 1, 1, 0.66
-	}
-	
-	framework.stroke = {
-		defaultBorder = framework:Stroke(framework:Dimension(1), framework.color.hoverColor)
-	}
-
-	framework.dimension = {
-        smallCornerRadius = framework:Dimension(2),
-        defaultMargin = framework:Dimension(8),
-        defaultCornerRadius = framework:Dimension(5),
-        elementSpacing = framework:Dimension(1),
-        groupSpacing = framework:Dimension(5)
-	}
-
-	framework.defaultFont = framework:Font("FreeSansBold.otf", 12)
+	VFS.Include(DIR .. "Constants/constants.lua", framework)
 
     local viewSizeX, viewSizeY = Spring.GetViewGeometry()
 
@@ -169,6 +135,8 @@ function widget:Initialize()
 
     framework.Internal = nil
     framework.Include = nil
+
+	WG["MasterFramework " .. framework.compatabilityVersion] = framework
 end
 
 function widget:DebugInfo()

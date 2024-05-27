@@ -144,6 +144,23 @@ function framework:OffsettedViewport(body, mode)
         local previousDrawingGroup = activeDrawingGroup -- Capture drawing, so can happen within scissor
         self.drawTargets = {}
         activeDrawingGroup = self
+
+        self.yOffset = math.max(
+            math.min(
+                self.yOffset,
+                viewport.contentHeight - height -- Must not leave any unneccessary blank space at the bottom of the scroll box
+            ),
+            0  -- Must not leave any unneccessary blank space at the top of the scroll box
+        )
+
+        self.xOffset = math.max(
+            math.min(
+                self.xOffset,
+                viewport.contentWidth - width -- Must not leave any unneccessary blank space at the bottom of the scroll box
+            ),
+            0  -- Must not leave any unneccessary blank space at the top of the scroll box
+        )
+
         textGroup:Position(x - self.xOffset, y + self.yOffset + height - self.contentHeight)
         activeDrawingGroup = previousDrawingGroup
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## CV 42: Misc - kill funcs.lua, separate out constants, change WG access
+Extensions are now declared in `MasterFramework $VERSION/Utils`, and pre-loaded before the rest of the framework. These are provided the same global environment as the rest of the framework. `string` extensions now all have `_MasterFramework` at the end of their name, while the `table` extension overrides the `Include.table` table for the framework, and provides access to the customised version as `framework.table`. The definition of `Include.clear` has been moved to `Utils/table.lua`, and `table.joinStrings()` has been removed, since it was a slower reimplementation of `table.concat()`
+
+Constants have been moved out of `gui_master_framework.lua` into separate files in the `Constants/` directory. Subfiles are not automatically loaded to allow for dependencies, other than the entry point `Constants/constants.lua`.
+
+The main framework files which would have been loaded in previous versions are now contained in the `Framework/` directory.
+
+The new major directories are loaded in this order: `Utils/`, `Framework/`, then `Constants/`.
+
+Framework access is no longer provided as WG.MasterFramework[compatabilityVersion], instead as WG["MasterFramework " .. compatabilityVersion]. Removing the intermediate table technically simplifies this?
+
 ## CV 41: Expose VerticalScrollContainer's viewport as `container.viewport`
 
 ## CV 40: TextEntry - Cursor up/down support, fix cursor movement after mouse selection
