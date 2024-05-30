@@ -42,6 +42,17 @@ function Error(...)
 	Spring_Echo(errorString)
 end
 
+--[[
+	Generates a string detailing the contents of a table - recursively. Calling this, 
+
+	Parameters:
+	- `table`: the table whose contents are to be displayed
+	- `name`: an optional string describing the table provided - e.g. the key used to access this table from its parent table
+	- `indentation`: an optional integer indicating how nested this table is. Usually, you will provide `0` or `nil`; this is primarily for the sake of recursion.
+	- `describedTables`: a table keyed by tables whose descriptions have been generated. This table is used to avoid infinite recursion in the case of recursive table references.
+
+	Note: Call this as framework.debugDescription, NOT framework:debugDescription!
+]]
 function debugDescriptionString(table, name, indentation, describedTables)
 	describedTables = describedTables or {}
 	local description = ""
@@ -53,7 +64,7 @@ function debugDescriptionString(table, name, indentation, describedTables)
 		describedTables[table] = true
 		for key, value in pairs(table) do
 			if type(value) == "table" then
-				description = description .. "\n" .. debugDescriptionString(value, key, indentation + 1)
+				description = description .. "\n" .. debugDescriptionString(value, key, indentation + 1, describedTables)
 			else
 				description = description .. "\n\255\100\100\100" .. string.rep("| ", indentation + 1) .. "\255\255\255\255" .. tostring(key) .. "\255\100\100\100:\255\255\255\255 " .. tostring(value)
 			end
