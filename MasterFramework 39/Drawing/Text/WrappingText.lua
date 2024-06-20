@@ -158,6 +158,9 @@ function framework:WrappingText(string, color, font, maxLines)
 		return rawString
 	end
 
+	function wrappingText:LayoutChildren()
+		return self
+	end
 	function wrappingText:NeedsLayout()
 		return stringChanged or font.key ~= cachedFontKey
 	end

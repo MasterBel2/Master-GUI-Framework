@@ -1,5 +1,7 @@
 local floor = Include.math.floor
 local max = Include.math.max
+local table_joinArrays = Include.table.joinArrays
+local unpack = Include.unpack
 
 function framework:StackInPlace(contents, xAnchor, yAnchor)
 	local stackInPlace = { members = contents, xAnchor = xAnchor, yAnchor = yAnchor, type = "StackInPlace" }
@@ -10,6 +12,15 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 	local cachedXAnchor
 	local cachedYAnchor
 
+	function stackInPlace:LayoutChildren()
+		local layoutChildren = {}
+		for i = 1, #self.members do
+			layoutChildren[i] = { self.members[i]:LayoutChildren() }
+		end
+
+		return self, unpack(table_joinArrays(layoutChildren))
+	end
+
 	local cachedMemberCount
 	function stackInPlace:NeedsLayout()
 		local members = self.members
@@ -17,7 +28,7 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 			return true
 		end
 		for i = 1, cachedMemberCount do
-			if i ~= self.members[i].stackInPlaceCachedIndex or self.members[i]:NeedsLayout() then
+			if i ~= self.members[i].stackInPlaceCachedIndex then
 				return true
 			end
 		end

@@ -135,8 +135,12 @@ function framework:OffsettedViewport(body, mode)
         "Offsetted Viewport"
     )
 
+    function viewport:LayoutChildren()
+        return self, textGroup:LayoutChildren()
+    end
+
     function viewport:NeedsLayout()
-        return offsetsUpdated or textGroup:NeedsLayout() or cachedScrollbarThickness ~= scrollbarThickness()
+        return offsetsUpdated or cachedScrollbarThickness ~= scrollbarThickness()
     end
 
     function viewport:Layout(availableWidth, availableHeight)

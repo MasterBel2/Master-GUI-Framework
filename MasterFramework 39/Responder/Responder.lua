@@ -18,8 +18,12 @@ function framework:Responder(rect, event, action)
 
 	local cachedRect
 
+	function responder:LayoutChildren()
+		return self, self.rect:LayoutChildren()
+	end
+
 	function responder:NeedsLayout()
-		return self.rect ~= cachedRect or cachedRect:NeedsLayout()
+		return self.rect ~= cachedRect
 	end
 
 	local laidOut
@@ -31,7 +35,7 @@ function framework:Responder(rect, event, action)
 	end
 
 	function responder:Position(x, y)
-		if not laidOut then 
+		if not laidOut then
 			Log("We havent laid out yet!")
 			Log(self._debugTypeIdentifier)
 			Log(self._debugUniqueIdentifier)

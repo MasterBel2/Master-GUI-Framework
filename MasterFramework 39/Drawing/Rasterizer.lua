@@ -5,6 +5,7 @@ local gl_DeleteList = Include.gl.DeleteList
 local gl_CreateList = Include.gl.CreateList
 local gl_CallList = Include.gl.CallList
 local os_clock = Include.os.clock
+local unpack = Include.unpack
 
 local Internal = Internal
 
@@ -43,17 +44,29 @@ function framework:Rasterizer(providedBody)
 		drawingGroup:SetBody(newBody)
 		invalidated = true
 	end
-
+	
+	function rasterizer:LayoutChildren()
+		return self
+	end
+	
+	local layoutChildren
 	local cachedNeedsLayout
 	function rasterizer:NeedsLayout()
-		if cachedNeedsLayout then return true end
-		cachedNeedsLayout = drawingGroup:NeedsLayout()
-		return cachedNeedsLayout
+		if not layoutChildren then return true end
+		for i = 1, #layoutChildren do
+			if layoutChildren[i]:NeedsLayout() then
+				cachedNeedsLayout = true
+				return true
+			end
+		end
+		cachedNeedsLayout = false
+		return false
 	end
 
 	local cachedAvailableWidth, cachedAvailableHeight
 	function rasterizer:Layout(availableWidth, availableHeight)
-		self.invalidated = self.invalidated or self:NeedsLayout() or viewportDidChange or availableWidth ~= cachedAvailableWidth or availableHeight ~= availableHeight
+		layoutChildren = { drawingGroup:LayoutChildren() }
+		self.invalidated = self.invalidated or cachedNeedsLayout or viewportDidChange or availableWidth ~= cachedAvailableWidth or availableHeight ~= availableHeight
 		cachedNeedsLayout = false
 		if self.invalidated then
 			width, height = drawingGroup:Layout(availableWidth, availableHeight)

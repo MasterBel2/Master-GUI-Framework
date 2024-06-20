@@ -4,6 +4,7 @@ local table = Include.table
 local clear = Include.clear
 local pcall = Include.pcall
 local Internal = Internal
+local type = Include.type
 local Spring_Echo = Include.Spring.Echo
 
 ------------------------------------------------------------------------------------------------------------
@@ -153,7 +154,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		error("[framework:InsertElement] No body provided for element \"" .. preferredKey .. "\"")
 	end
 
-	local element = { 
+	local element = {
 		body = body,
 		primaryFrame = nil,
 		tooltips = {},
@@ -161,6 +162,16 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		deselect = deselectAction or nullFunctionTrue
 	}
 	local drawingGroup = framework:DrawingGroup(body)
+	local layoutChildren
+
+	function element:NeedsLayout()
+		for i = 1, #layoutChildren do
+			if layoutChildren[i]:NeedsLayout() then
+				return true
+			end
+		end
+		return false
+	end
 
 	function element:Draw()
 		startProfile(self.key)
@@ -170,20 +181,40 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		local needsLayout
 		if viewportDidChange then
 			needsLayout = true
+		elseif not layoutChildren then
+			needsLayout = true
 		else
-			local success, needsLayoutOrError = pcall(drawingGroup.NeedsLayout)
-			if not success then
-				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:NeedsLayout", needsLayoutOrError)
-				framework:RemoveElement(self.key)
-			else
-				needsLayout = needsLayoutOrError
-			end
+			-- local success, needsLayoutOrError = pcall(self.NeedsLayout, self)
+			needsLayout = self:NeedsLayout()
+			-- if not success then
+			-- 	Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:NeedsLayout", needsLayoutOrError)
+			-- 	framework:RemoveElement(self.key)
+			-- else
+			-- 	needsLayout = needsLayoutOrError
+			-- end
 		end
 		endProfile(self.key .. ":NeedsLayout()")
 
 		Internal.DebugInfo[self.key .. ":NeedsLayout()"] = needsLayout
 
 		if needsLayout then
+
+			startProfile(self.key .. ":LayoutChildren()")
+			local result = { pcall(drawingGroup.LayoutChildren, drawingGroup, viewportWidth, viewportHeight) }
+			if not result[1] then
+				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:LayoutChildren", result[2])
+				framework:RemoveElement(self.key)
+			end
+			if #result > 1 then
+				for i = 1, #result - 1 do
+					result[i] = result[i + 1]
+				end
+				layoutChildren = result
+			else
+				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:LayoutChildren", "No children!")
+				framework:RemoveElement(self.key)
+			end
+			endProfile(self.key .. ":LayoutChildren()")
 		
 			startProfile(self.key .. ":Layout()")
 			local success, _error = pcall(drawingGroup.Layout, drawingGroup, viewportWidth, viewportHeight)

@@ -3,8 +3,8 @@ function framework:GeometryTarget(body)
     local geometryTarget = {}
     local width, height, cachedX, cachedY
 
-    function geometryTarget:NeedsLayout()
-        return body:NeedsLayout()
+    function geometryTarget:LayoutChildren()
+        return body:LayoutChildren()
     end
 
     function geometryTarget:Layout(...)

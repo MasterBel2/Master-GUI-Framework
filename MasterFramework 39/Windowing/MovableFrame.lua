@@ -60,9 +60,13 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
             height = height,
         }
     end
+    
+    function frame:LayoutChildren()
+        return self, zStack:LayoutChildren()
+    end
 
     function frame:NeedsLayout()
-        return moved or zStack:NeedsLayout()
+        return moved
     end
 
     function frame:Layout(availableWidth, availableHeight)

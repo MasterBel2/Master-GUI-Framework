@@ -6,8 +6,8 @@ function framework:DrawingGroup(body, name)
     local drawingGroup = { drawTargets = {} }
     local textGroup = framework:TextGroup(body, name)
 
-    function drawingGroup:NeedsLayout()
-        return textGroup:NeedsLayout()
+    function drawingGroup:LayoutChildren()
+        return textGroup:LayoutChildren()
     end
 
     function drawingGroup:Layout(availableWidth, availableHeight)

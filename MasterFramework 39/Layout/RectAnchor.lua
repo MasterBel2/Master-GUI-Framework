@@ -11,8 +11,12 @@ function framework:RectAnchor(rectToAnchorTo, anchoredRect, xAnchor, yAnchor)
 	local cachedXAnchor
 	local cachedYAnchor
 
+	function achor:LayoutChildren()
+		return self, self.rectToAnchorTo:LayoutChildren(), self.cachedAnchoredRect:LayoutChildren()
+	end
+
 	function anchor:NeedsLayout()
-		return cachedAnchorTo ~= self.rectToAnchorTo or cachedAnchoredRect ~= self.anchoredRect or cachedXAnchor ~= self.xAnchor or cachedYAnchor ~= self.yAnchor or cachedAnchorTo:NeedsLayout() or cachedAnchoredRect:NeedsLayout()
+		return cachedAnchorTo ~= self.rectToAnchorTo or cachedAnchoredRect ~= self.anchoredRect or cachedXAnchor ~= self.xAnchor or cachedYAnchor ~= self.yAnchor
 	end
 
 	function rectAnchor:Layout(availableWidth, availableHeight)

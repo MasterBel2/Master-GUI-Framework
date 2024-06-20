@@ -9,8 +9,13 @@ function framework:FrameOfReference(xAnchor, yAnchor, body)
 	local cachedXAnchor
 	local cachedYAnchor
 	local cachedBody
+
+	function frame:LayoutChildren()
+		return self, self.body:LayoutChildren()
+	end
+
 	function frame:NeedsLayout()
-		return cachedXAnchor ~= self.xAnchor or cachedYAnchor ~= self.yAnchor or cachedBody ~= self.body or cachedBody:NeedsLayout()
+		return cachedXAnchor ~= self.xAnchor or cachedYAnchor ~= self.yAnchor or cachedBody ~= self.body
 	end
 
 	function frame:Layout(availableWidth, availableHeight)

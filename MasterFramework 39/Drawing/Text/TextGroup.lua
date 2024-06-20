@@ -13,8 +13,8 @@ function framework:TextGroup(body, name)
 	local textGroup = { name = name or "default" }
 	local elements = {}
 
-	function textGroup:NeedsLayout()
-		return body:NeedsLayout()
+	function textGroup:LayoutChildren()
+		return body:LayoutChildren()
 	end
 
 	function textGroup:SetBody(newBody)

@@ -1,5 +1,7 @@
 local floor = Include.math.floor
 local max = Include.math.max
+local table_joinArrays = Include.table.joinArrays
+local unpack = Include.unpack
 
 -- Elements that take all available width (or an unbounded function of it) will likely not size correctly. 
 -- Instead, use `framework:HorizontalHungryStack`.
@@ -16,6 +18,15 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 
 	local maxHeight
 
+	function horizontalStack:LayoutChildren()
+		local layoutChildren = {}
+		for i = 1, #self.members do
+			layoutChildren[i] = { self.members[i]:LayoutChildren() }
+		end
+
+		return self, unpack(table_joinArrays(layoutChildren))
+	end
+
 	local cachedYAnchor
 	local cachedMemberCount
 	function horizontalStack:NeedsLayout()
@@ -24,7 +35,7 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 			return true
 		end
 		for i = 1, cachedMemberCount do
-			if i ~= members[i].hStackCachedIndex or members[i]:NeedsLayout() then
+			if i ~= members[i].hStackCachedIndex then
 				return true
 			end
 		end

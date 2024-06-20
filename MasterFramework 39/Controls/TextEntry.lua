@@ -437,8 +437,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         background.decorations[2] = nil
     end
 
-    function entry:NeedsLayout()
-        return selectionDetector:NeedsLayout() or self.text:NeedsLayout()
+    function entry:LayoutChildren()
+        return selectionDetector:LayoutChildren(), self.text:LayoutChildren()
     end
 
     function entry:Layout(...)

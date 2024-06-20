@@ -320,7 +320,7 @@ function widget:Update()
 end
 
 function widget:DrawScreen()
-	-- startProfile("DrawScreen")
+	framework.startProfile("DrawScreen")
 	frameworkInternal.hasCheckedElementBelowMouse = false
 	frameworkInternal.elementBelowMouse = nil
 	local index = #frameworkInternal.elementOrder
@@ -338,7 +338,7 @@ function widget:DrawScreen()
 		-- end
 		frameworkInternal.drawCalls = {}
 	end
-	-- endProfile()
+	framework.endProfile("DrawScreen")
 end
 
 function widget:ViewResize(viewSizeX, viewSizeY)

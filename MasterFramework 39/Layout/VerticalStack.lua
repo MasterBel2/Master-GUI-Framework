@@ -1,5 +1,7 @@
 local max = Include.math.max
 local floor = Include.math.floor
+local table_joinArrays = Include.table.joinArrays
+local unpack = Include.unpack
 
 -- Elements that take all available height (or an unbounded function of it) will likely not size correctly. 
 -- Instead, use `framework:VerticalHungryStack`.
@@ -13,6 +15,15 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 	local cachedXAnchor
 	local cachedMemberCount
 
+	function verticalStack:LayoutChildren()
+		local layoutChildren = {}
+		for i = 1, #self.members do
+			layoutChildren[i] = { self.members[i]:LayoutChildren() }
+		end
+
+		return self, unpack(table_joinArrays(layoutChildren))
+	end
+
 	function verticalStack:NeedsLayout()
 		local members = self.members
 		if #members ~= cachedMemberCount or cachedXAnchor ~= self.xAnchor then 
@@ -20,7 +31,7 @@ function framework:VerticalStack(contents, spacing, xAnchor)
 		end
 		for i = 1, cachedMemberCount do
 			local member = members[cachedMemberCount - (i - 1)]
-			if i ~= member.vStackCachedIndex or member:NeedsLayout() then
+			if i ~= member.vStackCachedIndex then
 				return true
 			end
 		end

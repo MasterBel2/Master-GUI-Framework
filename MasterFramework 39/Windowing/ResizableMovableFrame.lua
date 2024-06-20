@@ -189,8 +189,8 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
 
     local function SizeControl(child)
         local control = {}
-        function control:NeedsLayout()
-            return child:NeedsLayout()
+        function control:LayoutChildren()
+            return child:LayoutChildren()
         end
         function control:Layout(availableWidth, availableHeight)
             width, height = child:Layout(width, height)
@@ -207,8 +207,12 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         defaultX, defaultY
     )
 
+    function frame:LayoutChildren()
+        return self, moveableFrame:LayoutChildren()
+    end
+
     function frame:NeedsLayout()
-        return resized or movableFrame:NeedsLayout()
+        return resized
     end
     function frame:Layout(availableWidth, availableHeight)
         local currentScale = scale()

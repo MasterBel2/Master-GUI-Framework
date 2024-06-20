@@ -5,8 +5,13 @@ function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, y
 	local cachedAnchoredRect
 	local cachedXOffset
 	local cachedYOffset
+
+	function anchor:LayoutChildren()
+		return self, self.anchoredRect:LayoutChildren(), self.rectToAnchorTo:LayoutChildren()
+	end
+
 	function anchor:NeedsLayout()
-		return cachedAnchorTo ~= self.rectToAnchorTo or cachedAnchoredRect ~= self.anchoredRect or cachedXOffset ~= self.xOffset or cachedYOffset ~= self.yOffset or cachedAnchorTo:NeedsLayout() or cachedAnchoredRect:NeedsLayout()
+		return cachedAnchorTo ~= self.rectToAnchorTo or cachedAnchoredRect ~= self.anchoredRect or cachedXOffset ~= self.xOffset or cachedYOffset ~= self.yOffset
 	end
 
 	function anchor:Layout(availableWidth, availableHeight)

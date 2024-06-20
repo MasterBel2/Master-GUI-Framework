@@ -33,8 +33,12 @@ function framework:PrimaryFrame(body)
 		end
 	end
 
+	function primaryFrame:LayoutChildren()
+		return self, body:LayoutChildren()
+	end
+
 	function primaryFrame:NeedsLayout()
-		return bodyChanged or body:NeedsLayout()
+		return bodyChanged
 	end
 
 	function primaryFrame:Layout(availableWidth, availableHeight)

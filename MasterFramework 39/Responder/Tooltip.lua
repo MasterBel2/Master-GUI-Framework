@@ -24,8 +24,12 @@ function framework:Tooltip(rect, description)
 		return cachedX, cachedY, width, height
 	end
 
+	function tooltip:LayoutChildren()
+		return self, self.rect:LayoutChildren()
+	end
+
 	function tooltip:NeedsLayout()
-		return cachedRect ~= self.rect or cachedRect:NeedsLayout()
+		return cachedRect ~= self.rect
 	end
 
 	function tooltip:Layout(...)

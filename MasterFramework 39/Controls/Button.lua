@@ -39,8 +39,8 @@ function framework:Button(visual, action)
         end
     )
 
-    function button:NeedsLayout()
-        return cell:NeedsLayout()
+    function button:LayoutChildren()
+        return cell:LayoutChildren()
     end
 
     function button:Layout(...)

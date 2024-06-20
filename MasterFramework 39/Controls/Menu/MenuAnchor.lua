@@ -53,8 +53,8 @@ function framework:MenuAnchor(wrappedRect, menuOptions, menuLayoutFunc, menuName
         end
     end
 
-    function menuAnchor:NeedsLayout()
-        return wrappedRect:NeedsLayout()
+    function menuAnchor:LayoutChildren()
+        return wrappedRect:LayoutChildren()
     end
 
     function menuAnchor:Layout(availableWidth, availableHeight)

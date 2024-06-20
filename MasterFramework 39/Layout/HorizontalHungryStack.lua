@@ -13,6 +13,10 @@ function framework:HorizontalHungryStack(viewLeft, hungryView, viewRight, yAncho
 
     local maxHeight
 
+    function stack:LayoutChildren()
+        return viewLeft:LayoutChildren(), viewRight:LayoutChildren(), hungryView:LayoutChildren()
+    end
+
     function stack:NeedsLayout()
         return viewLeft:NeedsLayout() or viewRight:NeedsLayout() or hungryView:NeedsLayout() 
     end

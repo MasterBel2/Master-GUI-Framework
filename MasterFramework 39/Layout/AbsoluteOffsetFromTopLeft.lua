@@ -5,8 +5,13 @@ function framework:AbsoluteOffsetFromTopLeft(body, xOffset, yOffset)
 
 	local cachedXOffset
 	local cachedYOffset
+
+	function absoluteOffset:LayoutChildren()
+		return self, body:LayoutChildren()
+	end
+	
 	function absoluteOffset:NeedsLayout()
-		return body:NeedsLayout() or cachedXOffset ~= self.xOffset or cachedYOffset ~= self.yOffset
+		return cachedXOffset ~= self.xOffset or cachedYOffset ~= self.yOffset
 	end
 
 	function absoluteOffset:Layout(availableWidth, availableHeight)

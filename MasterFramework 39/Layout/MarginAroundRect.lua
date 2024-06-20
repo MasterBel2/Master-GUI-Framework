@@ -23,8 +23,12 @@ function framework:MarginAroundRect(rect, left, top, right, bottom, decorations,
 	local cachedBottom
 	local cachedRect
 
+	function margin:LayoutChildren()
+		return self, self.rect:LayoutChildren()
+	end
+
 	function margin:NeedsLayout()
-		return cachedLeft ~= left() or cachedRight ~= right() or cachedTop ~= top() or cachedBottom ~= bottom() or cachedRect ~= self.rect or cachedRect:NeedsLayout()
+		return cachedLeft ~= left() or cachedRight ~= right() or cachedTop ~= top() or cachedBottom ~= bottom() or cachedRect ~= self.rect
 	end
 
 	if shouldRasterize then
