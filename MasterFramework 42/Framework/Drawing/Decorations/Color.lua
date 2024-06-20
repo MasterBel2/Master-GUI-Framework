@@ -22,6 +22,18 @@ function framework:Color(r, g, b, a)
 	local function drawRoundedRectVertex(xOffset, yOffset, x, y)
 		gl_Vertex(x + xOffset, y + yOffset)
 	end
+
+	function color:NeedsRedrawForDrawer(drawer)
+		local drawCache = drawer[color] or {}
+		if self.r ~= drawCache.r or self.g ~= drawCache.g or self.b ~= drawCache.b or self.a ~= drawCache.a then
+			drawCache.r = self.r
+			drawCache.g = self.g
+			drawCache.b = self.b
+			drawCache.a = self.a
+			drawer[color] = drawCache
+			return true
+		end
+	end
 	
 	function color:Draw(rect, x, y, width, height)
 		self:Set()

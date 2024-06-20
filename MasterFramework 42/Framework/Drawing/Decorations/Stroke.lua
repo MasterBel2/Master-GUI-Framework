@@ -26,6 +26,21 @@ function framework:Stroke(width, color, inside)
 		gl_Vertex(cachedX + xOffset, cachedY + yOffset)
 	end
 
+	function stroke:NeedsRedrawForDrawer(drawer)
+		if self.color:NeedsRedrawForDrawer(drawer) then
+			return true
+		end
+		local drawCache = drawer[stroke] or {}
+		local currentWidth = self.width()
+		if drawer[stroke].cachedWidth ~= currentWidth then
+			drawer[stroke].cachedWidth = currentWidth
+			return true
+		elseif drawer[stroke].cachedInside ~= self.inside then
+			drawer[stroke].cachedInside = self.inside
+			return true
+		end
+	end
+
 	function stroke:Draw(rect, x, y, width, height)
 		local strokeWidth = self.width()
 		if strokeWidth <= 0 then

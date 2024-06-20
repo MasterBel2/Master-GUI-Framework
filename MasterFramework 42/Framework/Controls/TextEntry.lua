@@ -524,6 +524,11 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         table_insert(activeDrawingGroup.drawTargets, self)
     end
 
+    local cachedColor
+    function entry:NeedsRedraw()
+        return framework.color.hoverColor:NeedsRedrawForDrawer(self)
+    end
+
     function entry:Draw()
         if (focused or selectFrom) and not self.hideSelection then
             -- this will be drawn after the background but before text, because we don't have our own TextGroup

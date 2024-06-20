@@ -34,10 +34,7 @@ function framework:CheckBox(scale, action)
     )
 
     function checkbox:LayoutChildren()
-        return self
-    end
-    function checkbox:NeedsLayout()
-        return viewportDidChange -- checkbox's rect only updates on scale change
+        return rect
     end
 
     function checkbox:SetChecked(newChecked)

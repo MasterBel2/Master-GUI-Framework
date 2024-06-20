@@ -11,6 +11,16 @@ function framework:Rect(width, height, cornerRadius, decorations)
 	local cachedY
 
 	local cachedWidth, cachedHeight
+
+	function rect:NeedsRedraw() -- TODO: Move this to a standardised background element that unifies the drawing for this, Cell, and MarginAroundRect?
+        if #self.decorations ~= cachedDecorationCount then return true end
+        for i = 1, cachedDecorationCount do
+            if i ~= self.decorations[i]._rect_cachedDrawIndex or self.decorations[i]:NeedsRedrawForDrawer(self) then
+                return true
+            end
+        end
+    end
+
 	function rect:Draw()
 		local decorations = self.decorations
 		for i = 1, #decorations do

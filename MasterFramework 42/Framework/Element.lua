@@ -184,6 +184,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		elseif not layoutChildren then
 			needsLayout = true
 		else
+			Internal.DebugInfo[self.key .. ":layoutChildren Count"] = #layoutChildren
 			-- local success, needsLayoutOrError = pcall(self.NeedsLayout, self)
 			needsLayout = self:NeedsLayout()
 			-- if not success then

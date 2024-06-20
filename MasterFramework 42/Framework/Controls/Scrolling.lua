@@ -228,6 +228,13 @@ function framework:OffsettedViewport(body, mode)
         gl.Scissor(false)
     end
 
+    function viewport:NeedsRedraw()
+        local drawTargets = self.drawTargets
+        for i = 1, #drawTargets do
+            if drawTargets[i]:NeedsRedraw() then return true end
+        end
+    end
+
     return viewport
 end
 

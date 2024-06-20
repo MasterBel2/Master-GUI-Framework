@@ -27,6 +27,7 @@ function framework:Cell(body, decorations, cornerRadius)
     local cachedX, cachedY
     local cachedOverrideWidth
     local cachedOverrideHeight
+    local cachedDecorationCount
 
     function cell:LayoutChildren()
         return self, body:LayoutChildren()
@@ -61,6 +62,15 @@ function framework:Cell(body, decorations, cornerRadius)
     function cell:Draw()
         for i = 1, #self.decorations do
             self.decorations[i]:Draw(self, cachedX, cachedY, self.overrideWidth or width, self.overrideHeight or height)
+        end
+    end
+
+    function cell:NeedsRedraw()
+        if #self.decorations ~= cachedDecorationCount then return true end
+        for i = 1, cachedDecorationCount do
+            if i ~= self.decorations[i]._cell_cachedDrawIndex or self.decorations[i]:NeedsRedrawForDrawer(self) then
+                return true
+            end
         end
     end
 

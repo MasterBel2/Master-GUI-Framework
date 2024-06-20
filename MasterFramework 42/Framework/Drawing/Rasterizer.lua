@@ -53,6 +53,7 @@ function framework:Rasterizer(providedBody)
 	local cachedNeedsLayout
 	function rasterizer:NeedsLayout()
 		if not layoutChildren then return true end
+		Internal.DebugInfo["Rasterizer layoutChildren count"] = #layoutChildren
 		for i = 1, #layoutChildren do
 			if layoutChildren[i]:NeedsLayout() then
 				cachedNeedsLayout = true

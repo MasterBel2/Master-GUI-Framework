@@ -54,6 +54,10 @@ function framework:Gradient(color1, color2, color3, color4)
 		gl_Vertex(x + xOffset, y + yOffset)
 	end
 
+	function gradient:NeedsRedrawForDrawer(drawer)
+		return color1:NeedsRedrawForDrawer(drawer) or color2:NeedsRedrawForDrawer(drawer) or color3:NeedsRedrawForDrawer(drawer) or color4:NeedsRedrawForDrawer(drawer)
+	end
+
 	function gradient:Draw(rect, x, y, width, height)
 		local cornerRadius = rect.cornerRadius() or 0
 

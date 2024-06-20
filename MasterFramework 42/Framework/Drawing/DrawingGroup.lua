@@ -25,14 +25,27 @@ function framework:DrawingGroup(body, name)
         activeDrawingGroup = previousDrawingGroup
     end
 
+    local cachedDrawCount
+
     function drawingGroup:Draw()
-        for _, drawTarget in ipairs(self.drawTargets) do
+        for i = 1, #drawTargets in ipairs(self.drawTargets) do
+            local drawTarget = drawTargets[i]
             drawTarget:Draw()
         end
+        cachedDrawCount = #self.drawTargets
     end
 
     function drawingGroup:SetBody(newBody)
         textGroup:SetBody(newBody)
+    end
+
+    function drawingGroup:NeedsRedraw()
+        local drawTargets = self.drawTargets
+
+        for i = 1, #drawTargets do
+            local drawTarget = drawTargets[i]
+            if drawTarget:NeedsRedraw() then return true end
+        end
     end
 
     return drawingGroup

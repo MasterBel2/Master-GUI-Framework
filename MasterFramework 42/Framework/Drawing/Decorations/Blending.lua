@@ -7,6 +7,16 @@ local gl_Blending = Include.gl.Blending
 function framework:Blending(srcMode, dstMode, decorations)
 	local blending = {}
 
+	local cachedDecorationCount
+	function blending:NeedsRedrawForDrawer(drawer)
+		if #self.decorations ~= cachedDecorationCount then return true end
+        for i = 1, cachedDecorationCount do
+            if i ~= self.decorations[i]._blending_cachedDrawIndex or self.decorations[i]:NeedsRedrawForDrawer(drawer) then
+                return true
+            end
+        end
+	end
+
 	function blending:Draw(...)
 		gl_Blending(srcMode, dstMode)
 		for i=1, #decorations do
