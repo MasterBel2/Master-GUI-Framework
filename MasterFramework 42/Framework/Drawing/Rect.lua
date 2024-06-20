@@ -1,37 +1,15 @@
 -- A component of fixed size.
 function framework:Rect(width, height, cornerRadius, decorations)
-	local rect = { cornerRadius = cornerRadius or framework:Dimension(0), decorations = decorations or {} }
+	return framework:Cell(framework:LayoutRect(width, height), decorations, cornerRadius)
+end
+
+function framework:LayoutRect(width, height)
+	local rect = {}
+	local cachedWidth, cachedHeight
 
 	function rect:SetSize(newWidth, newHeight)
 		width = newWidth
 		height = newHeight
-	end
-
-	local cachedX
-	local cachedY
-
-	local cachedWidth, cachedHeight
-
-	function rect:NeedsRedraw() -- TODO: Move this to a standardised background element that unifies the drawing for this, Cell, and MarginAroundRect?
-        if #self.decorations ~= cachedDecorationCount then return true end
-        for i = 1, cachedDecorationCount do
-            if i ~= self.decorations[i]._rect_cachedDrawIndex or self.decorations[i]:NeedsRedrawForDrawer(self) then
-                return true
-            end
-        end
-    end
-
-	function rect:Draw()
-		local decorations = self.decorations
-		for i = 1, #decorations do
-			decorations[i]:Draw(self, cachedX, cachedY, cachedWidth, cachedHeight)
-		end
-	end
-
-	function rect:Position(x, y)
-		cachedX = x
-		cachedY = y
-		activeDrawingGroup.drawTargets[#activeDrawingGroup.drawTargets + 1] = self
 	end
 
 	function rect:LayoutChildren()
@@ -41,11 +19,14 @@ function framework:Rect(width, height, cornerRadius, decorations)
 	function rect:NeedsLayout()
 		return cachedWidth ~= width() or cachedHeight ~= height()
 	end
+
 	function rect:Layout()
 		cachedWidth = width()
 		cachedHeight = height()
 		return cachedWidth, cachedHeight
 	end
+
+	function rect:Position() --[[ noop ]] end
 
 	return rect
 end
