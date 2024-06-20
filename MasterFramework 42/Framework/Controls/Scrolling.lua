@@ -174,6 +174,24 @@ function framework:OffsettedViewport(body, mode)
         self.drawTargets = {}
         activeDrawingGroup = self
         textGroup:Position(x - xOffset, y + yOffset + height - self.contentHeight)
+
+        self:SetYOffset(math.max(
+            math.min(
+                yOffset,
+                viewport.contentHeight - height -- Must not leave any unneccessary blank space at the bottom of the scroll box
+            ),
+            0  -- Must not leave any unneccessary blank space at the top of the scroll box
+        ))
+
+        self:SetXOffset(math.max(
+            math.min(
+                xOffset,
+                viewport.contentWidth - width -- Must not leave any unneccessary blank space at the bottom of the scroll box
+            ),
+            0  -- Must not leave any unneccessary blank space at the top of the scroll box
+        ))
+
+        textGroup:Position(x - xOffset, y + yOffset + height - self.contentHeight)
         activeDrawingGroup = previousDrawingGroup
 
 
@@ -243,6 +261,8 @@ function framework:VerticalScrollContainer(body)
         ))
         return true
     end)
+
+    container.viewport = viewport
 
     return container
 end

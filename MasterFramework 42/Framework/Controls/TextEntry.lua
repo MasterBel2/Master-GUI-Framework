@@ -1,9 +1,12 @@
-local math = Include.math
 local Internal = Internal
-local gl = Include.gl
+
+local math = Include.math
 local table_insert = Include.table.insert
 local os_clock = Include.os.clock
 
+local Spring_GetModKeyState = Include.Spring.GetModKeyState
+
+local gl = Include.gl
 local gl_Rect = gl.Rect
 
 local math_max = math.max
@@ -12,6 +15,9 @@ local math_floor = math.floor
 
 local forwardCtrlSkipPattern = "[%s\n]*[^%s\n]+[%s\n]"
 local reverseCtrlSkipPattern = "[%s\n][^%s\n]+[%s\n]*$"
+
+local nextNewlinePattern = ".[^\n]*[\n]"
+local previousNewlinePattern = "[\n][^\n]*.$"
 
 local Spring_GetClipboard = Include.Spring.GetClipboard
 local Spring_SetClipboard = Include.Spring.SetClipboard
@@ -41,6 +47,55 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     local selectFrom
     local selectionChangedClock = os_clock()
 
+    function entry:CurrentCursorIndex()
+        if selectFrom == "begin" then
+            return self.selectionBegin 
+        else 
+            return self.selectionEnd
+        end
+    end
+
+    function entry:MoveCursor(destinationIndex, isShift)
+        selectionChangedClock = os_clock()
+        if not isShift then
+            self.selectionBegin = destinationIndex
+            self.selectionEnd = destinationIndex
+            selectFrom = nil
+        else
+            if not selectFrom then
+                if destinationIndex < self.selectionBegin then
+                    selectFrom = "begin"
+                else
+                    selectFrom = "end"
+                end
+            end
+
+            if selectFrom == "begin" then
+                self.selectionBegin = destinationIndex
+
+                if self.selectionEnd < self.selectionBegin then
+                    local temp = self.selectionEnd
+                    self.selectionEnd = self.selectionBegin 
+                    self.selectionBegin = temp
+                    selectFrom = "end"
+                end
+            elseif selectFrom == "end" then
+                self.selectionEnd = destinationIndex
+
+                if self.selectionEnd < self.selectionBegin then
+                    local temp = self.selectionEnd
+                    self.selectionEnd = self.selectionBegin 
+                    self.selectionBegin = temp
+                    selectFrom = "begin"
+                end
+            end
+            
+            if self.selectionBegin == self.selectionEnd then
+                selectFrom = nil
+            end
+        end
+    end
+
     local selectedStroke = framework:Stroke(framework:Dimension(2), framework.color.hoverColor)
     local textStack = framework:StackInPlace({ entry.text, entry.placeholder }, 0, 0)
     local background = framework:MarginAroundRect(
@@ -56,9 +111,9 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         function(responder, mouseX, mouseY, button)
             if button ~= 1 then return false end
             
-            entry.selectionBegin = entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY)
-            entry.selectionEnd = entry.selectionBegin
-            selectFrom = "begin" -- TODO: selection matching, click & drag text if you drag where already selected??
+            -- TODO: selection matching, click & drag text if you drag where already selected??
+            local _, _, _, shift = Spring_GetModKeyState()
+            entry:MoveCursor(entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY), shift)
             
             entry:TakeFocus()
 
@@ -70,24 +125,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             return true
         end,
         function(responder, mouseX, mouseY)
-            if selectFrom == "begin" then
-                entry.selectionBegin = entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY)
-            else
-                entry.selectionEnd = entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY)
-            end
-
-            if entry.selectionEnd < entry.selectionBegin then
-                local temp = entry.selectionEnd
-                entry.selectionEnd = entry.selectionBegin 
-                entry.selectionBegin = temp
-                if selectFrom == "begin" then
-                    selectFrom = "end"
-                else
-                    selectFrom = "begin"
-                end
-            end
-
-            selectionChangedClock = os_clock()
+            entry:MoveCursor(entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY), true)
             
             -- if framework.PointIsInRect(mouseX, mouseY, responder:Geometry()) then
             --     selectedStroke.color = pressColor
@@ -101,9 +139,6 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         end,
         function(responder, mouseX, mouseY)
             selectedStroke.color = framework.color.selectedColor
-            if self.selectionBegin == self.selectionEnd then
-                selectFrom = nil
-            end
 
             if framework.PointIsInRect(mouseX, mouseY, responder:Geometry()) and framework:FocusTarget() == entry then
                 background.decorations[2] = selectedStroke
@@ -137,13 +172,11 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
             if selectionBegin == selectionEnd then
                 string = string:sub(1, selectionBegin - 1 - deletedText:len()) .. string:sub(selectionBegin)
-                self.selectionBegin = selectionBegin - deletedText:len()
+                entry:MoveCursor(selectionBegin - deletedText:len())
             else
                 string = string:sub(1, selectionBegin - 1) .. string:sub(selectionEnd)
-                self.selectionBegin = selectionBegin
+                entry:MoveCursor(selectionBegin)
             end
-    
-            self.selectionEnd = self.selectionBegin
 
             entry.text:SetString(string)
         end
@@ -152,10 +185,10 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             local string = entry.text:GetRawString()
             if selectionBegin == selectionEnd then
                 entry.text:SetString(string:sub(1, selectionBegin - 1 - deletedText:len()) .. deletedText .. string:sub(selectionBegin - deletedText:len()))
-                entry.selectionBegin = selectionBegin
+                entry:MoveCursor(selectionBegin)
             else
                 entry.text:SetString(string:sub(1, selectionBegin - 1) .. deletedText .. string:sub(selectionBegin))
-                entry.selectionBegin = selectionBegin + deletedText:len()
+                entry:MoveCursor(selectionBegin + deletedText:len())
             end
 
             
@@ -192,8 +225,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
                 string = string:sub(1, selectionBegin - 1) .. string:sub(selectionEnd)
             end
     
-            self.selectionBegin = selectionBegin
-            self.selectionEnd = self.selectionBegin
+            entry:MoveCursor(selectionBegin)
 
             entry.text:SetString(string)
         end
@@ -203,97 +235,129 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
             entry.text:SetString(string:sub(1, selectionBegin - 1) .. deletedText .. string:sub(selectionBegin))
 
-            entry.selectionBegin = selectionBegin
-            entry.selectionEnd = entry.selectionBegin
+            entry:MoveCursor(selectionBegin)
         end, redoAction)
 
         redoAction()
     end
 
     function entry:editPrevious(isShift, isCtrl)
+        local destinationIndex
 
-        if isShift and not selectFrom then
-            selectFrom = "begin"
-        end
-
-        if isCtrl then
-            if selectFrom == "end" then
-                local begin = self.text:GetRawString():sub(1, self.selectionEnd - 1):find(reverseCtrlSkipPattern)
-                self.selectionEnd = (begin or 0) + 1
+        if selectFrom and not isShift then 
+            destinationIndex = self.selectionBegin
+        else
+            if isCtrl then
+                destinationIndex = (self.text.GetRawString():sub(1, self:CurrentCursorIndex() - 1):find(reverseCtrlSkipPattern) or 0) + 1
             else
-                local begin = self.text:GetRawString():sub(1, self.selectionBegin - 1):find(reverseCtrlSkipPattern)
-                self.selectionBegin = (begin or 0) + 1
-            end
-        elseif isShift or not selectFrom then
-            if selectFrom == "end" then
-                self.selectionEnd = math_max(self.selectionEnd - 1, 1)                        
-            else
-                self.selectionBegin = math_max(self.selectionBegin - 1, 1)
+                destinationIndex = math_max(self:CurrentCursorIndex() - 1, 1)
             end
         end
-
-        if self.selectionEnd < self.selectionBegin then
-            local temp = self.selectionEnd
-            self.selectionEnd = self.selectionBegin 
-            self.selectionBegin = temp
-            selectFrom = "begin"
-        end
-
-        if not isShift then
-            if selectFrom == "end" then
-                self.selectionBegin = self.selectionEnd
-            else
-                self.selectionEnd = self.selectionBegin
-            end
-            selectFrom = nil
-        end
-
-        return true
+        
+        self:MoveCursor(destinationIndex, isShift)
     end
     
     function entry:editNext(isShift, isCtrl)
-        local string = self.text:GetRawString()
-        local stringEnd = string:len() + 1
+        local destinationIndex
 
-        if isShift and not selectFrom then
-            selectFrom = "end"
-        end
-
-        if isCtrl then
-            if selectFrom == "begin" then
-                local _, matchEnd = string:find(forwardCtrlSkipPattern, self.selectionBegin)
-                self.selectionBegin = matchEnd or stringEnd
+        if selectFrom and not isShift then
+            destinationIndex = self.selectionEnd
+        else
+            local string = self.text.GetRawString()
+            local stringEnd = string:len() + 1
+            if isCtrl then
+                local _, matchEnd = string:find(forwardCtrlSkipPattern, self:CurrentCursorIndex())
+                destinationIndex = matchEnd or stringEnd
             else
-                local _, matchEnd = string:find(forwardCtrlSkipPattern, self.selectionEnd)
-                self.selectionEnd = matchEnd or stringEnd
-            end
-        elseif isShift or not selectFrom then
-            if selectFrom == "begin" then
-                self.selectionBegin = math_min(stringEnd, self.selectionBegin + 1)
-            else
-                self.selectionEnd = math_min(stringEnd, self.selectionEnd + 1)
+                destinationIndex = math_min(self:CurrentCursorIndex() + 1, stringEnd)
             end
         end
 
-        if self.selectionEnd < self.selectionBegin then
-            local temp = self.selectionEnd
-            self.selectionEnd = self.selectionBegin 
-            self.selectionBegin = temp
-            selectFrom = "end"
-        end
-
-        if not isShift then
-            if selectFrom == "begin" then
-                self.selectionEnd = self.selectionBegin
-            else
-                self.selectionBegin = self.selectionEnd
-            end
-            selectFrom = nil
-        end
+        self:MoveCursor(destinationIndex, isShift)
     end
 
-    -- function entry:editPreviousWord() --[[Not implemented]] end
-    -- function entry:editNextWord() --[[Not implemented]] end
+    function entry:IndexAtXOffsetBetweenDisplayNewlineIndices(rangeBeginDisplayIndex, rangeEndDisplayIndex, xOffset)
+        local font = self.text._readOnly_font
+        xOffset = math_floor(xOffset)
+        
+        local rawString = self.text:GetRawString()
+
+        local accumulatedWidth = 0
+
+        local rangeBeginRawIndex = self.text:DisplayIndexToRawIndex(rangeBeginDisplayIndex) + 1
+        local rangeEndRawIndex = self.text:DisplayIndexToRawIndex(rangeEndDisplayIndex) - 1
+
+        for i = rangeBeginRawIndex, rangeEndRawIndex do
+            if xOffset <= accumulatedWidth then
+                return i
+            else
+                accumulatedWidth = accumulatedWidth + math_floor(font.glFont:GetTextWidth(rawString:sub(i, i)) * font:ScaledSize())
+            end
+        end
+        
+        return rangeEndRawIndex + 1
+    end
+
+    function entry:editAbove(isShift, isCtrl)
+        local destinationIndex
+
+        if selectFrom and not isShift then 
+            destinationIndex = self.selectionBegin
+        else
+            if isCtrl then
+                local clippedString = self.text:GetRawString():sub(1, self:CurrentCursorIndex() - 1)
+                destinationIndex = (clippedString:find(previousNewlinePattern) or 0) + 1
+            else
+                local displayString = self.text:GetDisplayString()
+                local displayIndex = self.text:RawIndexToDisplayIndex(self:CurrentCursorIndex())
+                local substring = displayString:sub(1, displayIndex)
+                
+                local previousNewlineIndex = substring:find(previousNewlinePattern)
+                
+                if previousNewlineIndex then
+                    local previousLineStart = (substring:sub(1, previousNewlineIndex):find(previousNewlinePattern) or 0)
+                    if previousLineStart then
+                        local targetWidth = self.text._readOnly_font.glFont:GetTextWidth(substring:sub(previousNewlineIndex + 1, displayIndex - 1)) * self.text._readOnly_font:ScaledSize()
+                        destinationIndex = self:IndexAtXOffsetBetweenDisplayNewlineIndices(previousLineStart, previousNewlineIndex, targetWidth)
+                    else
+                        destinationIndex = 1
+                    end
+                else
+                    destinationIndex = 1
+                end
+            end
+        end
+        self:MoveCursor(destinationIndex, isShift)
+    end
+
+    function entry:editBelow(isShift, isCtrl)
+        local destinationIndex
+
+        if selectFrom and not isShift then 
+            destinationIndex = self.selectionEnd
+        else
+            if isCtrl then
+                destinationIndex = (self.text:GetRawString():find("\n", self:CurrentCursorIndex() + 1) or self.text:GetRawString():len() + 1)
+            else
+                local displayString = self.text:GetDisplayString()
+                local displayIndex = self.text:RawIndexToDisplayIndex(self:CurrentCursorIndex())
+                local _, nextNewlineIndex = displayString:find("\n", displayIndex)
+                if nextNewlineIndex then
+                    local _, endOfNextLine = displayString:find(nextNewlinePattern, nextNewlineIndex)
+                    local currentLineStart = (displayString:sub(1, displayIndex):find(previousNewlinePattern) or 0) + 1
+                    endOfNextLine = endOfNextLine or self.text:GetRawString():len()
+
+                    local targetWidth = self.text._readOnly_font.glFont:GetTextWidth(displayString:sub(currentLineStart, displayIndex - 1)) * self.text._readOnly_font:ScaledSize()
+                    destinationIndex = self:IndexAtXOffsetBetweenDisplayNewlineIndices(nextNewlineIndex, endOfNextLine, targetWidth)
+                else
+                    destinationIndex = self.text:GetRawString():len()
+                end
+            end
+            
+        end
+
+        self:MoveCursor(destinationIndex, isShift)
+    end
 
     function entry:editReturn(isCtrl)
         self:InsertText("\n")
@@ -327,17 +391,15 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         local function redoAction()
             local string = entry.text:GetRawString()
             entry.text:SetString(string:sub(1, selectionBegin - 1) .. newText .. string:sub(selectionEnd))
-
-            entry.selectionBegin = selectionBegin + newText:len()
-            entry.selectionEnd = entry.selectionBegin
+            
+            entry:MoveCursor(selectionBegin + newText:len())
         end
 
         self:InsertUndoAction(function()
             local string = entry.text:GetRawString()
             entry.text:SetString(string:sub(1, selectionBegin - 1) .. replacedText .. string:sub(selectionBegin + newText:len()))
             
-            entry.selectionBegin = selectionBegin + replacedText:len()
-            entry.selectionEnd = entry.selectionBegin
+            entry:MoveCursor(selectionBegin + replacedText:len())
         end, redoAction)
         
         redoAction()
@@ -348,8 +410,6 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     end
 
     function entry:KeyPress(key, mods, isRepeat)
-        selectionChangedClock = os_clock()
-
         if key == 0x08 then
             self:editBackspace(mods.ctrl)
             return true
@@ -358,6 +418,12 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             return true
         elseif key == 0x1B then 
             self:editEscape()
+            return true
+        elseif key == 0x111 then
+            self:editAbove(mods.shift, mods.ctrl)
+            return true
+        elseif key == 0x112 then
+            self:editBelow(mods.shift, mods.ctrl)
             return true
         elseif key == 0x113 then
             self:editNext(mods.shift, mods.ctrl)
