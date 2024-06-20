@@ -1,6 +1,6 @@
 -- A component of fixed size.
 function framework:Rect(width, height, cornerRadius, decorations)
-	return framework:Cell(framework:LayoutRect(width, height), decorations, cornerRadius)
+	return framework:Background(framework:LayoutRect(width, height), decorations, cornerRadius)
 end
 
 function framework:LayoutRect(width, height)
