@@ -108,8 +108,8 @@ function framework:Menu(options, anchor)
                 leftMargin,
                 topMargin,
                 rightMargin,
-                bottomMargin,
-            ), 
+                bottomMargin
+            ),
             { framework:Color(0, 0, 0, 0.7)},
             framework:Dimension(5)
         ),

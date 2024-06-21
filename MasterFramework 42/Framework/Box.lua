@@ -5,7 +5,7 @@ function framework:Box(child)
     function box:NeedsLayout()
         return cachedChild ~= self.child
     end
-    function box:Layout(....)
+    function box:Layout(...)
         cachedChild = child
         return cachedChild:Layout(...)
     end
