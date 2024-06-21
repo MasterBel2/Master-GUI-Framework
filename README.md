@@ -108,7 +108,7 @@ Every draw group also wraps its children in a text group, to ensure text is alwa
 
 Many components are designed to automatically adapt to screen size changes. Rather than taking integer sizes, they require a function that will provide a scaled value on demand.
 
-The framework provides [MasterFramework:Dimension](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2042/scaling.lua) which automatically scales a provided constant with the screen size.
+The framework provides [MasterFramework:AutoScalingDimension](https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2042/scaling.lua) which automatically scales a provided constant with the screen size.
 
 ### Performance
 

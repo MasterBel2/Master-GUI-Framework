@@ -7,11 +7,24 @@ function framework:DrawingGroup(body, name)
     local textGroup = framework:TextGroup(body, name)
 
     function drawingGroup:LayoutChildren()
-        return textGroup:LayoutChildren()
+        return self, textGroup:LayoutChildren()
+    end
+
+    function drawingGroup:NeedsLayout()
+        for _, dimension in ipairs(self.dimensions) do
+            if dimension.ValueHasChanged() then
+                return true
+            end
+        end
     end
 
     function drawingGroup:Layout(availableWidth, availableHeight)
-        return textGroup:Layout(availableWidth, availableHeight)
+        self.dimensions = {}
+        local previousDrawingGroup = activeDrawingGroup
+        activeDrawingGroup = self
+        local width, height = textGroup:Layout(availableWidth, availableHeight)
+        activeDrawingGroup = previousDrawingGroup
+        return width, height
     end
     
     function drawingGroup:Position(x, y)

@@ -21,7 +21,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
     local dragStartWidth
     local dragStartHeight
 
-    local scale = framework:Dimension(1)
+    local scale = framework:AutoScalingDimension(1)
     local oldScale = scale()
 
     local resized = true
@@ -39,14 +39,14 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
 
     local movableFrame -- value set below responders
 
-    local draggableDistance = framework:Dimension(20)
-    local margin = framework:Dimension(0) -- Must be 0; see ResizableMovableFrame documentation. 
+    local draggableDistance = framework:AutoScalingDimension(20)
+    local margin = framework:AutoScalingDimension(0) -- Must be 0; see ResizableMovableFrame documentation. 
 
     local draggable = true
 
     local draggableColor = framework:Color(1, 1, 1, 1)
     local draggingColor = framework:Color(0.2, 1, 0.4, 1)
-    local draggableDecoration = framework:Stroke(framework:Dimension(1), draggableColor, false)
+    local draggableDecoration = framework:Stroke(framework:AutoScalingDimension(1), draggableColor, false)
 
     local highlightWhenDraggable = framework:Background(
         framework:MarginAroundRect(

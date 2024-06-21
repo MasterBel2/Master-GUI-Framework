@@ -49,7 +49,7 @@ function framework:OffsettedViewport(body, mode)
     local draggingVertical = false
     local draggingHorizontal = false
 
-    local scrollbarThickness = framework:Dimension(2)
+    local scrollbarThickness = framework:AutoScalingDimension(2)
     local cachedScrollbarThickness
     
     local scrollStartMouse

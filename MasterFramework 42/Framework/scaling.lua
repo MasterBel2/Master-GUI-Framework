@@ -2,13 +2,44 @@ local Internal = Internal
 local min = Include.math.min
 local floor = Include.math.floor
 local pairs = Include.pairs
+local setmetatable = Include.setmetatable
 
 relativeScaleFactor = 1
 
-function framework:Dimension(unscaled)
-	return function()
-		return floor(unscaled * combinedScaleFactor)
+Internal.autoScalingDimensions = {}
+
+function framework:Dimension(generator)
+	local dimension = { registeredDrawGroups = {} }
+	local cachedValue
+
+	function dimension.ValueHasChanged()
+		return floor(generator()) == cachedValue
 	end
+
+	function dimension.ComputedValue()
+		if Internal.activeDrawingGroup then
+			Internal.activeDrawingGroup.dimensions[dimension] = true
+		end
+		cachedValue = floor(generator())
+		return cachedValue
+	end
+
+	setmetatable(dimension, {
+		__call = dimension.ComputedValue
+	})
+
+	return dimension
+end
+
+function framework:AutoScalingDimension(unscaled)
+	local dimension = Internal.autoScalingDimensions[unscaled]
+
+	if not dimension then
+		dimension = self:Dimension(function() return unscaled * combinedScaleFactor end)
+		Internal.autoScalingDimensions[unscaled] = dimension
+	end
+
+	return dimension
 end
 
 function Internal.updateScreenEnvironment(newWidth, newHeight, newScale)

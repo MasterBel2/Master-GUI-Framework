@@ -1,3 +1,3 @@
 framework.stroke = {
-    defaultBorder = framework:Stroke(framework:Dimension(1), framework.color.hoverColor)
+    defaultBorder = framework:Stroke(framework:AutoScalingDimension(1), framework.color.hoverColor)
 }

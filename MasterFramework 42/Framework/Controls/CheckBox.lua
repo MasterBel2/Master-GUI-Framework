@@ -1,7 +1,7 @@
 function framework:CheckBox(scale, action)
     local checkbox
-    local dimension = framework:Dimension(scale)
-    local radius = framework:Dimension(scale / 2)
+    local dimension = framework:AutoScalingDimension(scale)
+    local radius = framework:AutoScalingDimension(scale / 2)
     
     local checked = false
 

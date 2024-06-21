@@ -1,7 +1,7 @@
 function framework:Button(visual, action)
     local defaultMargin = framework.dimension.defaultMargin
     local button = { visual = visual }
-    local cell = framework:Cell(visual, {}, framework:Dimension(3))
+    local cell = framework:Background(visual, {}, framework:AutoScalingDimension(3))
 
     local highlightColor = framework.color.hoverColor
     button.action = action

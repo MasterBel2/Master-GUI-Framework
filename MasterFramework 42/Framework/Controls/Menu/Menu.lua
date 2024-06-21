@@ -38,7 +38,7 @@ function framework:Menu(options, anchor)
 
     local optionElements = {}
 
-    celledStack = framework:CelledVerticalStack(optionElements, framework:Dimension(0))
+    celledStack = framework:CelledVerticalStack(optionElements, framework:AutoScalingDimension(0))
 
     local menuItemAtCoordinates
     local highlightedMenuItem
@@ -96,8 +96,8 @@ function framework:Menu(options, anchor)
         end
     end
     
-    local leftMargin = framework:Dimension(0)
-    local topMargin = framework:Dimension(8)
+    local leftMargin = framework:AutoScalingDimension(0)
+    local topMargin = framework:AutoScalingDimension(8)
     local rightMargin = leftMargin
     local bottomMargin = topMargin
 
@@ -111,7 +111,7 @@ function framework:Menu(options, anchor)
                 bottomMargin
             ),
             { framework:Color(0, 0, 0, 0.7)},
-            framework:Dimension(5)
+            framework:AutoScalingDimension(5)
         ),
         function(isOver)
             menu.mouseIsOver = isOver
@@ -152,10 +152,10 @@ function framework:Menu(options, anchor)
 
             return framework:MarginAroundRect(
                 component,
-                framework:Dimension(8),
-                framework:Dimension(1),
-                framework:Dimension(8),
-                framework:Dimension(1)
+                framework:AutoScalingDimension(8),
+                framework:AutoScalingDimension(1),
+                framework:AutoScalingDimension(8),
+                framework:AutoScalingDimension(1)
             )
         end)
 

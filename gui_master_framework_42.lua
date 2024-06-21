@@ -95,6 +95,7 @@ function widget:Initialize()
         unpack = unpack,
         loadstring = loadstring,
         setfenv = setfenv,
+        setmetatable = setmetatable,
 		os = os,
 
         widgetHandler = widgetHandler,
@@ -289,6 +290,7 @@ end
 
 function widget:DrawScreen()
 	framework.startProfile("DrawScreen")
+
 	frameworkInternal.hasCheckedElementBelowMouse = false
 	frameworkInternal.elementBelowMouse = nil
 	local index = #frameworkInternal.elementOrder

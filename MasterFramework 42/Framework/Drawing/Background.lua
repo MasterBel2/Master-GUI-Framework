@@ -21,7 +21,7 @@ local table_insert = Include.table.insert
     - `Geometry()`: Returns the cached position and size.
 ]]
 function framework:Background(body, decorations, cornerRadius)
-    local background = { cornerRadius = cornerRadius or framework:Dimension(0), decorations = decorations }
+    local background = { cornerRadius = cornerRadius or framework:AutoScalingDimension(0), decorations = decorations }
 
     local width, height
     local cachedX, cachedY

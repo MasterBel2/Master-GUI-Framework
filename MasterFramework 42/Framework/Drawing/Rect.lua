@@ -5,28 +5,14 @@ end
 
 function framework:LayoutRect(width, height)
 	local rect = {}
-	local cachedWidth, cachedHeight
 
-	function rect:SetSize(newWidth, newHeight)
-		width = newWidth
-		height = newHeight
-	end
-
-	function rect:LayoutChildren()
-		return self
-	end
-	
-	function rect:NeedsLayout()
-		return cachedWidth ~= width() or cachedHeight ~= height()
-	end
+	function rect:LayoutChildren() end
 
 	function rect:Layout()
-		cachedWidth = width()
-		cachedHeight = height()
-		return cachedWidth, cachedHeight
+		return width(), height()
 	end
 
-	function rect:Position() --[[ noop ]] end
+	function rect:Position() end
 
 	return rect
 end

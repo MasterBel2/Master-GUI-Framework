@@ -9,11 +9,11 @@ local math = Include.math
 function framework:MovableFrame(key, child, defaultX, defaultY)
     local frame = {}
 
-    local handleDimension = framework:Dimension(20)
+    local handleDimension = framework:AutoScalingDimension(20)
     local xOffset = defaultX -- offsets are to top left corner
     local yOffset = defaultY
 
-    local scale = framework:Dimension(1)
+    local scale = framework:AutoScalingDimension(1)
     local oldScale = scale() -- Maybe cache this?
 
     local handleDecorations = { unhighlightedColor }

@@ -120,7 +120,7 @@ function EnableDebugMode(target)
 
 	local dummyRect
 	if draw then
-		dummyRect = { cornerRadius = framework:Dimension(0) }
+		dummyRect = { cornerRadius = function() return 0 end }
 	end
 
 	for key, value in pairs(target) do

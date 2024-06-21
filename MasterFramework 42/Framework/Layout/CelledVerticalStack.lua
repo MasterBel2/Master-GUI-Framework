@@ -15,7 +15,7 @@ function framework:CelledVerticalStack(contents, spacing)
     local _SetMembers = celledStack.SetMembers
     function celledStack:SetMembers(newMembers)
         _SetMembers(self, imap(newMembers, function(_, member)
-            return framework:Cell(member, {}, framework:Dimension(0))
+            return framework:Cell(member, {}, framework:AutoScalingDimension(0))
         end))
     end
 
