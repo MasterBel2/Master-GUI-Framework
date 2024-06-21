@@ -47,7 +47,7 @@ function framework:VerticalStack(_members, spacing, xAnchor)
 	end
 
 	function verticalStack:NeedsLayout()
-		return cachedXAnchor ~= self.xAnchor
+		return membersUpdated or cachedXAnchor ~= self.xAnchor
 	end
 
 	function verticalStack:Layout(availableWidth, availableHeight)
