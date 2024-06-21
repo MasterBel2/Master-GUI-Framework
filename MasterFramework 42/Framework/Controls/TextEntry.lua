@@ -98,12 +98,14 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
     local selectedStroke = framework:Stroke(framework:Dimension(2), framework.color.hoverColor)
     local textStack = framework:StackInPlace({ entry.text, entry.placeholder }, 0, 0)
-    local background = framework:MarginAroundRect(
-        textStack,
-        framework:Dimension(8),
-        framework:Dimension(8),
-        framework:Dimension(8),
-        framework:Dimension(8),
+    local background = framework:Background(
+        framework:MarginAroundRect(
+            textStack,
+            framework:Dimension(8),
+            framework:Dimension(8),
+            framework:Dimension(8),
+            framework:Dimension(8)
+        ), 
         { framework:Color(0, 0, 0, 0.7) }
     )
     local selectionDetector = framework:MousePressResponder(

@@ -47,18 +47,18 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
     local draggableColor = framework:Color(1, 1, 1, 1)
     local draggingColor = framework:Color(0.2, 1, 0.4, 1)
     local draggableDecoration = framework:Stroke(framework:Dimension(1), draggableColor, false)
-    local marginDecorations = {}
 
-    local highlightWhenDraggable = framework:MarginAroundRect(
-        child,
-        margin,
-        margin,
-        margin,
-        margin,
-        marginDecorations
-    )
+    local highlightWhenDraggable = framework:Background(
+        framework:MarginAroundRect(
+            child,
+            margin,
+            margin,
+            margin,
+            margin
+        ),
+    {})
 
-    frame.margin = highlightWhenDraggable
+    frame.background = highlightWhenDraggable
 
     function frame:DebugInfo()
         return {

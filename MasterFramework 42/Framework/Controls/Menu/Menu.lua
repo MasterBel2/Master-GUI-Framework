@@ -102,12 +102,14 @@ function framework:Menu(options, anchor)
     local bottomMargin = topMargin
 
     local body = framework:MouseOverChangeResponder(
-        framework:MarginAroundRect(
-            menuOptions,
-            leftMargin,
-            topMargin,
-            rightMargin,
-            bottomMargin,
+        framework:Background(
+            framework:MarginAroundRect(
+                menuOptions,
+                leftMargin,
+                topMargin,
+                rightMargin,
+                bottomMargin,
+            ), 
             { framework:Color(0, 0, 0, 0.7)},
             framework:Dimension(5)
         ),
