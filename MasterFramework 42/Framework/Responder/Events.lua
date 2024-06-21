@@ -69,7 +69,7 @@ local function SearchDownResponderTree(responder, x, y, ...)
 			break
 		end
 		if not (responderX and responderY and responderWidth and responderHeight) then
-			Error("SearchDownResponderTree", "childResponder:Geometry is incomplete: " .. (responderX or "nil") .. ", " .. (responderY or "nil") .. ", " .. (responderWidth or "nil") .. ", " .. (responderHeight or "nil"), responder._debugTypeIdentifier or "nil", (responder.rect and responder.rect._debugTypeIdentifier) or "nil", (responder._isDebugResponder and "true") or "false", (responder.noRect and "true") or "false")
+			Error("SearchDownResponderTree", "childResponder:Geometry is incomplete: " .. (responderX or "nil") .. ", " .. (responderY or "nil") .. ", " .. (responderWidth or "nil") .. ", " .. (responderHeight or "nil"), responder._debugTypeIdentifier or "nil", (responder._isDebugResponder and "true") or "false", (responder.noRect and "true") or "false")
 			break
 		end
 

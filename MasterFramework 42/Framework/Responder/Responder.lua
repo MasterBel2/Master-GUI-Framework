@@ -6,7 +6,7 @@ local Internal = Internal
 local responderID = 0
 
 function framework:Responder(rect, event, action)
-	local responder = { rect = rect, action = action, responders = {}, id = responderID, _event = event }
+	local responder = { action = action, responders = {}, id = responderID, _event = event }
 	responderID = responderID + 1
 
 	local width, height
@@ -16,21 +16,14 @@ function framework:Responder(rect, event, action)
 	function responder:CachedPosition() return cachedX, cachedY end
 	function responder:Geometry() return cachedX, cachedY, width, height end
 
-	local cachedRect
-
 	function responder:LayoutChildren()
-		return self, self.rect:LayoutChildren()
-	end
-
-	function responder:NeedsLayout()
-		return self.rect ~= cachedRect
+		return rect:LayoutChildren()
 	end
 
 	local laidOut
 	function responder:Layout(...)
 		laidOut = true
-		cachedRect = self.rect
-		width, height = cachedRect:Layout(...)
+		width, height = rect:Layout(...)
 		return width, height
 	end
 
@@ -50,8 +43,7 @@ function framework:Responder(rect, event, action)
 				Log(path)
 			end
 		end
-		if not self.rect then Log("We dont have a rect!") end
-		if not cachedRect then Log("We dont have a cached rect!") end
+		if not rect then Log("We dont have a rect!") end
 
 		-- Parent keeps track of the order of responders, and use that to decide who gets the interactions first
 		local previousActiveResponder = Internal.activeResponders[event]
@@ -60,7 +52,7 @@ function framework:Responder(rect, event, action)
 
 		Internal.activeResponders[event] = self
 		clear(self.responders)
-		cachedRect:Position(x, y)
+		rect:Position(x, y)
 		Internal.activeResponders[event] = previousActiveResponder
 		
 		cachedX = x

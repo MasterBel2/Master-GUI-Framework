@@ -23,10 +23,10 @@ local recalculatingRasterizer = false
 -- Additional notes: 
 --  - When drawDebug is enabled, rasterization is disabled.
 --  - When scaling or screen size changes, all rasterizers will automatically invalidate themselves.
-function framework:Rasterizer(providedBody)
+function framework:Rasterizer(body)
 	local rasterizer = { invalidated = true, type = "Rasterizer" }
 
-	local drawingGroup = framework:DrawingGroup(providedBody)
+	local drawingGroup = framework:DrawingGroup(body)
 	
 	-- debug
 	local framesCalculatedInARow = 0
@@ -38,11 +38,6 @@ function framework:Rasterizer(providedBody)
 
 	for _, event in pairs(events) do
 		activeResponderCache[event] = { responders = {} }
-	end
-
-	function rasterizer:SetBody(newBody)
-		drawingGroup:SetBody(newBody)
-		invalidated = true
 	end
 	
 	function rasterizer:LayoutChildren()

@@ -4,13 +4,12 @@ local Internal = Internal
 
 local tooltipID = 0
 function framework:Tooltip(rect, description)
-	local tooltip = { rect = rect, description = description, tooltips = {} }
+	local tooltip = { description = description, tooltips = {} }
 	local id = tooltipID -- like for responder, this is immutable so doesn't need to be stored in the table
 	tooltipID = tooltipID + 1
 
 	local width, height
 	local cachedX, cachedY
-	local cachedRect
 
 	function tooltip:Size()
 		return width, height
@@ -25,16 +24,11 @@ function framework:Tooltip(rect, description)
 	end
 
 	function tooltip:LayoutChildren()
-		return self, self.rect:LayoutChildren()
-	end
-
-	function tooltip:NeedsLayout()
-		return cachedRect ~= self.rect
+		return rect:LayoutChildren()
 	end
 
 	function tooltip:Layout(...)
-		cachedRect = self.rect
-		width, height = cachedRect:Layout(...)
+		width, height = rect:Layout(...)
 		return width, height
 	end
 	
@@ -50,7 +44,7 @@ function framework:Tooltip(rect, description)
 		end
 		Internal.activeTooltip = self
 
-		cachedRect:Position(x, y)
+		rect:Position(x, y)
 		Internal.activeTooltip = previousActiveTooltip
 		
 		cachedX = x

@@ -8,14 +8,7 @@ function framework:PrimaryFrame(body)
 	local width, height
 	local bodyChanged
 
-	local _body
-
-	function primaryFrame:SetBody()
-		bodyChanged = true
-		_body = framework:TextGroup(body)
-	end
-
-	primaryFrame:SetBody(body)
+	local _body = framework:TextGroup(body)
 
 	function primaryFrame:Geometry()
 		return cachedX, cachedY, width, height
@@ -34,11 +27,7 @@ function framework:PrimaryFrame(body)
 	end
 
 	function primaryFrame:LayoutChildren()
-		return self, body:LayoutChildren()
-	end
-
-	function primaryFrame:NeedsLayout()
-		return bodyChanged
+		return body:LayoutChildren()
 	end
 
 	function primaryFrame:Layout(availableWidth, availableHeight)
