@@ -25,14 +25,11 @@ function framework:DrawingGroup(body, name)
         activeDrawingGroup = previousDrawingGroup
     end
 
-    local cachedDrawCount
-
     function drawingGroup:Draw()
-        for i = 1, #drawTargets in ipairs(self.drawTargets) do
-            local drawTarget = drawTargets[i]
-            drawTarget:Draw()
+        local drawTargets = self.drawTargets
+        for i = 1, #drawTargets do
+            drawTargets[i]:Draw()
         end
-        cachedDrawCount = #self.drawTargets
     end
 
     function drawingGroup:SetBody(newBody)

@@ -14,8 +14,10 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 
 	function stackInPlace:LayoutChildren()
 		local layoutChildren = {}
+		Log(#self.members)
 		for i = 1, #self.members do
-			layoutChildren[i] = { self.members[i]:LayoutChildren() }
+			local member = self.members[i]
+			layoutChildren[i] = { member:LayoutChildren() }
 		end
 
 		return self, unpack(table_joinArrays(layoutChildren))

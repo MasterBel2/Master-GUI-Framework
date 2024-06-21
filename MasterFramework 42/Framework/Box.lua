@@ -6,7 +6,7 @@ function framework:Box(child)
         return cachedChild ~= self.child
     end
     function box:Layout(...)
-        cachedChild = child
+        cachedChild = self.child
         return cachedChild:Layout(...)
     end
     function box:LayoutChildren()
