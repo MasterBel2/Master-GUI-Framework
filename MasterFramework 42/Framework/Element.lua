@@ -184,15 +184,13 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		elseif not layoutChildren then
 			needsLayout = true
 		else
-			Internal.DebugInfo[self.key .. ":layoutChildren Count"] = #layoutChildren
-			-- local success, needsLayoutOrError = pcall(self.NeedsLayout, self)
-			needsLayout = self:NeedsLayout()
-			-- if not success then
-			-- 	Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:NeedsLayout", needsLayoutOrError)
-			-- 	framework:RemoveElement(self.key)
-			-- else
-			-- 	needsLayout = needsLayoutOrError
-			-- end
+			local success, needsLayoutOrError = pcall(self.NeedsLayout, self)
+			if not success then
+				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:NeedsLayout", needsLayoutOrError)
+				framework:RemoveElement(self.key)
+			else
+				needsLayout = needsLayoutOrError
+			end
 		end
 		endProfile(self.key .. ":NeedsLayout()")
 
@@ -216,6 +214,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 				framework:RemoveElement(self.key)
 			end
 			endProfile(self.key .. ":LayoutChildren()")
+			Internal.DebugInfo[self.key .. " layout children"] = table.imap(layoutChildren, function(_, component) return component._debugUniqueIdentifier .. ": " .. component._debugTypeIdentifier end) 
 		
 			startProfile(self.key .. ":Layout()")
 			local success, _error = pcall(drawingGroup.Layout, drawingGroup, viewportWidth, viewportHeight)

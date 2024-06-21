@@ -129,7 +129,7 @@ function widget:Initialize()
 
 	frameworkInternal.updateScreenEnvironment(viewSizeX, viewSizeY, framework.relativeScaleFactor)
 
-	frameworkInternal.SetDebugMode(false, false, false)
+	frameworkInternal.SetDebugMode(true, false, false)
 
     isAboveThing = frameworkInternal.IsAboveWatcher()
 

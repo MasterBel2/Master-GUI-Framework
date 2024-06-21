@@ -48,7 +48,6 @@ function framework:Rasterizer(body)
 	local cachedNeedsLayout
 	function rasterizer:NeedsLayout()
 		if not layoutChildren then return true end
-		Internal.DebugInfo["Rasterizer layoutChildren count"] = #layoutChildren
 		for i = 1, #layoutChildren do
 			if layoutChildren[i]:NeedsLayout() then
 				cachedNeedsLayout = true
@@ -62,6 +61,7 @@ function framework:Rasterizer(body)
 	local cachedAvailableWidth, cachedAvailableHeight
 	function rasterizer:Layout(availableWidth, availableHeight)
 		layoutChildren = { drawingGroup:LayoutChildren() }
+		Internal.DebugInfo[self._debugUniqueIdentifier .. ": " .. self._debugTypeIdentifier .. " layout children"] = table.imap(layoutChildren, function(_, component) return component._debugUniqueIdentifier .. ": " .. component._debugTypeIdentifier end) 
 		self.invalidated = self.invalidated or cachedNeedsLayout or viewportDidChange or availableWidth ~= cachedAvailableWidth or availableHeight ~= availableHeight
 		cachedNeedsLayout = false
 		if self.invalidated then
