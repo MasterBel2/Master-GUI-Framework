@@ -162,7 +162,7 @@ function framework:WrappingText(string, color, font, maxLines)
 		return self
 	end
 	function wrappingText:NeedsLayout()
-		return stringChanged or font.key ~= cachedFontKey
+		return stringChanged
 	end
 
 	function wrappingText:Layout(availableWidth, availableHeight, profile)
