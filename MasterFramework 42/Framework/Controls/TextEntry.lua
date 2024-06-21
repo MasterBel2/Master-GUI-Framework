@@ -511,9 +511,9 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
     function entry:Layout(...)
         if self.text:GetRawString() == "" then
-            textStack.members[2] = self.placeholder
+            textStack:SetMembers({ self.text , self.placeholder })
         else
-            textStack.members[2] = nil
+            textStack:SetMembers({ self.text })
         end
         return selectionDetector:Layout(...)
     end

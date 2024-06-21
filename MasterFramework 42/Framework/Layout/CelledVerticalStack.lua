@@ -12,10 +12,11 @@ local imap = Include.table.imap
 function framework:CelledVerticalStack(contents, spacing)
     local celledStack = framework:VerticalStack({}, spacing, 0)
 
+    local _SetMembers = celledStack.SetMembers
     function celledStack:SetMembers(newMembers)
-        self.members = imap(newMembers, function(_, member)
+        _SetMembers(self, imap(newMembers, function(_, member)
             return framework:Cell(member, {}, framework:Dimension(0))
-        end)
+        end))
     end
 
     celledStack:SetMembers(contents)
@@ -23,8 +24,9 @@ function framework:CelledVerticalStack(contents, spacing)
     celledStack._Layout = celledStack.Layout
     function celledStack:Layout(availableWidth, availableHeight)
         local width, height = self:_Layout(availableWidth, availableHeight)
-        for i = 1, #self.members do
-            self.members[i].overrideWidth = width
+        local members = self:GetMembers()
+        for i = 1, #members do
+            members[i].overrideWidth = width
         end
         return width, height
     end

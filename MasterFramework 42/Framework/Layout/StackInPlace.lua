@@ -3,8 +3,8 @@ local max = Include.math.max
 local table_joinArrays = Include.table.joinArrays
 local unpack = Include.unpack
 
-function framework:StackInPlace(contents, xAnchor, yAnchor)
-	local stackInPlace = { members = contents, xAnchor = xAnchor, yAnchor = yAnchor, type = "StackInPlace" }
+function framework:StackInPlace(_members, xAnchor, yAnchor)
+	local stackInPlace = { xAnchor = xAnchor, yAnchor = yAnchor, type = "StackInPlace" }
 
 	local maxWidth
 	local maxHeight
@@ -12,11 +12,32 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 	local cachedXAnchor
 	local cachedYAnchor
 
+	local members = {}
+	local membersUpdated
+
+	function stackInPlace:GetMembers()
+		local membersCopy = {}
+		for i = 1, #members do 
+			membersCopy[i] = members[i]
+		end
+		return members
+	end
+	function stackInPlace:SetMembers(newMembers)
+		membersUpdated = true
+		for i = #newMembers, #members do
+			members[i] = nil
+		end
+		for i = 1, #newMembers do
+			members[i] = newMembers[i]
+		end
+	end
+
+	stackInPlace:SetMembers(_members)
+
 	function stackInPlace:LayoutChildren()
 		local layoutChildren = {}
-		Log(#self.members)
-		for i = 1, #self.members do
-			local member = self.members[i]
+		for i = 1, #members do
+			local member = members[i]
 			layoutChildren[i] = { member:LayoutChildren() }
 		end
 
@@ -25,23 +46,15 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 
 	local cachedMemberCount
 	function stackInPlace:NeedsLayout()
-		local members = self.members
-		if #members ~= cachedMemberCount or cachedXAnchor ~= self.xAnchor or cachedYAnchor ~= self.yAnchor then
-			return true
-		end
-		for i = 1, cachedMemberCount do
-			if i ~= self.members[i].stackInPlaceCachedIndex then
-				return true
-			end
-		end
+		return membersUpdated or cachedXAnchor ~= self.xAnchor or cachedYAnchor ~= self.yAnchor
 	end
 
 	function stackInPlace:Layout(availableWidth, availableHeight)
-
+		membersUpdated = false
+		
 		maxWidth = 0
 		maxHeight = 0
 
-		local members = self.members
 		cachedMemberCount = #members
 
 		for i = 1, cachedMemberCount do 
@@ -51,7 +64,6 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 			maxWidth = max(maxWidth, memberWidth)
 			maxHeight = max(maxHeight, memberHeight)
 
-			member.stackInPlaceCachedIndex = i
 			member.stackInPlaceCachedWidth = memberWidth
 			member.stackInPlaceCachedHeight = memberHeight
 		end
@@ -60,7 +72,6 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 	end
 
 	function stackInPlace:Position(x, y)
-		local members = self.members
 		cachedXAnchor = self.xAnchor
 		cachedYAnchor = self.yAnchor
 
