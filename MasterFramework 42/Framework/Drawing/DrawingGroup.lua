@@ -45,10 +45,6 @@ function framework:DrawingGroup(body, name)
         end
     end
 
-    function drawingGroup:SetBody(newBody)
-        textGroup:SetBody(newBody)
-    end
-
     function drawingGroup:NeedsRedraw()
         local drawTargets = self.drawTargets
 

@@ -17,10 +17,6 @@ function framework:TextGroup(body, name)
 		return body:LayoutChildren()
 	end
 
-	function textGroup:SetBody(newBody)
-		body = newBody
-	end
-
 	function textGroup:AddElement(newElement)
 		local fontKey = newElement._readOnly_font.key
 		local fontGroup = elements[fontKey] or {}
