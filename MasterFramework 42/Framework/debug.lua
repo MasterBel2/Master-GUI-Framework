@@ -8,7 +8,12 @@ local ipairs = Include.ipairs
 local string = Include.string
 local table_insert = Include.table.insert
 
-local Spring_GetTimerMicros = Include.Spring.GetTimerMicros
+local Spring_GetTimer
+if Include.Spring.GetTimerMicros then
+	Spring_GetTimer = Include.Spring.GetTimerMicros
+else
+	Spring_GetTimer = Include.Spring.GetTimer
+end
 local Spring_DiffTimers = Include.Spring.DiffTimers
 local Spring_Echo = Include.Spring.Echo
 
@@ -80,14 +85,14 @@ end
 
 local profileTimers = {}
 function startProfile(profileName)
-	profileTimers[profileName] = Spring_GetTimerMicros()
+	profileTimers[profileName] = Spring_GetTimer()
 	-- startTimer = Spring_GetTimer()
 end
 
 function endProfile(profileName, recordMax)
 	-- local time = Spring_DiffTimers(Spring_GetTimer(), startTimer, nil)
 	if profileTimers[profileName] then
-		local time = Spring_DiffTimers(Spring_GetTimerMicros(), profileTimers[profileName], nil, true)
+		local time = Spring_DiffTimers(Spring_GetTimer(), profileTimers[profileName], nil, true)
 		if not recordMax or ((framework.stats[profileName] or 0) < time) then
 			framework.stats[profileName] = time
 		end
