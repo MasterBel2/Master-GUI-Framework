@@ -11,7 +11,7 @@ function framework:DrawingGroup(body, name)
     end
 
     function drawingGroup:NeedsLayout()
-        for _, dimension in ipairs(self.dimensions) do
+        for dimension, _ in pairs(self.dimensions) do
             if dimension.ValueHasChanged() then
                 return true
             end
