@@ -68,6 +68,7 @@ function framework:Rasterizer(body)
 			width, height = drawingGroup:Layout(availableWidth, availableHeight)
 			cachedAvailableWidth = availableWidth 
 			cachedAvailableHeight = availableHeight
+			Internal.DebugInfo[self._debugUniqueIdentifier .. ": " .. (self._debugTypeIdentifier or "\"unkown\"") .. " layout children"] = table.imap(layoutChildren, function(_, component) return (component._debugUniqueIdentifier or "\"unknown\"") .. ": " .. component._debugTypeIdentifier end)
 		end
 		return width, height 
 	end

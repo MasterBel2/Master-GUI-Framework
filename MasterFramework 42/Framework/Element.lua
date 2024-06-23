@@ -242,7 +242,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 				framework:RemoveElement(self.key)
 			end
 			endProfile(self.key .. ":LayoutChildren()")
-			Internal.DebugInfo[self.key .. " layout children"] = table.imap(layoutChildren, function(_, component) return component._debugUniqueIdentifier .. ": " .. component._debugTypeIdentifier end) 
+			Internal.DebugInfo[self.key .. " layout children"] = table.imap(layoutChildren, function(_, component) return (component._debugUniqueIdentifier or "\"unknown\"") .. ": " .. (component._debugTypeIdentifier or "\"unknown\"") end) 
 		end
 
 		startProfile(self.key .. ":Draw()")
