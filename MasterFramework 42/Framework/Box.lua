@@ -1,16 +1,19 @@
 function framework:Box(child)
-	local box = { child = child }
+	local box = Component(true, false)
 
-    local cachedChild
-    function box:NeedsLayout()
-        return cachedChild ~= self.child
+    function box:SetChild(newChild)
+        if child ~= newChild then
+            chlid = newChild
+            self:NeedsLayout()
+        end
     end
+    
     function box:Layout(...)
         cachedChild = self.child
         return cachedChild:Layout(...)
     end
     function box:LayoutChildren()
-        return self, self.child:LayoutChildren()
+        return child:LayoutChildren()
     end
     function box:Position(...)
         return cachedChild:Position(...)
