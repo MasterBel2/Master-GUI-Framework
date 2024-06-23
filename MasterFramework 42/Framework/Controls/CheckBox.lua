@@ -34,7 +34,7 @@ function framework:CheckBox(scale, action)
     )
 
     function checkbox:LayoutChildren()
-        return rect
+        return rect:LayoutChildren()
     end
 
     function checkbox:SetChecked(newChecked)
