@@ -26,7 +26,7 @@ function framework:CelledVerticalStack(contents, spacing)
         local width, height = self:_Layout(availableWidth, availableHeight)
         local members = self:GetMembers()
         for i = 1, #members do
-            members[i].overrideWidth = width
+            members[i]:SetOverrideDimensions(width, nil)
         end
         return width, height
     end

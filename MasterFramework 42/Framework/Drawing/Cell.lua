@@ -16,27 +16,29 @@ local table_insert = Include.table.insert
     - `cornerRadius`: a function returning a number whose result will be used to determine the corner radius for the decorations drawn.
 ]]
 function framework:Cell(body, decorations, cornerRadius)
-    local cell = {}
+    local cell = Component(true, false)
 
-    body = framework:Background(body, decorations, cornerRadius)
+    body = framework:Background(body, decorations, cornerRadius) -- TODO: legacy integration of Background
 
-    local width, height
-    local cachedOverrideWidth
-    local cachedOverrideHeight
+    local overrideWidth
+    local overrideHeight
 
-    function cell:LayoutChildren()
-        return self, body:LayoutChildren()
+    function cell:SetOverrideDimensions(newOverrideWidth, newOverrideHeight)
+        if newOverrideWidth ~= overrideWidth or newOverrideHeight ~= overrideHeight then
+            overrideWidth = newOverrideWidth
+            overrideHeight = newOverrideHeight
+            self:NeedsLayout()
+        end
     end
 
-    function cell:NeedsLayout()
-        return cachedOverrideWidth ~= self.overrideWidth or cachedOverrideHeight ~= self.overrideHeight
+    function cell:LayoutChildren()
+        return body:LayoutChildren()
     end
 
     function cell:Layout(availableWidth, availableHeight)
+        self:RegisterDrawingGroup()
         local width, height = body:Layout(availableWidth, availableHeight)
-        cachedOverrideWidth = self.overrideWidth
-        cachedOverrideHeight = self.overrideHeight
-        return cachedOverrideWidth or width, cachedOverrideHeight or height
+        return overrideWidth or width, overrideHeight or height
     end
 
     function cell:Position(x, y)
