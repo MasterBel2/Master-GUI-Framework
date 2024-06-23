@@ -235,6 +235,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 				for i = 1, #result - 1 do
 					result[i] = result[i + 1]
 				end
+				result[#result] = nil
 				layoutChildren = result
 			else
 				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:LayoutChildren", "No children!")
