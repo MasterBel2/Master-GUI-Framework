@@ -1,18 +1,23 @@
 function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, yOffset)
-	local anchor = { xOffset = xOffset, yOffset = yOffset }
+	local anchor = Component(true, false)
 
-	local cachedXOffset
-	local cachedYOffset
+	local xOffset
+	local yOffset
 
-	function anchor:LayoutChildren()
-		return self, anchoredRect:LayoutChildren(), rectToAnchorTo:LayoutChildren()
+	function anchor:SetOffsets(newXOffset, newYOffset)
+		if newXOffset ~= xOffset or newYOffset ~= yOffset then
+			xOffset = newXOffset
+			yOffset = newYOffset
+			self:NeedsPosition()
+		end
 	end
 
-	function anchor:NeedsLayout()
-		return cachedXOffset ~= self.xOffset or cachedYOffset ~= self.yOffset
+	function anchor:LayoutChildren()
+		return anchoredRect:LayoutChildren(), rectToAnchorTo:LayoutChildren()
 	end
 
 	function anchor:Layout(availableWidth, availableHeight)
+		self:RegisterDrawingGroup()
 		rectToAnchorToWidth, rectToAnchorToHeight = rectToAnchorTo:Layout(availableWidth, availableHeight)
 		anchoredRectWidth, anchoredRectHeight = anchoredRect:Layout(availableWidth, availableHeight)
 		
@@ -20,10 +25,8 @@ function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, y
 	end
 
 	function anchor:Position(x, y)
-		cachedXOffset = self.xOffset
-		cachedYOffset = self.yOffset
         rectToAnchorTo:Position(x, y)
-        anchoredRect:Position(x + cachedXOffset, y + cachedYOffset)
+        anchoredRect:Position(x + xOffset, y + yOffset)
 	end
 	return anchor
 end
