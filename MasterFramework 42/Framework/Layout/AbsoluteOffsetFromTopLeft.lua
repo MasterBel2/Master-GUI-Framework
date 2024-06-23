@@ -1,29 +1,28 @@
 function framework:AbsoluteOffsetFromTopLeft(body, xOffset, yOffset)
-	local absoluteOffset = { xOffset = xOffset, yOffset = yOffset }
+	local absoluteOffset = Component(true, false)
 	local width, height
 	local _availableHeight
 
-	local cachedXOffset
-	local cachedYOffset
+	function absoluteOffset:SetOffsets(newXOffset, newYOffset)
+		if newXOffset ~= xOffset or newYOffset ~= yOffset then
+			xOffset = newXOffset
+			yOffset = newYOffset
+			self:NeedsLayout()
+		end
+	end
 
 	function absoluteOffset:LayoutChildren()
-		return self, body:LayoutChildren()
-	end
-	
-	function absoluteOffset:NeedsLayout()
-		return cachedXOffset ~= self.xOffset or cachedYOffset ~= self.yOffset
+		return body:LayoutChildren()
 	end
 
 	function absoluteOffset:Layout(availableWidth, availableHeight)
 		_availableHeight = availableHeight
-		cachedXOffset = self.xOffset
-		cachedYOffset = self.yOffset
-		width, height = body:Layout(availableWidth - cachedXOffset, availableHeight - cachedYOffset)
-		return width + cachedXOffset, height + (availableHeight - cachedYOffset)
+		width, height = body:Layout(availableWidth - xOffset, availableHeight - yOffset)
+		return width + xOffset, height + (availableHeight - yOffset)
 	end
 
 	function absoluteOffset:Position(x, y)
-		body:Position(x + cachedXOffset, y + _availableHeight - cachedYOffset - height)
+		body:Position(x + xOffset, y + _availableHeight - yOffset - height)
 	end
 
 	return absoluteOffset
