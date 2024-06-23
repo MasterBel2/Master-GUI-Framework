@@ -13,12 +13,12 @@ function framework:Dimension(generator)
 	local cachedValue
 
 	function dimension.ValueHasChanged()
-		return floor(generator()) == cachedValue
+		return floor(generator()) ~= cachedValue
 	end
 
 	function dimension.ComputedValue()
-		if Internal.activeDrawingGroup then
-			Internal.activeDrawingGroup.dimensions[dimension] = true
+		if activeDrawingGroup then
+			activeDrawingGroup.dimensions[dimension] = true
 		end
 		cachedValue = floor(generator())
 		return cachedValue
