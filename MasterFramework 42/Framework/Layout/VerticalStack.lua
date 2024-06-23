@@ -8,15 +8,13 @@ local unpack = Include.unpack
 -- (N.B. Unbounded components at the end of the stack will always size correctly. An example of a component with
 -- unbounded height is one that returns `availableWidth, availableHeight` from its `Layout` method.)
 function framework:VerticalStack(_members, spacing, xAnchor)
-	local verticalStack = { xAnchor = xAnchor, spacing = spacing }
+	local verticalStack = Component(true, false)
 
 	local maxWidth
 
-	local cachedXAnchor
 	local cachedMemberCount
 
 	local members = {}
-	local membersUpdated
 
 	function verticalStack:GetMembers()
 		local membersCopy = {}
@@ -25,8 +23,9 @@ function framework:VerticalStack(_members, spacing, xAnchor)
 		end
 		return members
 	end
+
 	function verticalStack:SetMembers(newMembers)
-		membersUpdated = true
+		self:NeedsLayout()
 		for i = #newMembers + 1, #members do
 			members[i] = nil
 		end
@@ -37,21 +36,24 @@ function framework:VerticalStack(_members, spacing, xAnchor)
 
 	verticalStack:SetMembers(_members)
 
+	function verticalStack:SetXAnchor(newXAnchor)
+		if newXAnchor ~= xAnchor then
+			self:NeedsPosition()
+			xAnchor = newXAnchor
+		end
+	end
+
 	function verticalStack:LayoutChildren()
 		local layoutChildren = {}
 		for i = 1, #members do
 			layoutChildren[i] = { members[i]:LayoutChildren() }
 		end
 
-		return self, unpack(table_joinArrays(layoutChildren))
-	end
-
-	function verticalStack:NeedsLayout()
-		return membersUpdated or cachedXAnchor ~= self.xAnchor
+		return unpack(table_joinArrays(layoutChildren))
 	end
 
 	function verticalStack:Layout(availableWidth, availableHeight)
-		membersUpdated = false
+		self:RegisterDrawingGroup()
 
 		cachedMemberCount = #members
 		if cachedMemberCount == 0 then
@@ -60,7 +62,7 @@ function framework:VerticalStack(_members, spacing, xAnchor)
 
 		local elapsedDistance = 0
 	 	maxWidth = 0
-		local spacing = self.spacing()
+		local spacing = spacing()
 		
 		for i = 1, cachedMemberCount do
 			local member = members[cachedMemberCount - (i - 1)]
@@ -75,11 +77,9 @@ function framework:VerticalStack(_members, spacing, xAnchor)
 	end
 
 	function verticalStack:Position(x, y)
-		cachedXAnchor = self.xAnchor
-
 		for i = 1, cachedMemberCount do
 			local member = members[i]
-			member:Position(x + floor((maxWidth - member.vStackCachedWidth) * cachedXAnchor), y + member.vStackCachedY)
+			member:Position(x + floor((maxWidth - member.vStackCachedWidth) * xAnchor), y + member.vStackCachedY)
 		end
 	end
 

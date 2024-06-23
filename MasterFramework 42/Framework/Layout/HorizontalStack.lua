@@ -8,10 +8,10 @@ local unpack = Include.unpack
 -- (N.B. Unbounded components at the end of the stack will always size correctly. An example of an component with
 -- unbounded width is one that returns `availableWidth, availableHeight` from its `Layout` method.)
 function framework:HorizontalStack(_members, spacing, yAnchor)
-	local horizontalStack = { yAnchor = yAnchor or 0.5, spacing = spacing }
+	local horizontalStack = Component(true, false)
 
 	local members = {}
-	local membersUpdated
+	local cachedMemberCount
 
 	function horizontalStack:GetMembers()
 		local membersCopy = {}
@@ -20,8 +20,9 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 		end
 		return members
 	end
+
 	function horizontalStack:SetMembers(newMembers)
-		membersUpdated = true
+		self:NeedsLayout()
 		for i = #newMembers + 1, #members do
 			members[i] = nil
 		end
@@ -32,6 +33,13 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 
 	horizontalStack:SetMembers(_members)
 
+	function horizontalStack:SetYAnchor(newYAnchor)
+		if newYAnchor ~= yAnchor then
+			self:NeedsPosition()
+			yAnchor = newYAnchor
+		end
+	end
+
 	local maxHeight
 
 	function horizontalStack:LayoutChildren()
@@ -40,17 +48,11 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 			layoutChildren[i] = { members[i]:LayoutChildren() }
 		end
 
-		return self, unpack(table_joinArrays(layoutChildren))
-	end
-
-	local cachedYAnchor
-	local cachedMemberCount
-	function horizontalStack:NeedsLayout()
-		return membersUpdated or cachedYAnchor ~= self.yAnchor
+		return unpack(table_joinArrays(layoutChildren))
 	end
 
 	function horizontalStack:Layout(availableWidth, availableHeight)
-		membersUpdated = false
+		self:RegisterDrawingGroup()
 		cachedMemberCount = #members
 
 		if cachedMemberCount == 0 then
@@ -60,7 +62,7 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 		local elapsedDistance = 0
 		maxHeight = 0
 
-		local spacing = self.spacing()
+		local spacing = spacing()
 
 		for i = 1, cachedMemberCount do
 			local member = members[i]
@@ -75,11 +77,9 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 	end
 
 	function horizontalStack:Position(x, y)
-		cachedYAnchor = self.yAnchor
-
 		for i = 1, cachedMemberCount do
 			local member = members[i]
-			member:Position(x + member.hStackCachedX, y + floor((maxHeight - member.hStackCachedHeight) * cachedYAnchor))
+			member:Position(x + member.hStackCachedX, y + floor((maxHeight - member.hStackCachedHeight) * yAnchor))
 		end
 	end
 	

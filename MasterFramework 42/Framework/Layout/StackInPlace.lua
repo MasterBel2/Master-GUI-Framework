@@ -4,16 +4,13 @@ local table_joinArrays = Include.table.joinArrays
 local unpack = Include.unpack
 
 function framework:StackInPlace(_members, xAnchor, yAnchor)
-	local stackInPlace = { xAnchor = xAnchor, yAnchor = yAnchor, type = "StackInPlace" }
+	local stackInPlace = Component(true, false)
 
 	local maxWidth
 	local maxHeight
 
-	local cachedXAnchor
-	local cachedYAnchor
-
 	local members = {}
-	local membersUpdated
+	local cachedMemberCount
 
 	function stackInPlace:GetMembers()
 		local membersCopy = {}
@@ -23,7 +20,7 @@ function framework:StackInPlace(_members, xAnchor, yAnchor)
 		return members
 	end
 	function stackInPlace:SetMembers(newMembers)
-		membersUpdated = true
+		self:NeedsLayout()
 		for i = #newMembers + 1, #members do
 			members[i] = nil
 		end
@@ -34,6 +31,14 @@ function framework:StackInPlace(_members, xAnchor, yAnchor)
 
 	stackInPlace:SetMembers(_members)
 
+	function stackInPlace:SetAnchors(newXAnchor, newYAnchor)
+		if newXAnchor ~= xAnchor or newYAnchor ~= yAnchor then
+			xAnchor = newXAnchor
+			yAnchor = newYAnchor
+			self:NeedsPosition()
+		end
+	end
+
 	function stackInPlace:LayoutChildren()
 		local layoutChildren = {}
 		for i = 1, #members do
@@ -41,16 +46,11 @@ function framework:StackInPlace(_members, xAnchor, yAnchor)
 			layoutChildren[i] = { member:LayoutChildren() }
 		end
 
-		return self, unpack(table_joinArrays(layoutChildren))
-	end
-
-	local cachedMemberCount
-	function stackInPlace:NeedsLayout()
-		return membersUpdated or cachedXAnchor ~= self.xAnchor or cachedYAnchor ~= self.yAnchor
+		return unpack(table_joinArrays(layoutChildren))
 	end
 
 	function stackInPlace:Layout(availableWidth, availableHeight)
-		membersUpdated = false
+		self:RegisterDrawingGroup()
 		
 		maxWidth = 0
 		maxHeight = 0
@@ -72,12 +72,9 @@ function framework:StackInPlace(_members, xAnchor, yAnchor)
 	end
 
 	function stackInPlace:Position(x, y)
-		cachedXAnchor = self.xAnchor
-		cachedYAnchor = self.yAnchor
-
 		for i = 1, cachedMemberCount do
 			local member = members[i]
-			member:Position(x + (maxWidth - member.stackInPlaceCachedWidth) * cachedXAnchor, y + (maxHeight - member.stackInPlaceCachedHeight) * cachedYAnchor)
+			member:Position(x + (maxWidth - member.stackInPlaceCachedWidth) * xAnchor, y + (maxHeight - member.stackInPlaceCachedHeight) * yAnchor)
 		end
 	end
 	return stackInPlace

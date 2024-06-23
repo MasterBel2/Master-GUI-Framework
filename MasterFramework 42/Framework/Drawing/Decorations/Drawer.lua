@@ -42,6 +42,13 @@ function Component(hasLayout, draws)
 				end
 			end
 		end
+		function component:NeedsPosition()
+			for drawingGroup, _ in pairs(drawingGroups) do
+				if not drawingGroup:PositionsUpdated(self) then
+					drawingGroups[drawingGroup] = nil
+				end
+			end
+		end
 	end
 
 	if draws then

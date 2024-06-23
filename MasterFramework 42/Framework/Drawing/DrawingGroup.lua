@@ -6,6 +6,7 @@ function framework:DrawingGroup(body, name)
     local drawingGroup = Drawer()
 
     drawingGroup.childNeedsLayout = true
+    drawingGroup.childNeedsPosition = true
     drawingGroup.needsRedraw = true
 
     drawingGroup.dimensions = {}
@@ -19,8 +20,10 @@ function framework:DrawingGroup(body, name)
         return self, textGroup:LayoutChildren()
     end
 
+    -- Returns whether 
     function drawingGroup:NeedsLayout()
         if self.childNeedsLayout then return true end
+        if self.childNeedsPosition then return true end
         for dimension, _ in pairs(self.dimensions) do
             if dimension.ValueHasChanged() then
                 return true
@@ -30,6 +33,7 @@ function framework:DrawingGroup(body, name)
 
     function drawingGroup:Layout(availableWidth, availableHeight)
         self.childNeedsLayout = false
+        self.childNeedsPosition = true
         self.dimensions = {}
         self.layoutComponents = {}
         local previousDrawingGroup = activeDrawingGroup
@@ -40,6 +44,7 @@ function framework:DrawingGroup(body, name)
     end
     
     function drawingGroup:Position(x, y)
+        drawingGroup.childNeedsPosition = false
         self.drawTargets = {}
         local previousDrawingGroup = activeDrawingGroup
         if previousDrawingGroup then
@@ -63,17 +68,24 @@ function framework:DrawingGroup(body, name)
         activeDrawingGroup = previousDrawingGroup
     end
 
-    function drawingGroup:DrawerUpdated(drawer)
-        if self.drawers[drawer] then
-            self.needsRedraw = true
-            self:NeedsRedraw()
+    function drawingGroup:LayoutUpdated(layoutComponent)
+        if self.layoutComponents[layoutComponent] then
+            self.childNeedsLayout = true
             return true
         end
     end
 
-    function drawingGroup:LayoutUpdated(layoutComponent)
+    function drawingGroup:PositionsUpdated(layoutComponent)
         if self.layoutComponents[layoutComponent] then
-            self.childNeedsLayout = true
+            self.childNeedsPosition = true
+            return true
+        end
+    end
+
+    function drawingGroup:DrawerUpdated(drawer)
+        if self.drawers[drawer] then
+            self.needsRedraw = true
+            self:NeedsRedraw()
             return true
         end
     end
