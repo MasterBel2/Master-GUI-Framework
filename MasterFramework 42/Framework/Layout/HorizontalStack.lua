@@ -22,7 +22,7 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 	end
 	function horizontalStack:SetMembers(newMembers)
 		membersUpdated = true
-		for i = #newMembers, #members do
+		for i = #newMembers + 1, #members do
 			members[i] = nil
 		end
 		for i = 1, #newMembers do

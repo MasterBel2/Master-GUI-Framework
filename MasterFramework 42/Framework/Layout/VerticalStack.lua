@@ -27,7 +27,7 @@ function framework:VerticalStack(_members, spacing, xAnchor)
 	end
 	function verticalStack:SetMembers(newMembers)
 		membersUpdated = true
-		for i = #newMembers, #members do
+		for i = #newMembers + 1, #members do
 			members[i] = nil
 		end
 		for i = 1, #newMembers do
