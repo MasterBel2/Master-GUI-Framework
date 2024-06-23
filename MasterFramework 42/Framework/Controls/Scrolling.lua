@@ -38,12 +38,16 @@ function framework:OffsettedViewport(body, mode)
     end
 
     function viewport:SetXOffset(_xOffset)
-        xOffset = _xOffset
-        offsetsUpdated = true
+        if xOffset ~= _xOffset then
+            xOffset = _xOffset
+            offsetsUpdated = true
+        end
     end
     function viewport:SetYOffset(_yOffset)
-        yOffset = _yOffset
-        offsetsUpdated = true
+        if yOffset ~= _yOffset then
+            yOffset = _yOffset
+            offsetsUpdated = true
+        end
     end
 
     local draggingVertical = false
