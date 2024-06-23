@@ -24,9 +24,7 @@ local recalculatingRasterizer = false
 --  - When drawDebug is enabled, rasterization is disabled.
 --  - When scaling or screen size changes, all rasterizers will automatically invalidate themselves.
 function framework:Rasterizer(body)
-	local rasterizer = { invalidated = true, type = "Rasterizer" }
-
-	local drawingGroup = framework:DrawingGroup(body)
+	local rasterizer = framework:DrawingGroup(body)
 	
 	-- debug
 	local framesCalculatedInARow = 0
@@ -34,49 +32,63 @@ function framework:Rasterizer(body)
 	-- Caching
 	local activeResponderCache = {}
 	local drawList
-	local width, height
 
 	for _, event in pairs(events) do
 		activeResponderCache[event] = { responders = {} }
 	end
 	
+	local _LayoutChildren = rasterizer.LayoutChildren
 	function rasterizer:LayoutChildren()
 		return self
 	end
 	
 	local layoutChildren
-	local cachedNeedsLayout
+	local cachedNeedsLayout = true
+
+	local _NeedsLayout = rasterizer.NeedsLayout
 	function rasterizer:NeedsLayout()
-		if not layoutChildren then return true end
-		for i = 1, #layoutChildren do
-			if layoutChildren[i]:NeedsLayout() then
-				cachedNeedsLayout = true
-				return true
+		if (not layoutChildren) or _NeedsLayout(self) then
+			cachedNeedsLayout = true
+		else
+			for i = 2, #layoutChildren do -- DrawingGroup has itself as its first layout child; we'll skip that, coz we handled that above.
+				if layoutChildren[i]:NeedsLayout() then
+					cachedNeedsLayout = true
+					break
+				end
 			end
 		end
-		cachedNeedsLayout = false
-		return false
+		return cachedNeedsLayout
 	end
 
-	local cachedAvailableWidth, cachedAvailableHeight
+	local cachedAvailableWidth
+	local cachedAvailableHeight
+	local cachedX, cachedY
+	local cachedWidth, cachedHeight
+	local needsPosition
+
+	local _Layout = rasterizer.Layout
 	function rasterizer:Layout(availableWidth, availableHeight)
-		layoutChildren = { drawingGroup:LayoutChildren() }
-		Internal.DebugInfo[self._debugUniqueIdentifier .. ": " .. self._debugTypeIdentifier .. " layout children"] = table.imap(layoutChildren, function(_, component) return component._debugUniqueIdentifier .. ": " .. component._debugTypeIdentifier end) 
-		self.invalidated = self.invalidated or cachedNeedsLayout or viewportDidChange or availableWidth ~= cachedAvailableWidth or availableHeight ~= availableHeight
-		cachedNeedsLayout = false
-		if self.invalidated then
-			width, height = drawingGroup:Layout(availableWidth, availableHeight)
-			cachedAvailableWidth = availableWidth 
+		if cachedNeedsLayout or cachedAvailableWidth ~= availableWidth or cachedAvailableHeight ~= availableHeight then
+			cachedNeedsLayout = false
+			self.needsRedraw = true
+			needsPosition = true
+
+			cachedAvailableWidth = availableWidth
 			cachedAvailableHeight = availableHeight
+
+			layoutChildren = { _LayoutChildren(self) }
 			Internal.DebugInfo[self._debugUniqueIdentifier .. ": " .. (self._debugTypeIdentifier or "\"unkown\"") .. " layout children"] = table.imap(layoutChildren, function(_, component) return (component._debugUniqueIdentifier or "\"unknown\"") .. ": " .. component._debugTypeIdentifier end)
+			cachedWidth, cachedHeight = _Layout(self, availableWidth, availableHeight)
 		end
-		return width, height 
+		return cachedWidth, cachedHeight
 	end
 
 	local cachedX, cachedY
+	local _Position = rasterizer.Position
 	function rasterizer:Position(x, y)
-		self.invalidated = self.invalidated or cachedX ~= x or cachedY ~= y
-		if self.invalidated then
+		if needsPosition or cachedX ~= x or cachedY ~= y then
+			needsPosition = false
+			self.needsRedraw = true
 			-- Cache responders that won't be drawn
 			for _, event in pairs(events) do
 				-- activeResponderCache[event].responders = {}
@@ -91,20 +103,17 @@ function framework:Rasterizer(body)
 			activeRasterizer = self
 			self.childRasterizers = {}
 
-			drawingGroup:Position(x, y)
+			_Position(self, x, y)
 
 			activeRasterizer = previousActiveRasterizer
 			-- Reset  things
 			Internal.activeResponders = previousResponders
 
-			if activeRasterizer then
-				activeRasterizer.childRasterizers[#activeRasterizer.childRasterizers] = self
-			else
-				activeDrawingGroup.drawTargets[#activeDrawingGroup.drawTargets] = self
-			end
-
 			cachedX = x
 			cachedY = y
+			-- end
+		else
+			activeDrawingGroup.drawTargets[#activeDrawingGroup.drawTargets + 1] = self
 		end
 
 		for _, event in pairs(events) do
@@ -121,11 +130,12 @@ function framework:Rasterizer(body)
 		end
 	end
 
+	local _Draw = rasterizer.Draw
 	function rasterizer:Draw()
 		if Internal.debugMode.noRasterizer then
-			drawingGroup:Draw()
+			_Draw(self)
 			return
-		elseif self.invalidated --[[or drawingGroup:NeedsRedraw()]] then
+		elseif (not drawList) or self.needsRedraw then
 			Log("Recalculating rasterizer (" .. os_clock() .. ")")
 			recalculatingRasterizer = true
 			if framesCalculatedInARow > 0 then
@@ -133,9 +143,8 @@ function framework:Rasterizer(body)
 			end
 
 			gl_DeleteList(drawList)
-			drawList = gl_CreateList(drawingGroup.Draw, drawingGroup)
+			drawList = gl_CreateList(_Draw, self)
 			
-			self.invalidated = false
 			framesCalculatedInARow = framesCalculatedInARow + 1
 		else
 			framesCalculatedInARow = 0

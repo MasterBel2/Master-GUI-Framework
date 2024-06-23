@@ -1,9 +1,18 @@
 local Internal = Internal
 local table_insert = Include.table.insert
-local ipairs = Include.ipairs
+local pairs = Include.pairs
 
 function framework:DrawingGroup(body, name)
-    local drawingGroup = { drawTargets = {} }
+    local drawingGroup = Drawer()
+
+    drawingGroup.childNeedsLayout = true
+    drawingGroup.needsRedraw = true
+
+    drawingGroup.dimensions = {}
+    drawingGroup.drawers = {}
+    drawingGroup.drawTargets = {}
+    drawingGroup.layoutComponents = {}
+
     local textGroup = framework:TextGroup(body, name)
 
     function drawingGroup:LayoutChildren()
@@ -11,6 +20,7 @@ function framework:DrawingGroup(body, name)
     end
 
     function drawingGroup:NeedsLayout()
+        if self.childNeedsLayout then return true end
         for dimension, _ in pairs(self.dimensions) do
             if dimension.ValueHasChanged() then
                 return true
@@ -19,7 +29,9 @@ function framework:DrawingGroup(body, name)
     end
 
     function drawingGroup:Layout(availableWidth, availableHeight)
+        self.childNeedsLayout = false
         self.dimensions = {}
+        self.layoutComponents = {}
         local previousDrawingGroup = activeDrawingGroup
         activeDrawingGroup = self
         local width, height = textGroup:Layout(availableWidth, availableHeight)
@@ -39,18 +51,30 @@ function framework:DrawingGroup(body, name)
     end
 
     function drawingGroup:Draw()
+        self:RegisterDrawingGroup()
+        self.needsRedraw = false
+        self.drawers = {}
+        local previousDrawingGroup = activeDrawingGroup
+        activeDrawingGroup = self
         local drawTargets = self.drawTargets
         for i = 1, #drawTargets do
-            drawTargets[i]:Draw()
+            drawTargets[i]:Draw(self)
+        end
+        activeDrawingGroup = previousDrawingGroup
+    end
+
+    function drawingGroup:DrawerUpdated(drawer)
+        if self.drawers[drawer] then
+            self.needsRedraw = true
+            self:NeedsRedraw()
+            return true
         end
     end
 
-    function drawingGroup:NeedsRedraw()
-        local drawTargets = self.drawTargets
-
-        for i = 1, #drawTargets do
-            local drawTarget = drawTargets[i]
-            if drawTarget:NeedsRedraw() then return true end
+    function drawingGroup:LayoutUpdated(layoutComponent)
+        if self.layoutComponents[layoutComponent] then
+            self.childNeedsLayout = true
+            return true
         end
     end
 

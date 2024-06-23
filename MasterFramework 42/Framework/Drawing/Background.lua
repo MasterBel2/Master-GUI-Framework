@@ -20,12 +20,24 @@ local table_insert = Include.table.insert
     - `CachedPosition()`: Returns the position last provided in `cell:Draw(x, y)`.
     - `Geometry()`: Returns the cached position and size.
 ]]
-function framework:Background(body, decorations, cornerRadius)
-    local background = { cornerRadius = cornerRadius or framework:AutoScalingDimension(0), decorations = decorations }
+function framework:Background(body, _decorations, cornerRadius)
+    local background = Drawer()
+    background.cornerRadius = cornerRadius or framework:AutoScalingDimension(0)
+    local decorations = {}
 
     local width, height
     local cachedX, cachedY
-    local cachedDecorationCount
+
+    function background:SetDecorations(newDecorations)
+        self:NeedsRedraw()
+        for i = #newDecorations + 1, #decorations do
+            decorations[i] = nil
+        end
+        for i = 1, #newDecorations do
+            decorations[i] = newDecorations[i]
+        end
+    end
+    background:SetDecorations(_decorations)
 
     function background:LayoutChildren()
         return body:LayoutChildren()
@@ -54,17 +66,10 @@ function framework:Background(body, decorations, cornerRadius)
     end
 
     function background:Draw()
-        for i = 1, #self.decorations do
-            self.decorations[i]:Draw(self, cachedX, cachedY, width, height)
-        end
-    end
-
-    function background:NeedsRedraw()
-        if #self.decorations ~= cachedDecorationCount then return true end
-        for i = 1, cachedDecorationCount do
-            if i ~= self.decorations[i]._background_cachedDrawIndex or self.decorations[i]:NeedsRedrawForDrawer(self) then
-                return true
-            end
+        self:RegisterDrawingGroup()
+        
+        for i = 1, #decorations do
+            decorations[i]:Draw(self, cachedX, cachedY, width, height)
         end
     end
 

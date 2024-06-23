@@ -4,6 +4,7 @@ local gl_BeginEnd = Include.gl.BeginEnd
 local gl_Color = Include.gl.Color
 local gl_Rect = Include.gl.Rect
 local gl_Vertex = Include.gl.Vertex
+local pairs = Include.pairs
 
 local Internal = Internal
 
@@ -13,26 +14,22 @@ function framework:Color(r, g, b, a)
 	local DrawRoundedRect = Internal.DrawRoundedRect
 	local DrawRect = Internal.DrawRect
 
-	local color = { r = r, g = g, b = b, a = a }
+	local color = Drawer()
 
 	function color:Set()
-		gl_Color(self.r, self.g, self.b, self.a)
+		self:RegisterDrawingGroup()
+		gl_Color(r, g, b, a)
+	end
+	function color:SetRawValues(...)
+		self:NeedsRedraw()
+		r, g, b, a = ...
+	end
+	function color:GetRawValues()
+		return r, g, b, a
 	end
 
 	local function drawRoundedRectVertex(xOffset, yOffset, x, y)
 		gl_Vertex(x + xOffset, y + yOffset)
-	end
-
-	function color:NeedsRedrawForDrawer(drawer)
-		local drawCache = drawer[color] or {}
-		if self.r ~= drawCache.r or self.g ~= drawCache.g or self.b ~= drawCache.b or self.a ~= drawCache.a then
-			drawCache.r = self.r
-			drawCache.g = self.g
-			drawCache.b = self.b
-			drawCache.a = self.a
-			drawer[color] = drawCache
-			return true
-		end
 	end
 	
 	function color:Draw(rect, x, y, width, height)

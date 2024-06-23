@@ -12,7 +12,7 @@ function framework:Gradient(color1, color2, color3, color4)
 
 	local DrawRoundedRect = Internal.DrawRoundedRect
 
-	local gradient = {}
+	local gradient = Drawer()
 
 	local color2r; local color2g; local color2b; local color2a
 	local color3r; local color3g; local color3b; local color3a
@@ -20,10 +20,11 @@ function framework:Gradient(color1, color2, color3, color4)
 	local color1r; local color1g; local color1b; local color1a
 
 	function gradient:SetColors(newColor1, newColor2, newColor3, newColor4)
-		color1r = newColor1.r; color1g = newColor1.g; color1b = newColor1.b; color1a = newColor1.a
-		color2r = newColor2.r; color2g = newColor2.g; color2b = newColor2.b; color2a = newColor2.a
-		color3r = newColor3.r; color3g = newColor3.g; color3b = newColor3.b; color3a = newColor3.a
-		color4r = newColor4.r; color4g = newColor4.g; color4b = newColor4.b; color4a = newColor4.a
+		self:NeedsRedraw()
+		color1r, color1g, color1b, color1a = newColor1:GetRawValues()
+		color2r, color2g, color2b, color2a = newColor2:GetRawValues()
+		color3r, color3g, color3b, color3a = newColor3:GetRawValues()
+		color4r, color4g, color4b, color4a = newColor4:GetRawValues()
 	end
 	gradient:SetColors(color1, color2, color3, color4)
 
@@ -54,11 +55,8 @@ function framework:Gradient(color1, color2, color3, color4)
 		gl_Vertex(x + xOffset, y + yOffset)
 	end
 
-	function gradient:NeedsRedrawForDrawer(drawer)
-		return color1:NeedsRedrawForDrawer(drawer) or color2:NeedsRedrawForDrawer(drawer) or color3:NeedsRedrawForDrawer(drawer) or color4:NeedsRedrawForDrawer(drawer)
-	end
-
 	function gradient:Draw(rect, x, y, width, height)
+		self:RegisterDrawingGroup()
 		local cornerRadius = rect.cornerRadius() or 0
 
 		if cornerRadius > 0 then

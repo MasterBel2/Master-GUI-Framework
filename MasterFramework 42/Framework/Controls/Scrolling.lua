@@ -8,7 +8,9 @@ framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL = 1
 framework.OFFSETED_VIEWPORT_MODE_VERTICAL = 2
 
 function framework:OffsettedViewport(body, mode)
-    local viewport = { contentHeight = 0, contentWidth = 0 }
+    local viewport = self:DrawingGroup(body)
+    viewport.contentWidth = 0
+    viewport.contentHeight = 0
 
     if (not mode) or mode < 0 or mode > 2 then
         error("OffsettedViewport mode must be one of `framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL_VERTICAL`, `framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL`, and `framework.OFFSETED_VIEWPORT_MODE_VERTICAL`")
@@ -133,24 +135,17 @@ function framework:OffsettedViewport(body, mode)
             end
         end
     )
-    
-    local textGroup = framework:TextGroup(
-        body,
-        "Offsetted Viewport"
-    )
 
-    function viewport:LayoutChildren()
-        return self, textGroup:LayoutChildren()
-    end
-
+    local _NeedsLayout = viewport.NeedsLayout
     function viewport:NeedsLayout()
-        return offsetsUpdated or cachedScrollbarThickness ~= scrollbarThickness()
+        return offsetsUpdated or cachedScrollbarThickness ~= scrollbarThickness() or _NeedsLayout(self)
     end
 
+    local _Layout = viewport.Layout
     function viewport:Layout(availableWidth, availableHeight)
         offsetsUpdated = false
         cachedScrollbarThickness = scrollbarThickness()
-        local _width, _height = textGroup:Layout(allowHorizontalScrolling and math.huge or availableWidth, allowVerticalScrolling and math.huge or availableHeight)
+        local _width, _height = _Layout(self, allowHorizontalScrolling and math.huge or availableWidth, allowVerticalScrolling and math.huge or availableHeight)
         self.contentWidth = _width
         self.contentHeight = _height
 
@@ -167,17 +162,13 @@ function framework:OffsettedViewport(body, mode)
         return width, height
     end
     
+    local _Position = viewport.Position
     function viewport:Position(x, y)
         _x = x
         _y = y
         if height <= 0 or width <= 0 then return end
 
-        table_insert(activeDrawingGroup.drawTargets, self)
-        
-        local previousDrawingGroup = activeDrawingGroup -- Capture drawing, so can happen within scissor
-        self.drawTargets = {}
-        activeDrawingGroup = self
-        textGroup:Position(x - xOffset, y + yOffset + height - self.contentHeight)
+        _Position(self, x - xOffset, y + yOffset + height - self.contentHeight)
 
         self:SetYOffset(math.max(
             math.min(
@@ -195,8 +186,7 @@ function framework:OffsettedViewport(body, mode)
             0  -- Must not leave any unneccessary blank space at the top of the scroll box
         ))
 
-        textGroup:Position(x - xOffset, y + yOffset + height - self.contentHeight)
-        activeDrawingGroup = previousDrawingGroup
+        _Position(self, x - xOffset, y + yOffset + height - self.contentHeight)
 
 
         if width < self.contentWidth then
@@ -208,8 +198,12 @@ function framework:OffsettedViewport(body, mode)
         end
     end
 
+    local _Draw = viewport.Draw
     function viewport:Draw()
-        if height <= 0 or width <= 0 then return end
+        if height <= 0 or width <= 0 then
+            self:RegisterDrawingGroup()
+            return
+        end
 
         local clipWidth = width
         local clipHeight = height
@@ -225,18 +219,8 @@ function framework:OffsettedViewport(body, mode)
         end
         
         gl.Scissor(_x, clipY, clipWidth, clipHeight)
-        local drawTargets = self.drawTargets
-        for i = 1, #drawTargets do
-            drawTargets[i]:Draw()
-        end
+        _Draw(self)
         gl.Scissor(false)
-    end
-
-    function viewport:NeedsRedraw()
-        local drawTargets = self.drawTargets
-        for i = 1, #drawTargets do
-            if drawTargets[i]:NeedsRedraw() then return true end
-        end
     end
 
     return viewport

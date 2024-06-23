@@ -14,14 +14,14 @@ local Internal = Internal
 function framework:WrappingText(string, color, font, maxLines)
 	maxLines = maxLines or math_huge
 	font = font or framework.defaultFont
-	local wrappingText = {
-		color = color or framework.color.white,
-		_readOnly_font = font,
-		type = "Wrapping Text",
+	color = color or framework.color.white
+	local wrappingText = Component(true, false)
 
-		addedCharacters = {},
-		removedSpaces = {}
-	}
+	wrappingText._readOnly_font = font
+	wrappingText.type = "Wrapping Text"
+
+	wrappingText.addedCharacters = {}
+	wrappingText.removedSpaces = {}
 
 	local coloredString
 	local wrappedText, lineCount
@@ -39,6 +39,7 @@ function framework:WrappingText(string, color, font, maxLines)
 		if newString ~= string then
 			string = newString or ""
 			stringChanged = true
+			self:NeedsLayout()
 		end
 	end
 	-- Returns the string that was provided to `WrappingText`, unmodified. 
@@ -158,14 +159,10 @@ function framework:WrappingText(string, color, font, maxLines)
 		return rawString
 	end
 
-	function wrappingText:LayoutChildren()
-		return self
-	end
-	function wrappingText:NeedsLayout()
-		return stringChanged
-	end
+	function wrappingText:LayoutChildren() end -- none; we update layout other ways
 
 	function wrappingText:Layout(availableWidth, availableHeight, profile)
+		self:RegisterDrawingGroup()
 		availableWidth = math_min(availableWidth, 2147483647) -- if we allow math.huge, `glFont:WrapText()` will fail. 
 		availableHeight = math_min(availableHeight, 2147483647)
 		local fontScaledSize = font:ScaledSize()
@@ -246,8 +243,8 @@ function framework:WrappingText(string, color, font, maxLines)
 	--
 	-- Called by the `framework:TextGroup` that `wrappingText:Position(x, y)` registered us with.
 	function wrappingText:Draw(glFont)
-		local color = self.color
-		glFont:SetTextColor(color.r, color.g, color.b, color.a)
+		glFont:SetTextColor(color:GetRawValues())
+		color:RegisterDrawingGroup()
 
 		-- height - 1 is because it appeared to be drawing 1 pixel too high - for the default font, at least. I haven't checked with any other font size yet.
 		-- I don't know what to do about text that's supposed to be centred vertically in a cell, because this method of drawing means the descender pushes the text up a bunch.

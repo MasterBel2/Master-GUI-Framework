@@ -14,20 +14,17 @@ function framework:Image(fileName, tintColor)
     local DrawRoundedRect = Internal.DrawRoundedRect
     local DrawRect = Internal.DrawRect
 
-	local image = { fileName = fileName, tintColor = tintColor or framework.color.white }
+	local image = Drawer()
 
 	local function drawRoundedRectVertex(xOffset, yOffset, x, y, width, height)
 		gl_TexCoord(xOffset / width, 1 - (yOffset / height))
 		gl_Vertex(x + xOffset, y + yOffset)
 	end
 
-	function image:NeedsRedrawForDrawer(drawer)
-		return self.tintColor:NeedsRedrawForDrawer(drawer)
-	end
-
 	function image:Draw(rect, x, y, width, height)
-		self.tintColor:Set()
-		gl_Texture(self.fileName)
+		-- self:RegisterDrawingGroup()
+		tintColor:Set()
+		gl_Texture(fileName)
 		
 		if rect.cornerRadius() > 0 then
 			gl_BeginEnd(GL_POLYGON, DrawRoundedRect, width, height, rect.cornerRadius(), drawRoundedRectVertex, false, false, false, false, x, y, width, height)
