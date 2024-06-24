@@ -53,10 +53,6 @@ function framework:MenuAnchor(wrappedRect, menuOptions, menuLayoutFunc, menuName
         end
     end
 
-    function menuAnchor:LayoutChildren()
-        return wrappedRect:LayoutChildren()
-    end
-
     function menuAnchor:Layout(availableWidth, availableHeight)
         if menu and not (menu.mouseIsOver or conditionalShow) then
             self:HideMenu()

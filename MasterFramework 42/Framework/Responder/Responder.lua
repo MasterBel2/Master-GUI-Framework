@@ -16,10 +16,6 @@ function framework:Responder(rect, event, action)
 	function responder:CachedPosition() return cachedX, cachedY end
 	function responder:Geometry() return cachedX, cachedY, width, height end
 
-	function responder:LayoutChildren()
-		return rect:LayoutChildren()
-	end
-
 	local laidOut
 	function responder:Layout(...)
 		laidOut = true

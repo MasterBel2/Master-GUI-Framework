@@ -11,10 +11,6 @@ function framework:AbsoluteOffsetFromTopLeft(body, xOffset, yOffset)
 		end
 	end
 
-	function absoluteOffset:LayoutChildren()
-		return body:LayoutChildren()
-	end
-
 	function absoluteOffset:Layout(availableWidth, availableHeight)
 		_availableHeight = availableHeight
 		width, height = body:Layout(availableWidth - xOffset, availableHeight - yOffset)

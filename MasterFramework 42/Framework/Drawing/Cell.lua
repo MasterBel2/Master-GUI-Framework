@@ -31,10 +31,6 @@ function framework:Cell(body, decorations, cornerRadius)
         end
     end
 
-    function cell:LayoutChildren()
-        return body:LayoutChildren()
-    end
-
     function cell:Layout(availableWidth, availableHeight)
         self:RegisterDrawingGroup()
         local width, height = body:Layout(availableWidth, availableHeight)

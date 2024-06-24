@@ -39,16 +39,6 @@ function framework:StackInPlace(_members, xAnchor, yAnchor)
 		end
 	end
 
-	function stackInPlace:LayoutChildren()
-		local layoutChildren = {}
-		for i = 1, #members do
-			local member = members[i]
-			layoutChildren[i] = { member:LayoutChildren() }
-		end
-
-		return unpack(table_joinArrays(layoutChildren))
-	end
-
 	function stackInPlace:Layout(availableWidth, availableHeight)
 		self:RegisterDrawingGroup()
 		

@@ -159,8 +159,6 @@ function framework:WrappingText(string, color, font, maxLines)
 		return rawString
 	end
 
-	function wrappingText:LayoutChildren() end -- none; we update layout other ways
-
 	function wrappingText:Layout(availableWidth, availableHeight, profile)
 		self:RegisterDrawingGroup()
 		availableWidth = math_min(availableWidth, 2147483647) -- if we allow math.huge, `glFont:WrapText()` will fail. 

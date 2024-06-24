@@ -43,15 +43,6 @@ function framework:VerticalStack(_members, spacing, xAnchor)
 		end
 	end
 
-	function verticalStack:LayoutChildren()
-		local layoutChildren = {}
-		for i = 1, #members do
-			layoutChildren[i] = { members[i]:LayoutChildren() }
-		end
-
-		return unpack(table_joinArrays(layoutChildren))
-	end
-
 	function verticalStack:Layout(availableWidth, availableHeight)
 		self:RegisterDrawingGroup()
 

@@ -42,15 +42,6 @@ function framework:HorizontalStack(_members, spacing, yAnchor)
 
 	local maxHeight
 
-	function horizontalStack:LayoutChildren()
-		local layoutChildren = {}
-		for i = 1, #members do
-			layoutChildren[i] = { members[i]:LayoutChildren() }
-		end
-
-		return unpack(table_joinArrays(layoutChildren))
-	end
-
 	function horizontalStack:Layout(availableWidth, availableHeight)
 		self:RegisterDrawingGroup()
 		cachedMemberCount = #members

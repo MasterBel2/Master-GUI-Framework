@@ -33,10 +33,6 @@ function framework:CheckBox(scale, action)
         end
     )
 
-    function checkbox:LayoutChildren()
-        return rect:LayoutChildren()
-    end
-
     function checkbox:SetChecked(newChecked)
         checked = newChecked
         unhighlightedColor = (checked and framework.color.selectedColor) or framework.stroke.defaultBorder

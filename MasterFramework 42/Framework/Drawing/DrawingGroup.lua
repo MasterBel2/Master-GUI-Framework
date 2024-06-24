@@ -1,63 +1,131 @@
 local Internal = Internal
 local table_insert = Include.table.insert
+local insert = Include.table.insert
+local tostring = Include.tostring
 local pairs = Include.pairs
+local os_clock = Include.os.clock
+local gl_DeleteList = Include.gl.DeleteList
+local gl_CreateList = Include.gl.CreateList
+local gl_CallList = Include.gl.CallList
+local clear = Include.clear
 
-function framework:DrawingGroup(body, name)
-    local drawingGroup = Drawer()
+function framework:Rasterizer(body)
+    local rasterizer = self:DrawingGroup(body)
+    rasterizer.noRasterizer = false
+    return rasterizer
+end
+
+function framework:DrawingGroup(body)
+    local drawingGroup = {}
 
     drawingGroup.childNeedsLayout = true
     drawingGroup.childNeedsPosition = true
     drawingGroup.needsRedraw = true
 
+    drawingGroup.noRasterizer = true
+
     drawingGroup.dimensions = {}
     drawingGroup.drawers = {}
     drawingGroup.drawTargets = {}
+    drawingGroup.childDrawingGroups = {}
     drawingGroup.layoutComponents = {}
 
+    local activeResponderCache = {}
+
+    for _, event in pairs(events) do
+		activeResponderCache[event] = { responders = {} }
+	end
+
     local textGroup = framework:TextGroup(body, name)
+    local drawList
 
-    function drawingGroup:LayoutChildren()
-        return self, textGroup:LayoutChildren()
-    end
+    -- debug
+    local framesRedrawnInARow = 0
 
-    -- Returns whether 
     function drawingGroup:NeedsLayout()
         if self.childNeedsLayout then return true end
-        if self.childNeedsPosition then return true end
         for dimension, _ in pairs(self.dimensions) do
             if dimension.ValueHasChanged() then
                 return true
             end
         end
+        local childDrawingGroups = drawingGroup.childDrawingGroups
+        for i = 1, #childDrawingGroups do
+            if childDrawingGroups[i]:NeedsLayout() then
+                return true
+            end
+        end
     end
 
+    local cachedWidth, cachedHeight
+    local cachedAvailableWidth, cachedAvailableHeight
     function drawingGroup:Layout(availableWidth, availableHeight)
-        self.childNeedsLayout = false
-        self.childNeedsPosition = true
-        self.dimensions = {}
-        self.layoutComponents = {}
-        local previousDrawingGroup = activeDrawingGroup
-        activeDrawingGroup = self
-        local width, height = textGroup:Layout(availableWidth, availableHeight)
-        activeDrawingGroup = previousDrawingGroup
-        return width, height
-    end
-    
-    function drawingGroup:Position(x, y)
-        drawingGroup.childNeedsPosition = false
-        self.drawTargets = {}
         local previousDrawingGroup = activeDrawingGroup
         if previousDrawingGroup then
-            table_insert(previousDrawingGroup.drawTargets, self)
+            previousDrawingGroup.childDrawingGroups[#previousDrawingGroup.childDrawingGroups + 1] = self
         end
-        activeDrawingGroup = self
-        textGroup:Position(x, y)
-        activeDrawingGroup = previousDrawingGroup
+
+        if self:NeedsLayout() or availableWidth ~= cachedAvailableWidth or availableHeight ~= cachedAvailableHeight then
+            self.childNeedsLayout = false
+            self.childNeedsPosition = true
+            self.needsRedraw = true
+            self.dimensions = {}
+            self.layoutComponents = {}
+            self.childDrawingGroups = {}
+
+            cachedAvailableWidth = availableWidth
+            cachedAvailableHeight = availableHeight
+
+            activeDrawingGroup = self
+            cachedWidth, cachedHeight = textGroup:Layout(availableWidth, availableHeight)
+            activeDrawingGroup = previousDrawingGroup
+        end
+
+        return cachedWidth, cachedHeight
+    end
+    
+    local cachedX, cachedY
+    function drawingGroup:Position(x, y)
+        if self.childNeedsPosition or cachedX ~= x or cachedY ~= y then
+            self.childNeedsPosition = false
+            self.needsRedraw = true
+            self.drawTargets = {}
+
+            cachedX = x
+            cachedY = y
+
+            -- Cache responders that won't be drawn
+			for _, event in pairs(events) do
+				clear(activeResponderCache[event].responders)
+			end
+
+            local previousDrawingGroup = activeDrawingGroup
+            activeDrawingGroup = self
+
+            local previousResponders = Internal.activeResponders
+			Internal.activeResponders = activeResponderCache
+
+            textGroup:Position(x, y)
+
+            Internal.activeResponders = previousResponders
+            activeDrawingGroup = previousDrawingGroup
+        end
+
+        for _, event in pairs(events) do
+			local parentResponder = Internal.activeResponders[event]
+			local childrenOfParentResponder = parentResponder.responders
+			
+			local cachedResponders = activeResponderCache[event].responders
+
+			for index = 1, #cachedResponders do
+				local cachedResponder = cachedResponders[index]
+                childrenOfParentResponder[#childrenOfParentResponder + 1] = cachedResponder
+				cachedResponder.parent = parentResponder
+			end
+		end
     end
 
-    function drawingGroup:Draw()
-        self:RegisterDrawingGroup()
-        self.needsRedraw = false
+    local function _Draw(self)
         self.drawers = {}
         local previousDrawingGroup = activeDrawingGroup
         activeDrawingGroup = self
@@ -65,7 +133,38 @@ function framework:DrawingGroup(body, name)
         for i = 1, #drawTargets do
             drawTargets[i]:Draw(self)
         end
+        local childDrawingGroups = self.childDrawingGroups
+        for i = 1, #childDrawingGroups do
+            childDrawingGroups[i]:Draw()
+        end
         activeDrawingGroup = previousDrawingGroup
+    end
+
+    function drawingGroup:Draw()
+        if self.noRasterizer then
+            self.needsRedraw = false
+            _Draw(self)
+        else 
+            if self.needsRedraw then
+                -- if Internal.debugMode.general then
+                --     Log("Recompiling drawlist for (" .. self._debugUniqueIdentifier .. ") " .. self._debugTypeIdentifier .. "(" .. os_clock() .. ")" .. tostring(not drawList) .. ", " .. tostring(self.needsRedraw))
+                --     recalculatingRasterizer = true
+                --     if framesRedrawnInARow > 0 then
+                --         Log("Recompiling drawlist for (" .. self._debugUniqueIdentifier .. ") " .. self._debugTypeIdentifier ..  " " .. framesRedrawnInARow .. " frame(s) in a row")
+                --     end
+                -- end
+                self.needsRedraw = false
+
+                gl_DeleteList(drawList)
+                drawList = gl_CreateList(_Draw, self)
+                
+                -- framesRedrawnInARow = framesRedrawnInARow + 1
+            -- else
+                -- framesRedrawnInARow = 0
+            end
+
+            gl_CallList(drawList)
+        end
     end
 
     function drawingGroup:LayoutUpdated(layoutComponent)
@@ -85,7 +184,6 @@ function framework:DrawingGroup(body, name)
     function drawingGroup:DrawerUpdated(drawer)
         if self.drawers[drawer] then
             self.needsRedraw = true
-            self:NeedsRedraw()
             return true
         end
     end

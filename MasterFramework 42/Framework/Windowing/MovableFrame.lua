@@ -59,10 +59,6 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
         }
     end
     
-    function frame:LayoutChildren()
-        return zStack:LayoutChildren()
-    end
-
     function frame:Layout(availableWidth, availableHeight)
         self:RegisterDrawingGroup()
         width, height = zStack:Layout(availableWidth, availableHeight)

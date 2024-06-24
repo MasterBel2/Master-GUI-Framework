@@ -39,10 +39,6 @@ function framework:Background(body, _decorations, cornerRadius)
     end
     background:SetDecorations(_decorations)
 
-    function background:LayoutChildren()
-        return body:LayoutChildren()
-    end
-
     function background:Layout(availableWidth, availableHeight)
         width, height = body:Layout(availableWidth, availableHeight)
         return width, height

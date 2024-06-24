@@ -188,9 +188,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
 
     local function SizeControl(child)
         local control = {}
-        function control:LayoutChildren()
-            return child:LayoutChildren()
-        end
+
         function control:Layout(availableWidth, availableHeight)
             width, height = child:Layout(width, height)
             return width, height
@@ -205,10 +203,6 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         key, sizeControl,
         defaultX, defaultY
     )
-
-    function frame:LayoutChildren()
-        return moveableFrame:LayoutChildren()
-    end
 
     function frame:Layout(availableWidth, availableHeight)
         self:RegisterDrawingGroup()

@@ -13,10 +13,6 @@ function framework:TextGroup(body, name)
 	local textGroup = { name = name or "default" }
 	local elements = {}
 
-	function textGroup:LayoutChildren()
-		return body:LayoutChildren()
-	end
-
 	function textGroup:AddElement(newElement)
 		local fontKey = newElement._readOnly_font.key
 		local fontGroup = elements[fontKey] or {}

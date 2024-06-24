@@ -42,13 +42,13 @@ function framework:OffsettedViewport(body, mode)
     function viewport:SetXOffset(_xOffset)
         if xOffset ~= _xOffset then
             xOffset = _xOffset
-            offsetsUpdated = true
+            self.childNeedsPosition = true
         end
     end
     function viewport:SetYOffset(_yOffset)
         if yOffset ~= _yOffset then
             yOffset = _yOffset
-            offsetsUpdated = true
+            self.childNeedsPosition = true
         end
     end
 
@@ -135,11 +135,6 @@ function framework:OffsettedViewport(body, mode)
             end
         end
     )
-
-    local _NeedsLayout = viewport.NeedsLayout
-    function viewport:NeedsLayout()
-        return offsetsUpdated or cachedScrollbarThickness ~= scrollbarThickness() or _NeedsLayout(self)
-    end
 
     local _Layout = viewport.Layout
     function viewport:Layout(availableWidth, availableHeight)

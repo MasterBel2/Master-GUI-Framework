@@ -6,10 +6,6 @@ function framework:FrameOfReference(xAnchor, yAnchor, body)
 	local width, height
 	local rectWidth, rectHeight
 
-	function frame:LayoutChildren()
-		return body:LayoutChildren()
-	end
-
 	function frame:SetAnchors(newXAnchor, newYAnchor)
 		if newXAnchor ~= xAnchor or newYAnchor ~= yAnchor then
 			xAnchor = newXAnchor

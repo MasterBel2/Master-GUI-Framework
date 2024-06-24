@@ -6,8 +6,6 @@ end
 function framework:LayoutRect(width, height)
 	local rect = {}
 
-	function rect:LayoutChildren() end
-
 	function rect:Layout()
 		return width(), height()
 	end

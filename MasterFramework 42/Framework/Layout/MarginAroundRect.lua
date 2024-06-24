@@ -8,10 +8,6 @@ function framework:MarginAroundRect(rect, left, top, right, bottom)
 	local cachedLeft
 	local cachedBottom
 
-	function margin:LayoutChildren()
-		return rect:LayoutChildren()
-	end
-
 	function margin:Layout(availableWidth, availableHeight)
 		cachedLeft = left()
 		cachedBottom = bottom()

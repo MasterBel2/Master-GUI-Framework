@@ -12,9 +12,6 @@ function framework:Box(child)
         cachedChild = self.child
         return cachedChild:Layout(...)
     end
-    function box:LayoutChildren()
-        return child:LayoutChildren()
-    end
     function box:Position(...)
         return cachedChild:Position(...)
     end

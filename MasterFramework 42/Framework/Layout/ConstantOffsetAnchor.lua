@@ -11,11 +11,7 @@ function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, y
 			self:NeedsPosition()
 		end
 	end
-
-	function anchor:LayoutChildren()
-		return anchoredRect:LayoutChildren(), rectToAnchorTo:LayoutChildren()
-	end
-
+	
 	function anchor:Layout(availableWidth, availableHeight)
 		self:RegisterDrawingGroup()
 		rectToAnchorToWidth, rectToAnchorToHeight = rectToAnchorTo:Layout(availableWidth, availableHeight)

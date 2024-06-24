@@ -14,10 +14,6 @@ function framework:RectAnchor(rectToAnchorTo, anchoredRect, xAnchor, yAnchor)
 		end
 	end
 
-	function achor:LayoutChildren()
-		return rectToAnchorTo:LayoutChildren(), anchoredRect:LayoutChildren()
-	end
-
 	function rectAnchor:Layout(availableWidth, availableHeight)
 		anchoredRectWidth, anchoredRectHeight = anchoredRect:Layout(availableWidth, availableHeight)
 		rectToAnchorToWidth, rectToAnchorToHeight = rectToAnchorTo:Layout(availableWidth, availableHeight)

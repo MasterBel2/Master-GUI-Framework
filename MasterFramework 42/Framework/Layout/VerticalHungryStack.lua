@@ -13,10 +13,6 @@ function framework:VerticalHungryStack(viewAbove, hungryView, viewBelow, xAnchor
 
     local maxWidth
 
-    function stack:LayoutChildren()
-        return viewAbove:LayoutChildren(), viewBelow:LayoutChildren(), hungryView:LayoutChildren()
-    end
-
     function stack:Layout(availableWidth, availableHeight)
         widthAbove, heightAbove = viewAbove:Layout(availableWidth, availableHeight)
         widthBelow, heightBelow = viewBelow:Layout(availableWidth, availableHeight - heightAbove)

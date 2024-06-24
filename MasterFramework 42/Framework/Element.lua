@@ -162,88 +162,38 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		deselect = deselectAction or nullFunctionTrue
 	}
 	local drawingGroup = framework:DrawingGroup(body)
-	local layoutChildren
-
-	function element:NeedsLayout()
-		for i = 1, #layoutChildren do
-			if layoutChildren[i]:NeedsLayout() then
-				return true
-			end
-		end
-		return false
-	end
+	element.drawingGroup = drawingGroup
 
 	function element:Draw()
 		startProfile(self.key)
 		Internal._debug_currentElementKey = self.key
 		Internal.activeElement = element
 
-		startProfile(self.key .. ":NeedsLayout()")
-		local needsLayout
-		if viewportDidChange then
-			needsLayout = true
-		elseif not layoutChildren then
-			needsLayout = true
-		else
-			local success, needsLayoutOrError = pcall(self.NeedsLayout, self)
-			if not success then
-				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:NeedsLayout", needsLayoutOrError)
-				framework:RemoveElement(self.key)
-			else
-				needsLayout = needsLayoutOrError
-			end
+		startProfile(self.key .. ":Layout()")
+		local success, _error = pcall(drawingGroup.Layout, drawingGroup, viewportWidth, viewportHeight)
+		if not success then
+			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Layout", _error)
+			framework:RemoveElement(self.key)
 		end
-		endProfile(self.key .. ":NeedsLayout()")
+		endProfile(self.key .. ":Layout()")
 
-		Internal.DebugInfo[self.key .. ":NeedsLayout()"] = needsLayout
+		startProfile(self.key .. ":Position()")
 
-		if needsLayout then
-
-			startProfile(self.key .. ":Layout()")
-			local success, _error = pcall(drawingGroup.Layout, drawingGroup, viewportWidth, viewportHeight)
-			if not success then
-				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Layout", _error)
-				framework:RemoveElement(self.key)
-			end
-			endProfile(self.key .. ":Layout()")
-
-			startProfile(self.key .. ":Position()")
-
-			Internal.activeTooltip = element
-			Internal.activeResponders = element.baseResponders
-			for _, responder in pairs(Internal.activeResponders) do
-				clear(responder.responders)
-			end
-			if Internal.debugMode.draw then
-				element.activeDebugResponder.responders = {}
-			end
-
-			local success, _error = pcall(drawingGroup.Position, drawingGroup, 0, 0)
-			if not success then
-				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Position", _error)
-				framework:RemoveElement(self.key)
-			end
-			endProfile(self.key .. ":Position()")
-
-			startProfile(self.key .. ":LayoutChildren()")
-			local result = { pcall(drawingGroup.LayoutChildren, drawingGroup, viewportWidth, viewportHeight) }
-			if not result[1] then
-				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:LayoutChildren", result[2])
-				framework:RemoveElement(self.key)
-			end
-			if #result > 1 then
-				for i = 1, #result - 1 do
-					result[i] = result[i + 1]
-				end
-				result[#result] = nil
-				layoutChildren = result
-			else
-				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:LayoutChildren", "No children!")
-				framework:RemoveElement(self.key)
-			end
-			endProfile(self.key .. ":LayoutChildren()")
-			Internal.DebugInfo[self.key .. " layout children"] = table.imap(layoutChildren, function(_, component) return (component._debugUniqueIdentifier or "\"unknown\"") .. ": " .. (component._debugTypeIdentifier or "\"unknown\"") end) 
+		Internal.activeTooltip = element
+		Internal.activeResponders = element.baseResponders
+		for _, responder in pairs(Internal.activeResponders) do
+			clear(responder.responders)
 		end
+		if Internal.debugMode.draw then
+			element.activeDebugResponder.responders = {}
+		end
+
+		local success, _error = pcall(drawingGroup.Position, drawingGroup, 0, 0)
+		if not success then
+			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Position", _error)
+			framework:RemoveElement(self.key)
+		end
+		endProfile(self.key .. ":Position()")
 
 		startProfile(self.key .. ":Draw()")
 		local success, _error = pcall(drawingGroup.Draw, drawingGroup, 0, 0)
@@ -288,14 +238,14 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		}
 	end
 
-	element.key = key 
+	element.key = key
 	Internal.elements[key] = element
 
 	local wantedLayer = WantedLayer(layerRequest or self.layerRequest.anywhere())
 	table.insert(elementOrder, wantedLayer, key)
 	element.layerRequest = layerRequest
 
-	return key
+	return key, element
 end
 
 -- Removes an element from the display.

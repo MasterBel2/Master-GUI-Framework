@@ -23,10 +23,6 @@ function framework:Tooltip(rect, description)
 		return cachedX, cachedY, width, height
 	end
 
-	function tooltip:LayoutChildren()
-		return rect:LayoutChildren()
-	end
-
 	function tooltip:Layout(...)
 		width, height = rect:Layout(...)
 		return width, height

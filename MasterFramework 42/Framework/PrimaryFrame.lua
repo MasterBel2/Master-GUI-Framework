@@ -22,11 +22,7 @@ function framework:PrimaryFrame(body)
 			return width, height
 		end
 	end
-
-	function primaryFrame:LayoutChildren()
-		return body:LayoutChildren()
-	end
-
+	
 	function primaryFrame:Layout(availableWidth, availableHeight)
 		width, height = body:Layout(availableWidth, availableHeight)
 		return width, height
