@@ -7,7 +7,7 @@ local math = Include.math
 -- If key is set, MovableFrame will automatically cache its position
 -- DO NOT have multiple concurrent MovableFrame instances with the same key!
 function framework:MovableFrame(key, child, defaultX, defaultY)
-    local frame = {}
+    local frame = Component(true, false)
 
     local handleDimension = framework:AutoScalingDimension(20)
     local xOffset = defaultX -- offsets are to top left corner
@@ -21,8 +21,6 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
     local handle = framework:Rect(handleDimension, handleDimension, nil, handleDecorations)
 
     local selected = false
-
-    local moved = true
 
     local handleHoverDetector = framework:MouseOverChangeResponder(
         handle,
@@ -62,15 +60,11 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
     end
     
     function frame:LayoutChildren()
-        return self, zStack:LayoutChildren()
-    end
-
-    function frame:NeedsLayout()
-        return moved
+        return zStack:LayoutChildren()
     end
 
     function frame:Layout(availableWidth, availableHeight)
-        moved = false
+        self:RegisterDrawingGroup()
         width, height = zStack:Layout(availableWidth, availableHeight)
         if xOffset > availableWidth - 5 then
             xOffset = availableWidth - 5
@@ -105,7 +99,7 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
     end
 
     function frame:SetOffset(x, y)
-        moved = true
+        self:NeedsPosition()
         xOffset = math.min(math.max(x, 0), framework.viewportWidth - 5)
         yOffset = math.min(math.max(y, 5), framework.viewportHeight)
 
