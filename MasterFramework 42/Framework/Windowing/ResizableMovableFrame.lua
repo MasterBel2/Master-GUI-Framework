@@ -9,7 +9,7 @@ local math = Include.math
 -- As of now, primary frame MUST be inside ResizableMovableFrame, but ResizableMovableFrame must NOT have any padding on its margins,
 -- as any padding will inset the primary frame from the visible size of ResizableMovableFrame.
 function framework:ResizableMovableFrame(key, child, defaultX, defaultY, defaultWidth, defaultHeight, growToFitContents)
-    local frame = {}
+    local frame = Component(true, false)
 
     local width = defaultWidth
     local height = defaultHeight
@@ -23,8 +23,6 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
 
     local scale = framework:AutoScalingDimension(1)
     local oldScale = scale()
-
-    local resized = true
 
     if key then
         if ConfigData.frameSizeCache[key] then
@@ -120,6 +118,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
                 newProspectiveHeight = dragStartHeight + dMouseY
             end
             
+            -- TODO: This could break some things under the new model, since layout is expected to have a drawing group!
             local new_Width, new_Height = child:Layout(newProspectiveWidth, newProspectiveHeight)
             local newFinalWidth = math.min(new_Width, newProspectiveWidth) -- I tried commenting these out for some debugging thing and it appears
             local newFinalHeight = math.min(new_Height, newProspectiveHeight) -- clamping works even when we don't do this???
@@ -143,7 +142,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
                 _dy = newFinalHeight - dragStartHeight
             end
 
-            resized = true
+            self:NeedsLayout()
 
             movableFrame:SetOffset(dragStartX + _dx, dragStartY + _dy)
 
@@ -208,13 +207,11 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
     )
 
     function frame:LayoutChildren()
-        return self, moveableFrame:LayoutChildren()
+        return moveableFrame:LayoutChildren()
     end
 
-    function frame:NeedsLayout()
-        return resized
-    end
     function frame:Layout(availableWidth, availableHeight)
+        self:RegisterDrawingGroup()
         local currentScale = scale()
         if currentScale ~= oldScale then
             scaleTranslation = currentScale / oldScale
@@ -229,8 +226,6 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         --     width = math.max(childWidth, width)
         --     height = math.max(childHeight, height)
         -- end
-
-        resized = false
 
         return availableWidth, availableHeight
     end
