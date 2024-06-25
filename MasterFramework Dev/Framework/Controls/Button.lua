@@ -11,38 +11,38 @@
 ]]
 function framework:Button(visual, action)
     local button = { visual = visual, action = action }
-    local background = framework:Background(visual, emptyTable, framework:AutoScalingDimension(3))
+    local background = framework:Background(visual, framework.buttonStyles.defaultBackgroundDecorations, framework:AutoScalingDimension(3))
 
     local responder = framework:MouseOverChangeResponder(
         framework:MousePressResponder(
-            cell,
+            background,
             function(self, x, y, button)
                 if button ~= 1 then return false end
                 if framework.PointIsInRect(x, y, self:Geometry()) then
-                    cell:SetDecorations(framework.buttonStyles.selectedBackgroundDecorations)
+                    background:SetDecorations(framework.buttonStyles.selectedBackgroundDecorations)
                 else
-                    cell:SetDecorations(framework.buttonStyles.defaultBackgroundDecorations)
+                    background:SetDecorations(framework.buttonStyles.defaultBackgroundDecorations)
                 end
                 return true
             end,
             function(self, x, y, dx, dy)
                 if framework.PointIsInRect(x, y, self:Geometry()) then
-                    cell:SetDecorations(framework.buttonStyles.selectedBackgroundDecorations)
+                    background:SetDecorations(framework.buttonStyles.selectedBackgroundDecorations)
                 else
-                    cell:SetDecorations(framework.buttonStyles.defaultBackgroundDecorations)
+                    background:SetDecorations(framework.buttonStyles.defaultBackgroundDecorations)
                 end
             end, 
             function(self, x, y)
                 if framework.PointIsInRect(x, y, self:Geometry()) then
-                    cell:SetDecorations(framework.buttonStyles.hoverBackgroundDecorations)
+                    background:SetDecorations(framework.buttonStyles.hoverBackgroundDecorations)
                     button.action(button)
                 else
-                    cell:SetDecorations(framework.buttonStyles.unhighlightedBackgroundDecorations)
+                    background:SetDecorations(framework.buttonStyles.unhighlightedBackgroundDecorations)
                 end
             end
         ),
         function(isInside)
-            cell:SetDecorations((isInside and framework.buttonStyles.hoverBackgroundDecorations) or framework.buttonStyles.unhighlightedBackgroundDecorations)
+            background:SetDecorations((isInside and framework.buttonStyles.hoverBackgroundDecorations) or framework.buttonStyles.unhighlightedBackgroundDecorations)
         end
     )
 
