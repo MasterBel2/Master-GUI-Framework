@@ -8,7 +8,14 @@ local pairs = Include.pairs
 
 local Internal = Internal
 
--- Draws a color in a rect.
+--[[
+ 	`Color` is a non-overriding extension of `Drawer` that draws a fill color in a rect.
+
+	Methods:
+	 - `color:Set()` Instructs GL to apply the color.
+	 - `color:SetRawValues(r, g, b, a)`: Sets the RGBA values to be used.
+	 - `color:GetRawValues()`: Returns `r, g, b, a`.
+]]
 function framework:Color(r, g, b, a)
 
 	local DrawRoundedRect = Internal.DrawRoundedRect
