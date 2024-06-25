@@ -4,7 +4,7 @@
 
 -- https://github.com/MasterBel2/Master-GUI-Framework
 
-local compatabilityVersion = 42
+local compatabilityVersion = 43
 
 function widget:GetInfo()
 	return {
