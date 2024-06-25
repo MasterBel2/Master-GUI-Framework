@@ -3,6 +3,8 @@
 ## CV 43 (WIP):
 
 - `OffsettedViewport` is now an overriding extension of `DrawingGroup`.
+- `Rasterizer` has been merged into `DrawingGroup`.
+- `DrawingGroup` now rasterizes by default. See documentation for how to disable this, for cases where it harms performance.
 
 ## CV 42: Misc - kill funcs.lua, separate out constants, change WG access
 Extensions are now declared in `MasterFramework $VERSION/Utils`, and pre-loaded before the rest of the framework. These are provided the same global environment as the rest of the framework. `string` extensions now all have `_MasterFramework` at the end of their name, while the `table` extension overrides the `Include.table` table for the framework, and provides access to the customised version as `framework.table`. The definition of `Include.clear` has been moved to `Utils/table.lua`, and `table.joinStrings()` has been removed, since it was a slower reimplementation of `table.concat()`

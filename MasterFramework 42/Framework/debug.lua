@@ -101,7 +101,7 @@ function endProfile(profileName, recordMax)
 end
 
 function framework:GetDebugMode()
-	return Internal.debugMode.general, Internal.debugMode.draw, Internal.debugMode.noRasterizer 
+	return Internal.debugMode.general, Internal.debugMode.draw, Internal.debugMode.disableDrawList 
 end
 
 -- A unique identifier used by `EnableDebugMode`. Always increment this after assigning the value to something, and do not reset it.
@@ -119,7 +119,7 @@ function EnableDebugMode(target)
 	if target._masterframework_debugModeEnabled then return end
 	target._masterframework_debugModeEnabled = true
 
-	local general, draw, noRasterizer = Internal.debugMode.general, Internal.debugMode.draw,  Internal.debugMode.noRasterizer
+	local general, draw, disableDrawList = Internal.debugMode.general, Internal.debugMode.draw,  Internal.debugMode.disableDrawList
 
 	if not general then return end
 
@@ -254,13 +254,13 @@ function EnableDebugMode(target)
 	end
 end
 
-function Internal.SetDebugMode(general, draw, noRasterizer)
+function Internal.SetDebugMode(general, draw, disableDrawList)
 	if Internal.debugMode.initialised then return end
 	Internal.debugMode.initialised = true
 
 	general = general or draw
-	Internal.debugMode = { general = general, draw = draw, noRasterizer = noRasterizer }
+	Internal.debugMode = { general = general, draw = draw, disableDrawList = disableDrawList }
 
 	EnableDebugMode(framework)
-	Log("Debug mode enabled!", general, draw, noRasterizer)
+	Log("Debug mode enabled!", general, draw, disableDrawList)
 end
