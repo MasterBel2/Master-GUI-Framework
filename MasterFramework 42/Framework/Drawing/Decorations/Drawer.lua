@@ -1,5 +1,18 @@
 local pairs = Include.pairs
 
+--[[
+	`Drawer` provides essential methods for drawing components & decorations that need to notify their `DrawingGroup` of necessary updates.
+	Drawers that do not update have no use for these methods.
+
+	Note that components and decorations both make use of these methods, even though components will almost always only have a maximum of one registered `DrawingGroup`.
+
+	Methods:
+	 - `drawer:RegisterDrawingGroup()`: Adds `self` to the current `DrawingGroup`'s list of updatable drawers, so that `DrawingGroup` may inform `self` of when it no longer needs to provide updates.
+	                                    This may be called in `drawer:Layout()`, `drawer:Position()`, or `drawer:Draw()` - whichever is most useful. 
+										This does NOT add `self` to the `DrawingGroup`'s list of drawTargets;
+	 - `drawer:NeedsRedraw()`: Informs all registered `DrawingGroup`s that the drawer has been updated and requires a redraw. 
+	                           This also checks whether the drawer is still registered with the `DrawingGroup`s, and removes any `DrawingGroup`s that the drawer is no longer a member of.
+]]
 function Drawer()
 	local drawingGroups = {}
 	return {
@@ -18,6 +31,23 @@ function Drawer()
 	}
 end
 
+--[[
+	`Component` provides essential methods for drawing components & decorations that need to notify their `DrawingGroup` of necessary updates.
+	Components that do not update have no use for these methods.
+
+	Note that components and decorations both make use of these methods, even though components will almost always only have a maximum of one registered `DrawingGroup`, and decorations may have many registered `DrawingGroup`s.
+
+	Methods:
+	 - `component:RegisterDrawingGroup()`: Adds `self` to the current `DrawingGroup`'s list of updatable drawers, so that `DrawingGroup` may inform `self` of when it no longer needs to provide updates.
+	                                       This may be called in `component:Layout()`, `component:Position()`, or `component:Draw()` - whichever is most useful. 
+										   This does NOT add `self` to the `DrawingGroup`'s list of drawTargets;
+     - `component:NeedsLayout()`: Informs all registered `DrawingGroup`s that the component's layout has been updated and requires a relayout. 
+	                              This also checks whether the component is still registered with the `DrawingGroup`s, and removes any `DrawingGroup`s that the component is no longer a member of.
+	 - `component:NeedsPosition()`: Informs all registered `DrawingGroup`s that the component's positioning has been updated and requires a reposition. 
+	                                This also checks whether the component is still registered with the `DrawingGroup`s, and removes any `DrawingGroup`s that the component is no longer a member of.
+	 - `component:NeedsRedraw()`: Informs all registered `DrawingGroup`s that the component's drawing has been updated and requires a redraw. 
+	                              This also checks whether the component is still registered with the `DrawingGroup`s, and removes any `DrawingGroup`s that the component is no longer a member of.
+]]
 function Component(hasLayout, draws)
 	local drawingGroups = {}
 
