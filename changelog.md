@@ -1,10 +1,23 @@
 # Changelog
 
-## CV 43 (WIP):
+## CV 43 (WIP): Limit unnecessary layout / position / draw passes
 
-- `OffsettedViewport` is now an overriding extension of `DrawingGroup`.
+Agressive changes have been made to how updates are made to reduce the necessary fequency of calculations:
 - `Rasterizer` has been merged into `DrawingGroup`.
-- `DrawingGroup` now rasterizes by default. See documentation for how to disable this, for cases where it harms performance.
+- `DrawingGroup` now uses draw lists by default. See documentation for how to disable this, for cases where it harms performance.
+- `Position` can now be expected to be called more than once for some `Layout` calls, where sizing hasn't changed but positioning has (e.g. )
+- Even if rasterization isn't involved, `Draw` can be called more than once per `Position`/`Layout` call.
+- To specifically request an update to any of `Layout`/`Position`/`Draw`, the corresponding property may be set on the relevant `DrawingGroup`. See `Drawer` and `Component` for more detail and example implementations.
+
+To facilitate this:
+- Most components that allow specifying a child no longer make their child editable; instead, when you wish to mutate a child view hierarchy, set the parent's initial child to `Box`, which allows its child to be changed (via `Box:SetChild(newChild)`).
+- `Rect`, `MarginAroundRect`, and `Cell` no longer draw decorations. Use `Background` instead to attach a background.
+  (Note that `Background` doesn't have the rasterizing optimisation that `MarginAroundRect` did; instead, use nested `DrawingGroup`s to separate the re-drawing profile of different parts of the interface hierarchy.) 
+- `HorizontalStack`, `VerticalStack`, and `StackInPlace` no longer make their members public; instead, they must be set/get through methods that copy to/from the internal member array.
+- Other mutable properties for other component types must be changed through methods, similar to above.
+- Some properties are simply no longer mutable.
+- `Dimension` now has a base constructor that registers for updates with the drawing group; the previous functionality of the `Dimension` function has moved to `AutoScalingDimension`.
+- `OffsettedViewport` is now an overriding extension of `DrawingGroup`.
 
 ## CV 42: Misc - kill funcs.lua, separate out constants, change WG access
 Extensions are now declared in `MasterFramework $VERSION/Utils`, and pre-loaded before the rest of the framework. These are provided the same global environment as the rest of the framework. `string` extensions now all have `_MasterFramework` at the end of their name, while the `table` extension overrides the `Include.table` table for the framework, and provides access to the customised version as `framework.table`. The definition of `Include.clear` has been moved to `Utils/table.lua`, and `table.joinStrings()` has been removed, since it was a slower reimplementation of `table.concat()`
