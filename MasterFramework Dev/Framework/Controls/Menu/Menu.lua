@@ -110,7 +110,7 @@ function framework:Menu(options, anchor)
                 rightMargin,
                 bottomMargin
             ),
-            { framework:Color(0, 0, 0, 0.7)},
+            { framework:Color(0, 0, 0, 0.7) },
             framework:AutoScalingDimension(5)
         ),
         function(isOver)
