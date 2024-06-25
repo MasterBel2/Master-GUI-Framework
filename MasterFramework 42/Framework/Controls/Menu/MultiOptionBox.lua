@@ -30,7 +30,7 @@ function framework:MultiOptionBox(options, selectAction)
         text,
         {},
         function(anchorX, anchorY, anchorWidth, anchorHeight, menu)
-            return anchorX - framework:Dimension(8)(), framework.viewportHeight - anchorY - anchorHeight - menu.topMargin() - framework:Dimension(1)()
+            return anchorX - framework:AutoScalingDimension(8)(), framework.viewportHeight - anchorY - anchorHeight - menu.topMargin() - framework:AutoScalingDimension(1)()
         end,
         "Menu for MultiOptionBox"
     )

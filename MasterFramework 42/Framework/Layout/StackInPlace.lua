@@ -1,21 +1,53 @@
 local floor = Include.math.floor
 local max = Include.math.max
+local table_joinArrays = Include.table.joinArrays
+local unpack = Include.unpack
 
-function framework:StackInPlace(contents, xAnchor, yAnchor)
-	local stackInPlace = { members = contents, xAnchor = xAnchor, yAnchor = yAnchor, type = "StackInPlace" }
+function framework:StackInPlace(_members, xAnchor, yAnchor)
+	local stackInPlace = Component(true, false)
 
 	local maxWidth
 	local maxHeight
 
-	function stackInPlace:Layout(availableWidth, availableHeight)
+	local members = {}
+	local cachedMemberCount
 
+	function stackInPlace:GetMembers()
+		local membersCopy = {}
+		for i = 1, #members do 
+			membersCopy[i] = members[i]
+		end
+		return members
+	end
+	function stackInPlace:SetMembers(newMembers)
+		self:NeedsLayout()
+		for i = #newMembers + 1, #members do
+			members[i] = nil
+		end
+		for i = 1, #newMembers do
+			members[i] = newMembers[i]
+		end
+	end
+
+	stackInPlace:SetMembers(_members)
+
+	function stackInPlace:SetAnchors(newXAnchor, newYAnchor)
+		if newXAnchor ~= xAnchor or newYAnchor ~= yAnchor then
+			xAnchor = newXAnchor
+			yAnchor = newYAnchor
+			self:NeedsPosition()
+		end
+	end
+
+	function stackInPlace:Layout(availableWidth, availableHeight)
+		self:RegisterDrawingGroup()
+		
 		maxWidth = 0
 		maxHeight = 0
 
-		local members = self.members
-		local memberCount = #members
+		cachedMemberCount = #members
 
-		for i = 1, memberCount do 
+		for i = 1, cachedMemberCount do 
 			local member = members[i]
 			local memberWidth, memberHeight = member:Layout(availableWidth, availableHeight)
 
@@ -30,11 +62,7 @@ function framework:StackInPlace(contents, xAnchor, yAnchor)
 	end
 
 	function stackInPlace:Position(x, y)
-		local members = self.members
-		local xAnchor = self.xAnchor
-		local yAnchor = self.yAnchor
-
-		for i = 1, #members do
+		for i = 1, cachedMemberCount do
 			local member = members[i]
 			member:Position(x + (maxWidth - member.stackInPlaceCachedWidth) * xAnchor, y + (maxHeight - member.stackInPlaceCachedHeight) * yAnchor)
 		end

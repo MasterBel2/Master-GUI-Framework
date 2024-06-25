@@ -1,6 +1,7 @@
 local Internal = Internal
 
 Internal.dragListeners = {}
+Internal.dragListenerElementKeys = {}
 
 function framework:MousePressResponder(rect, downAction, moveAction, releaseAction)
 	local responder = framework:Responder(rect, events.mousePress, nil)
@@ -12,6 +13,7 @@ function framework:MousePressResponder(rect, downAction, moveAction, releaseActi
 	function responder:action(x, y, button)
 		responder.button = button
 		Internal.dragListeners[button] = responder
+		Internal.dragListenerElementKeys[button] = Internal._debug_currentElementKey
 		return responder:downAction(x, y, button)
 	end
 

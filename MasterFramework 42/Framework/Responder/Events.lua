@@ -7,6 +7,7 @@ local Spring_Echo = Include.Spring.Echo
 -- Finds the topmost element whose PrimaryFrame contains the given point.
 function Internal.CheckElementUnderMouse(x, y)
 	if not Internal.hasCheckedElementBelowMouse then
+		startProfile("MasterFramework:CheckUnderMouse")
 		for _, key in ipairs(Internal.elementOrder) do
 			local element = Internal.elements[key]
 			local primaryFrame = element.primaryFrame
@@ -27,6 +28,7 @@ function Internal.CheckElementUnderMouse(x, y)
 				end
 			end
 		end
+		endProfile("MasterFramework:CheckUnderMouse")
 	end
 
 	return Internal.elementBelowMouse ~= nil
@@ -67,7 +69,7 @@ local function SearchDownResponderTree(responder, x, y, ...)
 			break
 		end
 		if not (responderX and responderY and responderWidth and responderHeight) then
-			Error("SearchDownResponderTree", "childResponder:Geometry is incomplete: " .. (responderX or "nil") .. ", " .. (responderY or "nil") .. ", " .. (responderWidth or "nil") .. ", " .. (responderHeight or "nil"), responder._debugTypeIdentifier or "nil", (responder.rect and responder.rect._debugTypeIdentifier) or "nil", (responder._isDebugResponder and "true") or "false", (responder.noRect and "true") or "false")
+			Error("SearchDownResponderTree", "childResponder:Geometry is incomplete: " .. (responderX or "nil") .. ", " .. (responderY or "nil") .. ", " .. (responderWidth or "nil") .. ", " .. (responderHeight or "nil"), responder._debugTypeIdentifier or "nil", (responder._isDebugResponder and "true") or "false", (responder.noRect and "true") or "false")
 			break
 		end
 

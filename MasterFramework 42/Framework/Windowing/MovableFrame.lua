@@ -7,13 +7,13 @@ local math = Include.math
 -- If key is set, MovableFrame will automatically cache its position
 -- DO NOT have multiple concurrent MovableFrame instances with the same key!
 function framework:MovableFrame(key, child, defaultX, defaultY)
-    local frame = {}
+    local frame = Component(true, false)
 
-    local handleDimension = framework:Dimension(20)
+    local handleDimension = framework:AutoScalingDimension(20)
     local xOffset = defaultX -- offsets are to top left corner
     local yOffset = defaultY
 
-    local scale = framework:Dimension(1)
+    local scale = framework:AutoScalingDimension(1)
     local oldScale = scale() -- Maybe cache this?
 
     local handleDecorations = { unhighlightedColor }
@@ -58,8 +58,9 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
             height = height,
         }
     end
-
+    
     function frame:Layout(availableWidth, availableHeight)
+        self:RegisterDrawingGroup()
         width, height = zStack:Layout(availableWidth, availableHeight)
         if xOffset > availableWidth - 5 then
             xOffset = availableWidth - 5
@@ -94,6 +95,7 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
     end
 
     function frame:SetOffset(x, y)
+        self:NeedsPosition()
         xOffset = math.min(math.max(x, 0), framework.viewportWidth - 5)
         yOffset = math.min(math.max(y, 5), framework.viewportHeight)
 

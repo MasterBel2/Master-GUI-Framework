@@ -7,14 +7,6 @@ function framework:PrimaryFrame(body)
 	local cachedX, cachedY
 	local width, height
 
-	local _body
-
-	function primaryFrame:SetBody()
-		_body = framework:TextGroup(body)
-	end
-
-	primaryFrame:SetBody(body)
-
 	function primaryFrame:Geometry()
 		return cachedX, cachedY, width, height
 	end
@@ -30,14 +22,14 @@ function framework:PrimaryFrame(body)
 			return width, height
 		end
 	end
-
+	
 	function primaryFrame:Layout(availableWidth, availableHeight)
-		width, height = _body:Layout(availableWidth, availableHeight)
+		width, height = body:Layout(availableWidth, availableHeight)
 		return width, height
 	end
 
 	function primaryFrame:Position(x, y)
-		_body:Position(x, y)
+		body:Position(x, y)
 		Internal.activeElement.primaryFrame = self
 		cachedX = x
 		cachedY = y

@@ -4,6 +4,7 @@ local table = Include.table
 local clear = Include.clear
 local pcall = Include.pcall
 local Internal = Internal
+local type = Include.type
 local Spring_Echo = Include.Spring.Echo
 
 ------------------------------------------------------------------------------------------------------------
@@ -153,7 +154,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		error("[framework:InsertElement] No body provided for element \"" .. preferredKey .. "\"")
 	end
 
-	local element = { 
+	local element = {
 		body = body,
 		primaryFrame = nil,
 		tooltips = {},
@@ -161,14 +162,12 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		deselect = deselectAction or nullFunctionTrue
 	}
 	local drawingGroup = framework:DrawingGroup(body)
+	element.drawingGroup = drawingGroup
 
 	function element:Draw()
+		startProfile(self.key)
+		Internal._debug_currentElementKey = self.key
 		Internal.activeElement = element
-		Internal.activeTooltip = element
-		Internal.activeResponders = element.baseResponders
-		for _, responder in pairs(Internal.activeResponders) do
-			clear(responder.responders)
-		end
 
 		startProfile(self.key .. ":Layout()")
 		local success, _error = pcall(drawingGroup.Layout, drawingGroup, viewportWidth, viewportHeight)
@@ -176,15 +175,25 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Layout", _error)
 			framework:RemoveElement(self.key)
 		end
-		endProfile()
+		endProfile(self.key .. ":Layout()")
 
 		startProfile(self.key .. ":Position()")
+
+		Internal.activeTooltip = element
+		Internal.activeResponders = element.baseResponders
+		for _, responder in pairs(Internal.activeResponders) do
+			clear(responder.responders)
+		end
+		if Internal.debugMode.draw then
+			element.activeDebugResponder.responders = {}
+		end
+
 		local success, _error = pcall(drawingGroup.Position, drawingGroup, 0, 0)
 		if not success then
 			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Position", _error)
 			framework:RemoveElement(self.key)
 		end
-		endProfile()
+		endProfile(self.key .. ":Position()")
 
 		startProfile(self.key .. ":Draw()")
 		local success, _error = pcall(drawingGroup.Draw, drawingGroup, 0, 0)
@@ -192,7 +201,9 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Draw", _error)
 			framework:RemoveElement(self.key)
 		end
-		endProfile()
+		endProfile(self.key .. ":Draw()")
+
+		endProfile(self.key)
 	end
 
 	local nullFunction = allowInteractionBehind and nullFunctionFalse or nullFunctionTrue
@@ -227,14 +238,14 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		}
 	end
 
-	element.key = key 
+	element.key = key
 	Internal.elements[key] = element
 
 	local wantedLayer = WantedLayer(layerRequest or self.layerRequest.anywhere())
 	table.insert(elementOrder, wantedLayer, key)
 	element.layerRequest = layerRequest
 
-	return key
+	return key, element
 end
 
 -- Removes an element from the display.

@@ -1,15 +1,28 @@
 function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, yOffset)
-	local anchor = { rectToAnchorTo = rectToAnchorTo, anchoredRect = anchoredRect, xOffset = xOffset, yOffset = yOffset }
+	local anchor = Component(true, false)
 
+	local xOffset
+	local yOffset
+
+	function anchor:SetOffsets(newXOffset, newYOffset)
+		if newXOffset ~= xOffset or newYOffset ~= yOffset then
+			xOffset = newXOffset
+			yOffset = newYOffset
+			self:NeedsPosition()
+		end
+	end
+	
 	function anchor:Layout(availableWidth, availableHeight)
-		rectToAnchorToWidth, rectToAnchorToHeight = self.rectToAnchorTo:Layout(availableWidth, availableHeight)
-		anchoredRectWidth, anchoredRectHeight = self.anchoredRect:Layout(availableWidth, availableHeight)
+		self:RegisterDrawingGroup()
+		rectToAnchorToWidth, rectToAnchorToHeight = rectToAnchorTo:Layout(availableWidth, availableHeight)
+		anchoredRectWidth, anchoredRectHeight = anchoredRect:Layout(availableWidth, availableHeight)
+		
 		return rectToAnchorToWidth, rectToAnchorToHeight
 	end
 
 	function anchor:Position(x, y)
-        self.rectToAnchorTo:Position(x, y)
-        self.anchoredRect:Position(x + self.xOffset, y + self.yOffset)
+        rectToAnchorTo:Position(x, y)
+        anchoredRect:Position(x + xOffset, y + yOffset)
 	end
 	return anchor
 end

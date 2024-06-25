@@ -38,7 +38,7 @@ function framework:Menu(options, anchor)
 
     local optionElements = {}
 
-    celledStack = framework:CelledVerticalStack(optionElements, framework:Dimension(0))
+    celledStack = framework:CelledVerticalStack(optionElements, framework:AutoScalingDimension(0))
 
     local menuItemAtCoordinates
     local highlightedMenuItem
@@ -87,7 +87,7 @@ function framework:Menu(options, anchor)
 
     menuItemAtCoordinates = function(x, y)
         local responderX, responderY = menuOptions:CachedPosition()
-        local stackMembers = celledStack.members
+        local stackMembers = celledStack:GetMembers()
         for i = 1, #stackMembers do
             local member = stackMembers[i]
             if framework.PointIsInRect(x, y, responderX, responderY + member.vStackCachedY, member:Size()) then
@@ -96,20 +96,22 @@ function framework:Menu(options, anchor)
         end
     end
     
-    local leftMargin = framework:Dimension(0)
-    local topMargin = framework:Dimension(8)
+    local leftMargin = framework:AutoScalingDimension(0)
+    local topMargin = framework:AutoScalingDimension(8)
     local rightMargin = leftMargin
     local bottomMargin = topMargin
 
     local body = framework:MouseOverChangeResponder(
-        framework:MarginAroundRect(
-            menuOptions,
-            leftMargin,
-            topMargin,
-            rightMargin,
-            bottomMargin,
+        framework:Background(
+            framework:MarginAroundRect(
+                menuOptions,
+                leftMargin,
+                topMargin,
+                rightMargin,
+                bottomMargin
+            ),
             { framework:Color(0, 0, 0, 0.7)},
-            framework:Dimension(5)
+            framework:AutoScalingDimension(5)
         ),
         function(isOver)
             menu.mouseIsOver = isOver
@@ -139,7 +141,7 @@ function framework:Menu(options, anchor)
                     option.subOptions,
                     function(anchorX, anchorY, anchorWidth, anchorHeight, submenu)
                         anchor:ShowMenu()
-                        local cellX, cellY, cellWidth, cellHeight = celledStack.members[index]:Geometry()
+                        local cellX, cellY, cellWidth, cellHeight = celledStack:GetMembers()[index]:Geometry()
                         return cellX + cellWidth, framework.viewportHeight - cellY - cellHeight - submenu.topMargin()
                     end,
                     option.title
@@ -150,10 +152,10 @@ function framework:Menu(options, anchor)
 
             return framework:MarginAroundRect(
                 component,
-                framework:Dimension(8),
-                framework:Dimension(1),
-                framework:Dimension(8),
-                framework:Dimension(1)
+                framework:AutoScalingDimension(8),
+                framework:AutoScalingDimension(1),
+                framework:AutoScalingDimension(8),
+                framework:AutoScalingDimension(1)
             )
         end)
 

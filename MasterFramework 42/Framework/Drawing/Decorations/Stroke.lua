@@ -13,7 +13,7 @@ function framework:Stroke(width, color, inside)
 	local DrawRoundedRect = Internal.DrawRoundedRect
 	local DrawRectVertices = Internal.DrawRectVertices
 
-	local stroke = { width = width, color = color, inside = inside or false }
+	local stroke = Drawer()
 
 	-- Only used for the draw function, so we don't need to worry about this being used by multiple strokes.
 	local cachedX 
@@ -27,12 +27,13 @@ function framework:Stroke(width, color, inside)
 	end
 
 	function stroke:Draw(rect, x, y, width, height)
-		local strokeWidth = self.width()
+		local strokeWidth = width()
 		if strokeWidth <= 0 then
 			return 
 		end
+		-- self:RegisterDrawGroup()
 
-		self.color:Set()
+		color:Set()
 		gl_LineWidth(strokeWidth)
 
 		-- Ceil and floor here prevent half-pixels

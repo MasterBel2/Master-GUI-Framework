@@ -95,6 +95,7 @@ function widget:Initialize()
         unpack = unpack,
         loadstring = loadstring,
         setfenv = setfenv,
+        setmetatable = setmetatable,
 		os = os,
 
         widgetHandler = widgetHandler,
@@ -129,7 +130,7 @@ function widget:Initialize()
 
 	frameworkInternal.updateScreenEnvironment(viewSizeX, viewSizeY, framework.relativeScaleFactor)
 
-	frameworkInternal.SetDebugMode(false, false, false)
+	frameworkInternal.SetDebugMode(true, false, false)
 
     isAboveThing = frameworkInternal.IsAboveWatcher()
 
@@ -156,7 +157,9 @@ end
 function widget:TextInput(utf8char)
     if not frameworkInternal.focusTarget then return end
 
+	framework.startProfile(frameworkInternal .. focusTargetElementKey .. ":TextInput()")
 	local success, errorMessage = pcall(frameworkInternal.focusTarget.TextInput, frameworkInternal.focusTarget, utf8char)
+	framework.endProfile(frameworkInternal .. focusTargetElementKey .. ":TextInput()")
 	if not success then 
 		framework.Error("widget:TextInput", "focusTarget:TextInput", errorMessage)
 	end
@@ -167,18 +170,21 @@ end
 function widget:KeyPress(key, mods, isRepeat, label, utf32char, scanCode, actionList)
     if not frameworkInternal.focusTarget then return end
 
+	framework.startProfile(frameworkInternal.focusTargetElementKey .. ":KeyPress()")
 	local success, errorMessage = pcall(frameworkInternal.focusTarget.KeyPress, frameworkInternal.focusTarget, key, mods, isRepeat, label, utf32char, scanCode, actionList)
 	if not success then 
 		framework.Error("widget:KeyPress", "focusTarget:KeyPress", errorMessage)
 	end
+	framework.endProfile(frameworkInternal.focusTargetElementKey .. ":KeyPress()")
 
     return true
 end
 
 function widget:KeyRelease(key, mods, label, utf32char, scanCode, actionList)
 	if not frameworkInternal.focusTarget then return end
-	
+	framework.startProfile(frameworkInternal.focusTargetElementKey .. ":KeyRelease()")
 	local success, errorMessage = pcall(frameworkInternal.focusTarget.KeyRelease, frameworkInternal.focusTarget, key, mods, label, utf32char, scanCode, actionList)
+	framework.endProfile(frameworkInternal.focusTargetElementKey .. ":KeyRelease()")
 	if not success then 
 		framework.Error("widget:KeyRelease", "focusTarget:KeyRelease", errorMessage)
 	end
@@ -193,21 +199,28 @@ function widget:MousePress(x, y, button)
 	end
 	if not frameworkInternal.CheckElementUnderMouse(x, y) then
 		for _, key in ipairs(frameworkInternal.elementOrder) do
+			framework.startProfile(key .. ":deselect()")
 			local element = frameworkInternal.elements[key]
 			local success, errorMessage = pcall(element.deselect)
 			if not success then
 				framework.Error("widget:MousePress", "Element: " .. key, "element.deslect", errorMessage)
 			end
+			framework.endProfile(key .. ":deselect()")
 		end
 		return false
 	end
-	return frameworkInternal.FindResponder(framework.events.mousePress, x, y, button)
+	framework.startProfile(frameworkInternal.elementBelowMouse.key .. ":MousePress()")
+	local result = frameworkInternal.FindResponder(framework.events.mousePress, x, y, button)
+	framework.endProfile(frameworkInternal.elementBelowMouse.key .. ":MousePress()")
+	return result
 end
 
 function widget:MouseMove(x, y, dx, dy, button)
 	local dragListener = frameworkInternal.dragListeners[button]
 	if dragListener ~= nil then
+		framework.startProfile(frameworkInternal.dragListenerElementKeys[button] .. ":MouseMove()")
 		local success, errorMessage = pcall(dragListener.MouseMove, dragListener, x, y, dx, dy, button)
+		framework.endProfile(frameworkInternal.dragListenerElementKeys[button] .. ":MouseMove()")
 		if not success then
 			framework.Error("widget:MouseMove", "dragListener:MouseMove", errorMessage)
 		end
@@ -217,11 +230,14 @@ end
 function widget:MouseRelease(x, y, button)
 	local dragListener = frameworkInternal.dragListeners[button]
 	if dragListener then
+		framework.startProfile(frameworkInternal.dragListenerElementKeys[button] .. ":MouseRelease()")
 		local success, errorMessage = pcall(dragListener.MouseRelease, dragListener, x, y, button)
+		framework.endProfile(frameworkInternal.dragListenerElementKeys[button] .. ":MouseRelease()")
 		if not success then
 			framework.Error("widget:MouseRelease", "dragListener:MouseRelease", errorMessage)
 		end
 		frameworkInternal.dragListeners[button] = nil
+		frameworkInternal.dragListenerElementKeys[button] = nil
 	end
 	return false
 end
@@ -229,7 +245,10 @@ end
 function widget:MouseWheel(up, value)
 	local mouseX, mouseY = Spring.GetMouseState()
 	if frameworkInternal.CheckElementUnderMouse(mouseX, mouseY) then
-		return frameworkInternal.FindResponder(framework.events.mouseWheel, mouseX, mouseY, up, value)
+		framework.startProfile(frameworkInternal.elementBelowMouse.key .. ":MouseWheel()")
+		local result = frameworkInternal.FindResponder(framework.events.mouseWheel, mouseX, mouseY, up, value)
+		framework.endProfile(frameworkInternal.elementBelowMouse.key  .. ":MouseWheel()")
+		return result
 	else
 		return false
 	end
@@ -244,7 +263,6 @@ function widget:IsAbove(x, y)
 		frameworkInternal.DebugInfo.elementBelowMouse = {}
 		for _, element in pairs(frameworkInternal.elements) do
 			frameworkInternal.SearchDownResponderTree(element.activeDebugResponder, x, y)
-			
 		end
 	end
 
@@ -253,7 +271,9 @@ function widget:IsAbove(x, y)
 	-- for i=0,1000 do
 		isAbove = frameworkInternal.CheckElementUnderMouse(x, y)
 		if isAbove then
+			framework.startProfile(frameworkInternal.elementBelowMouse.key .. ":IsAbove")
 			isAboveThing:Search(frameworkInternal.elementBelowMouse.baseResponders[framework.events.mouseOver], x, y)
+			framework.endProfile(frameworkInternal.elementBelowMouse.key .. ":IsAbove")
 		else
 			isAboveThing:Reset()
 		end
@@ -269,21 +289,16 @@ function widget:Update()
 end
 
 function widget:DrawScreen()
-	-- startProfile("DrawScreen")
+	framework.startProfile("DrawScreen")
+
 	frameworkInternal.hasCheckedElementBelowMouse = false
 	frameworkInternal.elementBelowMouse = nil
 	local index = #frameworkInternal.elementOrder
 	while 0 < index do
 		local key = frameworkInternal.elementOrder[index]
+		frameworkInternal.elements[key]:Draw()
+
 		index = index - 1
-		local element = frameworkInternal.elements[key]
-
-		if frameworkInternal.debugMode.draw then
-			element.activeDebugResponder.responders = {}
-			frameworkInternal._debug_currentElementKey = key
-		end
-
-		element:Draw()
 	end
 	framework.viewportDidChange = false
 	if frameworkInternal.debugMode.draw then
@@ -293,7 +308,7 @@ function widget:DrawScreen()
 		-- end
 		frameworkInternal.drawCalls = {}
 	end
-	-- endProfile()
+	framework.endProfile("DrawScreen")
 end
 
 function widget:ViewResize(viewSizeX, viewSizeY)

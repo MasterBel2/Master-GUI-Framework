@@ -5,3 +5,5 @@ VFS.Include(DIR .. "Constants/color.lua")
 VFS.Include(DIR .. "Constants/dimension.lua")
 VFS.Include(DIR .. "Constants/stroke.lua") -- depends on color.lua and dimension.lua
 VFS.Include(DIR .. "Constants/font.lua")
+
+VFS.Include(DIR .. "Constants/button.lua")

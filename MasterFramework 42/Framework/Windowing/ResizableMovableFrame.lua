@@ -9,7 +9,7 @@ local math = Include.math
 -- As of now, primary frame MUST be inside ResizableMovableFrame, but ResizableMovableFrame must NOT have any padding on its margins,
 -- as any padding will inset the primary frame from the visible size of ResizableMovableFrame.
 function framework:ResizableMovableFrame(key, child, defaultX, defaultY, defaultWidth, defaultHeight, growToFitContents)
-    local frame = {}
+    local frame = Component(true, false)
 
     local width = defaultWidth
     local height = defaultHeight
@@ -21,7 +21,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
     local dragStartWidth
     local dragStartHeight
 
-    local scale = framework:Dimension(1)
+    local scale = framework:AutoScalingDimension(1)
     local oldScale = scale()
 
     if key then
@@ -37,26 +37,26 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
 
     local movableFrame -- value set below responders
 
-    local draggableDistance = framework:Dimension(20)
-    local margin = framework:Dimension(0) -- Must be 0; see ResizableMovableFrame documentation. 
+    local draggableDistance = framework:AutoScalingDimension(20)
+    local margin = framework:AutoScalingDimension(0) -- Must be 0; see ResizableMovableFrame documentation. 
 
     local draggable = true
 
     local draggableColor = framework:Color(1, 1, 1, 1)
     local draggingColor = framework:Color(0.2, 1, 0.4, 1)
-    local draggableDecoration = framework:Stroke(framework:Dimension(1), draggableColor, false)
-    local marginDecorations = {}
+    local draggableDecoration = framework:Stroke(framework:AutoScalingDimension(1), draggableColor, false)
 
-    local highlightWhenDraggable = framework:MarginAroundRect(
-        child,
-        margin,
-        margin,
-        margin,
-        margin,
-        marginDecorations
-    )
+    local highlightWhenDraggable = framework:Background(
+        framework:MarginAroundRect(
+            child,
+            margin,
+            margin,
+            margin,
+            margin
+        ),
+    {})
 
-    frame.margin = highlightWhenDraggable
+    frame.background = highlightWhenDraggable
 
     function frame:DebugInfo()
         return {
@@ -118,6 +118,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
                 newProspectiveHeight = dragStartHeight + dMouseY
             end
             
+            -- TODO: This could break some things under the new model, since layout is expected to have a drawing group!
             local new_Width, new_Height = child:Layout(newProspectiveWidth, newProspectiveHeight)
             local newFinalWidth = math.min(new_Width, newProspectiveWidth) -- I tried commenting these out for some debugging thing and it appears
             local newFinalHeight = math.min(new_Height, newProspectiveHeight) -- clamping works even when we don't do this???
@@ -140,6 +141,8 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
                 height = newFinalHeight
                 _dy = newFinalHeight - dragStartHeight
             end
+
+            self:NeedsLayout()
 
             movableFrame:SetOffset(dragStartX + _dx, dragStartY + _dy)
 
@@ -185,6 +188,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
 
     local function SizeControl(child)
         local control = {}
+
         function control:Layout(availableWidth, availableHeight)
             width, height = child:Layout(width, height)
             return width, height
@@ -201,6 +205,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
     )
 
     function frame:Layout(availableWidth, availableHeight)
+        self:RegisterDrawingGroup()
         local currentScale = scale()
         if currentScale ~= oldScale then
             scaleTranslation = currentScale / oldScale

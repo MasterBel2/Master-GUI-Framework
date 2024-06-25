@@ -2,6 +2,7 @@
 function framework:GeometryTarget(body)
     local geometryTarget = {}
     local width, height, cachedX, cachedY
+
     function geometryTarget:Layout(...)
         width, height = body:Layout(...)
         return width, height

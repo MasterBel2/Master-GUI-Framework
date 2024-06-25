@@ -4,19 +4,35 @@ local gl_BeginEnd = Include.gl.BeginEnd
 local gl_Color = Include.gl.Color
 local gl_Rect = Include.gl.Rect
 local gl_Vertex = Include.gl.Vertex
+local pairs = Include.pairs
 
 local Internal = Internal
 
--- Draws a color in a rect.
+--[[
+ 	`Color` is a non-overriding extension of `Drawer` that draws a fill color in a rect.
+
+	Methods:
+	 - `color:Set()` Instructs GL to apply the color.
+	 - `color:SetRawValues(r, g, b, a)`: Sets the RGBA values to be used.
+	 - `color:GetRawValues()`: Returns `r, g, b, a`.
+]]
 function framework:Color(r, g, b, a)
 
 	local DrawRoundedRect = Internal.DrawRoundedRect
 	local DrawRect = Internal.DrawRect
 
-	local color = { r = r, g = g, b = b, a = a }
+	local color = Drawer()
 
 	function color:Set()
-		gl_Color(self.r, self.g, self.b, self.a)
+		self:RegisterDrawingGroup()
+		gl_Color(r, g, b, a)
+	end
+	function color:SetRawValues(...)
+		self:NeedsRedraw()
+		r, g, b, a = ...
+	end
+	function color:GetRawValues()
+		return r, g, b, a
 	end
 
 	local function drawRoundedRectVertex(xOffset, yOffset, x, y)

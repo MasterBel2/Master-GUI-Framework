@@ -2,21 +2,28 @@ local floor = Include.math.floor
 
 -- Positions a rect relative to another rect, with no impact on the layout of the original rect.
 function framework:RectAnchor(rectToAnchorTo, anchoredRect, xAnchor, yAnchor)
-	local rectAnchor = { rectToAnchorTo = rectToAnchorTo, anchoredRect = anchoredRect, xAnchor = xAnchor, yAnchor = yAnchor, type = "RectAnchor" }
+	local rectAnchor = Component(true, false)
 
-	local rectToAnchorToWidth,rectToAnchorToHeight,anchoredRectWidth,anchoredRectHeight
+	local rectToAnchorToWidth, rectToAnchorToHeight, anchoredRectWidth, anchoredRectHeight
+
+	function anchor:SetAnchors(newXAnchor, yAnchor)
+		if xAnchor ~= newXAnchor or yAnchor ~= newYAnchor then
+			xAnchor = newXAnchor
+			yAnchor = newYAnchor
+			self:NeedsPosition()
+		end
+	end
 
 	function rectAnchor:Layout(availableWidth, availableHeight)
-		anchoredRectWidth, anchoredRectHeight = self.anchoredRect:Layout(availableWidth, availableHeight)
-		rectToAnchorToWidth, rectToAnchorToHeight = self.rectToAnchorTo:Layout(availableWidth, availableHeight)
+		anchoredRectWidth, anchoredRectHeight = anchoredRect:Layout(availableWidth, availableHeight)
+		rectToAnchorToWidth, rectToAnchorToHeight = rectToAnchorTo:Layout(availableWidth, availableHeight)
 		return rectToAnchorToWidth, rectToAnchorToHeight
 	end
 
 	function rectAnchor:Position(x, y)
-		local rectToAnchorTo = self.rectToAnchorTo
-		local anchoredRect = self.anchoredRect
 		rectToAnchorTo:Position(x, y)
-		anchoredRect:Position(x + floor((rectToAnchorToWidth - anchoredRectWidth) * self.xAnchor), y + floor((rectToAnchorToHeight - anchoredRectHeight) * self.yAnchor))
+		anchoredRect:Position(x + floor((rectToAnchorToWidth - anchoredRectWidth) * xAnchor), y + floor((rectToAnchorToHeight - anchoredRectHeight) * yAnchor))
 	end
+	
 	return rectAnchor
 end

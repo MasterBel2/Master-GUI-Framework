@@ -8,7 +8,12 @@ local ipairs = Include.ipairs
 local string = Include.string
 local table_insert = Include.table.insert
 
-local Spring_GetTimerMicros = Include.Spring.GetTimerMicros
+local Spring_GetTimer
+if Include.Spring.GetTimerMicros then
+	Spring_GetTimer = Include.Spring.GetTimerMicros
+else
+	Spring_GetTimer = Include.Spring.GetTimer
+end
 local Spring_DiffTimers = Include.Spring.DiffTimers
 local Spring_Echo = Include.Spring.Echo
 
@@ -78,21 +83,27 @@ function debugDescription(...)
 	Spring_Echo(debugDescriptionString(...))
 end
 
-function startProfile(_profileName)
-	profileName = _profileName
-	startTimer = Spring_GetTimerMicros()
+local profileTimers = {}
+function startProfile(profileName)
+	if Internal.debugMode.general then
+		profileTimers[profileName] = Spring_GetTimer()
+	end
 	-- startTimer = Spring_GetTimer()
 end
 
-function endProfile()
+function endProfile(profileName, recordMax)
 	-- local time = Spring_DiffTimers(Spring_GetTimer(), startTimer, nil)
-	local time = Spring_DiffTimers(Spring_GetTimerMicros(), startTimer, nil, true)
-	framework.stats[profileName] = time
+	if Internal.debugMode.general and profileTimers[profileName] then
+		local time = Spring_DiffTimers(Spring_GetTimer(), profileTimers[profileName], nil, true)
+		if not recordMax or ((framework.stats[profileName] or 0) < time) then
+			framework.stats[profileName] = time
+		end
+	end
 	-- Log("Profiled " .. profileName .. ": " .. Spring_DiffTimers(Spring_GetTimer(), startTimer) * 1000 .. " microseconds")
 end
 
 function framework:GetDebugMode()
-	return Internal.debugMode.general, Internal.debugMode.draw, Internal.debugMode.noRasterizer 
+	return Internal.debugMode.general, Internal.debugMode.draw, Internal.debugMode.disableDrawList 
 end
 
 -- A unique identifier used by `EnableDebugMode`. Always increment this after assigning the value to something, and do not reset it.
@@ -110,13 +121,13 @@ function EnableDebugMode(target)
 	if target._masterframework_debugModeEnabled then return end
 	target._masterframework_debugModeEnabled = true
 
-	local general, draw, noRasterizer = Internal.debugMode.general, Internal.debugMode.draw,  Internal.debugMode.noRasterizer
+	local general, draw, disableDrawList = Internal.debugMode.general, Internal.debugMode.draw,  Internal.debugMode.disableDrawList
 
 	if not general then return end
 
 	local dummyRect
 	if draw then
-		dummyRect = { cornerRadius = framework:Dimension(0) }
+		dummyRect = { cornerRadius = function() return 0 end }
 	end
 
 	for key, value in pairs(target) do
@@ -131,7 +142,7 @@ function EnableDebugMode(target)
 					nextUniqueIdentifier = nextUniqueIdentifier + 1
 
 					if draw then
-						local cachedX, cachedY, cachedWidth, cachedHeight
+						local cachedX, cachedY, cachedWidth, cachedHeight, needsLayout
 						local elementKey
 
 						if temp[1].Position and temp[1].Layout then
@@ -160,6 +171,8 @@ function EnableDebugMode(target)
 										cachedHeight = cachedHeight,
 										x = x,
 										y = y,
+
+										needsLayout = needsLayout,
 	
 										_debugTypeIdentifier = temp[1]._debugTypeIdentifier,
 										_debugUniqueIdentifier = temp[1]._debugUniqueIdentifier
@@ -179,6 +192,16 @@ function EnableDebugMode(target)
 						if temp[1].Position then
 							temp[1]._debug_cachedPosition = temp[1]._debug_cachedPosition or temp[1].Position
 							temp[1].Position = function(...)
+								if not temp[1].laidOut then
+									-- local x = temp[1]._debug_mouseOverResponder.parent
+									-- local path = temp[1]._debugTypeIdentifier
+									-- for i = 1, 1000 do
+									-- 	if not x then break end
+									-- 	path = (x._debugTypeIdentifier or "Unknown") .. "/" .. path
+									-- 	x = x.parent
+									-- end
+									Log("Position called before Layout for " .. temp[1]._debugTypeIdentifier .. " " .. temp[1]._debugUniqueIdentifier)
+								end
 								LogDrawCall(key .. ":Position", false)
 								elementKey = Internal._debug_currentElementKey
 
@@ -202,7 +225,20 @@ function EnableDebugMode(target)
 								LogDrawCall(key .. ":Position", true)
 							end
 						end
+						if temp[1].NeedsLayout then
+							temp[1]._debug_cachedNeedsLayout = temp[1]._debug_cachedNeedsLayout or temp[1].NeedsLayout
+							temp[1].NeedsLayout = function(...)
+									needsLayout = temp[1]._debug_cachedNeedsLayout(...) or false
+									temp[1]._debug_needsLayout = needsLayout
+								return needsLayout
+							end
+						end
+						
 						if temp[1].Layout then
+							temp[1].laidOut = true
+							if temp[1]._debug_cachedLayout then
+								Log("Overriding layout for " .. temp[1]._debugTypeIdentifier .. " " .. temp[1]._debugUniqueIdentifier)
+							end
 							temp[1]._debug_cachedLayout = temp[1]._debug_cachedLayout or temp[1].Layout
 							temp[1].Layout = function(...)
 								LogDrawCall(key .. ":Layout", false)
@@ -220,13 +256,13 @@ function EnableDebugMode(target)
 	end
 end
 
-function Internal.SetDebugMode(general, draw, noRasterizer)
+function Internal.SetDebugMode(general, draw, disableDrawList)
 	if Internal.debugMode.initialised then return end
 	Internal.debugMode.initialised = true
 
 	general = general or draw
-	Internal.debugMode = { general = general, draw = draw, noRasterizer = noRasterizer }
+	Internal.debugMode = { general = general, draw = draw, disableDrawList = disableDrawList }
 
 	EnableDebugMode(framework)
-	Log("Debug mode enabled!", general, draw, noRasterizer)
+	Log("Debug mode enabled!", general, draw, disableDrawList)
 end
