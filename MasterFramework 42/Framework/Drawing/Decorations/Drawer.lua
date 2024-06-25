@@ -37,6 +37,11 @@ end
 
 	Note that components and decorations both make use of these methods, even though components will almost always only have a maximum of one registered `DrawingGroup`, and decorations may have many registered `DrawingGroup`s.
 
+	Parameters:
+	 - `hasLayout`: A boolean value indicating whether the component performs any updatable layout. 
+	 - `draws`: A boolean value indicating whether the component performs any updatable drawing. 
+	            When true, the returned component will suport the same interface provided by `Drawer`.
+
 	Methods:
 	 - `component:RegisterDrawingGroup()`: Adds `self` to the current `DrawingGroup`'s list of updatable drawers, so that `DrawingGroup` may inform `self` of when it no longer needs to provide updates.
 	                                       This may be called in `component:Layout()`, `component:Position()`, or `component:Draw()` - whichever is most useful. 
