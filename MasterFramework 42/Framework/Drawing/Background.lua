@@ -1,24 +1,25 @@
 local table_insert = Include.table.insert
 
 --[[
-    A component used to draw decorations of a desired size around a fixed-size child, that does not directly wrap the child as `framework:MarginAroundRect` would.
+    `Background` is a component used to draw decorations around a child.
     
-    Set `cell.overrideWidth` or `cell.overrideHeight` to a non-nil number to customise layout.
-    `framework:Cell` is a valid Geometry Target.
+    Notes: 
+     - `Background` is a valid geometry target.
+     - `Background` is a non-overriding extension of `Drawer`.
 
     Parameters:
-    - `body`: the child component of the cell.
-    - `decorations`: an array of decorations that implement `decoration:Draw(rect, x, y, width, height)` that will be called in-order to draw the cell's background.
-    - `cornerRadius`: a function returning a number whose result will be used to determine the corner radius for the decorations drawn.
+     - `body`: the child component of the cell.
+     - `decorations`: an array of decorations that implement `decoration:Draw(rect, x, y, width, height)` that will be called in-order to draw the cell's background.
+     - `cornerRadius`: a function returning a number whose result will be used to determine the corner radius for the decorations drawn. This may be nil.
 
-    Properties:
-    - `decorations`: an array of decorations that implement `decoration:Draw(rect, x, y, width, height)` that will be called in-order to draw the cell's background.
-    - `cornerRadius`: a function returning a number whose result will be used to determine the corner radius for the decorations drawn.
+    Read/write properties:
+     - `cornerRadius`: a function returning a number whose result will be used to determine the corner radius for the decorations drawn.
 
     Methods:
-    - `Size()`: Returns the overridden width & height of the cell, or the width/height of the child if the dimension had not been overridden. 
-    - `CachedPosition()`: Returns the position last provided in `cell:Draw(x, y)`.
-    - `Geometry()`: Returns the cached position and size.
+     - `background.CachedPosition()`: Returns the position last provided in `cell:Draw(x, y)`.
+     - `background.Geometry()`: Returns the cached position and size.
+     - `background.Size()`: Returns the overridden width & height of the cell, or the width/height of the child if the dimension had not been overridden. 
+     - `background:SetDecorations(newDecorations)`: copies the array contents of `newDecorations` to be the new set of decorations drawn.
 ]]
 function framework:Background(body, _decorations, cornerRadius)
     local background = Drawer()
