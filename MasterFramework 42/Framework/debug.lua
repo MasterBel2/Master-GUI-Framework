@@ -85,13 +85,15 @@ end
 
 local profileTimers = {}
 function startProfile(profileName)
-	profileTimers[profileName] = Spring_GetTimer()
+	if Internal.debugMode.general then
+		profileTimers[profileName] = Spring_GetTimer()
+	end
 	-- startTimer = Spring_GetTimer()
 end
 
 function endProfile(profileName, recordMax)
 	-- local time = Spring_DiffTimers(Spring_GetTimer(), startTimer, nil)
-	if profileTimers[profileName] then
+	if Internal.debugMode.general and profileTimers[profileName] then
 		local time = Spring_DiffTimers(Spring_GetTimer(), profileTimers[profileName], nil, true)
 		if not recordMax or ((framework.stats[profileName] or 0) < time) then
 			framework.stats[profileName] = time
