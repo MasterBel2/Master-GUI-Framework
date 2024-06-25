@@ -96,7 +96,6 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         end
     end
 
-    local selectedStroke = framework:Stroke(framework:AutoScalingDimension(2), framework.color.hoverColor)
     local textStack = framework:StackInPlace({ entry.text, entry.placeholder }, 0, 0)
     local background = framework:Background(
         framework:MarginAroundRect(
@@ -106,7 +105,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             framework:AutoScalingDimension(8),
             framework:AutoScalingDimension(8)
         ), 
-        { framework:Color(0, 0, 0, 0.7) }
+        textEntryStyles
     )
     local selectionDetector = framework:MousePressResponder(
         background,
@@ -119,8 +118,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             
             entry:TakeFocus()
 
-            selectedStroke.color = framework.color.pressColor
-            background.decorations[2] = selectedStroke
+            background:SetDecorations(textEntryStyles.pressedBackgroundDecorations)
 
             selectionChangedClock = os_clock()
             
@@ -140,12 +138,10 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             -- end
         end,
         function(responder, mouseX, mouseY)
-            selectedStroke.color = framework.color.selectedColor
-
             if framework.PointIsInRect(mouseX, mouseY, responder:Geometry()) and framework:FocusTarget() == entry then
-                background.decorations[2] = selectedStroke
+                background:SetDecorations(textEntryStyles.selectedBackgroundDecorations)
             else
-                background.decorations[2] = nil
+                background:SetDecorations(textEntryStyles.defaultBackgroundDecorations)
             end
         end
     )
@@ -492,8 +488,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     function entry:TakeFocus()
         if framework:TakeFocus(self) then
             focused = true
-            selectedStroke.color = framework.color.selectedColor
-            background.decorations[2] = selectedStroke
+            background:SetDecorations(textEntryStyles.selectedBackgroundDecorations)
             return true
         end
     end
@@ -502,7 +497,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     function entry:ReleaseFocus()
         focused = false
         framework:ReleaseFocus(self)
-        background.decorations[2] = nil
+        background:SetDecorations(textEntryStyles.defaultBackgroundDecorations)
     end
 
     function entry:Layout(...)
