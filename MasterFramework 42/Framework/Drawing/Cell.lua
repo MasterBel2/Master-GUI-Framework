@@ -1,24 +1,18 @@
 local table_insert = Include.table.insert
 
 --[[
-    A component used to draw decorations of a desired size around a fixed-size child, that does not directly wrap the child as `framework:MarginAroundRect` would.
-    
-    Set `cell.overrideWidth` or `cell.overrideHeight` to a non-nil number to customise layout.
-    `framework:Cell` is a valid Geometry Target.
+    `Cell` is used to override the size alotted to an interface, e.g. for a table with equal-sized cells in each column. 
+    See `CelledVerticalStack` for an example use.
 
     Parameters:
-    - `body`: the child component of the cell.
-    - `decorations`: an array of decorations that implement `decoration:Draw(rect, x, y, width, height)` that will be called in-order to draw the cell's background.
-    - `cornerRadius`: a function returning a number whose result will be used to determine the corner radius for the decorations drawn.
+     - `child`: the interface to be displayed in the cell.
 
-    Properties:
-    - `decorations`: an array of decorations that implement `decoration:Draw(rect, x, y, width, height)` that will be called in-order to draw the cell's background.
-    - `cornerRadius`: a function returning a number whose result will be used to determine the corner radius for the decorations drawn.
+    Methods:
+     - `cell:SetOverrideDimensions(newOverrideWidth, newOverrideHeight)`: Set a size to be maintained by the cell.
+                                                                          If either value is nil, the value returned by the child's layout method will be used instead.
 ]]
-function framework:Cell(body, decorations, cornerRadius)
+function framework:Cell(child)
     local cell = Component(true, false)
-
-    body = framework:Background(body, decorations, cornerRadius) -- TODO: legacy integration of Background
 
     local overrideWidth
     local overrideHeight
