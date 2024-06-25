@@ -7,6 +7,34 @@ framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL_VERTICAL = 0
 framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL = 1
 framework.OFFSETED_VIEWPORT_MODE_VERTICAL = 2
 
+--[[
+    `OffsettedViewport` is an overriding extension of `DrawingGroup` that allows a large interface to be clipped and displayed within a smaller parent view. 
+    Scrollbars are provided for navigation. 
+
+    Overridden interface:
+     - `viewport:Layout(availableWidth, availableHeight)`: A wrapper for `DrawingGroup`'s layout function that additionally lays out the viewport's scrollbars. 
+                                                           `DrawingGroup`'s layout function will be provided with `math.huge` for scrollable axes, 
+                                                            and `availableWidth`/`availableHeight` for non-scrollable axes.
+     - `viewport:Position(x, y)`: A wrapper for `DrawingGroup`'s position function that additionally manages the offset of the `body` and positions the viewport's scrollbars.
+     - `viewport:Draw()`: A wrapper for `DrawingGroup`'s draw function that clips all children to within the viewport's bounds (accounting for any scroll bars).
+    
+    Note: By default, the provided scrollbars do not react to mousewheel interaction; see `VerticalScrollContainer` and `HorizontalScrollContainer` for implementations
+          of mousewheel scrolling 
+
+    Arguments:
+     - `body`: The parent component of the interface to be provided within the clipping viewport.
+     - `mode`: Any of `framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL_VERTICAL`, `framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL`, or `framework.OFFSETED_VIEWPORT_MODE_VERTICAL = 2`, 
+             that specifies on which axes scrolling will be enabled.
+
+    Read-only properties:
+     - `viewport.contentWidth`: The width of the the viewport's `body` returned from the last layout.
+     - `viewport.contentHeight`: The height of the viewport's `body` returned from the last layout.
+
+    Methods:
+     - `viewport:GetOffsets()`: returns the offset used to position the `body` relative to the viewport.
+     - `viewport:SetXOffset(_xOffset)`: sets a new x offset.
+     - `viewport:SetYOffset(_yOffset)`: sets a new y offset.
+]]
 function framework:OffsettedViewport(body, mode)
     local viewport = self:DrawingGroup(body)
     viewport.contentWidth = 0
@@ -32,8 +60,6 @@ function framework:OffsettedViewport(body, mode)
     local _y = 0
     local xOffset = 0
     local yOffset = 0
-
-    local offsetsUpdated = true
 
     function viewport:GetOffsets()
         return xOffset, yOffset
@@ -138,7 +164,6 @@ function framework:OffsettedViewport(body, mode)
 
     local _Layout = viewport.Layout
     function viewport:Layout(availableWidth, availableHeight)
-        offsetsUpdated = false
         cachedScrollbarThickness = scrollbarThickness()
         local _width, _height = _Layout(self, allowHorizontalScrolling and math.huge or availableWidth, allowVerticalScrolling and math.huge or availableHeight)
         self.contentWidth = _width
@@ -196,7 +221,6 @@ function framework:OffsettedViewport(body, mode)
     local _Draw = viewport.Draw
     function viewport:Draw()
         if height <= 0 or width <= 0 then
-            self:RegisterDrawingGroup()
             return
         end
 
@@ -221,6 +245,10 @@ function framework:OffsettedViewport(body, mode)
     return viewport
 end
 
+--[[
+    `ResponderScopeWrap` wraps its child (`body`) in no-op responders, to 'clip' interaction to its bounds. 
+    Use this when clipping a child view to a parent's bounds, e.g. with `OffsettedViewport`.
+]]
 function framework:ResponderScopeWrap(body)
     return framework:Responder(
         framework:Responder(
@@ -237,6 +265,12 @@ function framework:ResponderScopeWrap(body)
     )
 end
 
+--[[
+    A wrapper for `OffsettedViewport` that implements mousewheel interaction for vertical scrolling.
+
+    Read-only properties:
+     - `container.viewport`: the wrapped `OffsettedViewport`.
+]]
 function framework:VerticalScrollContainer(body)
     local viewport = self:OffsettedViewport(body, framework.OFFSETED_VIEWPORT_MODE_VERTICAL)
     local container =  framework:Responder(framework:ResponderScopeWrap(viewport), framework.events.mouseWheel, function(responder, x, y, up, value)
@@ -256,6 +290,14 @@ function framework:VerticalScrollContainer(body)
 
     return container
 end
+
+--[[
+    A wrapper for `OffsettedViewport` that implements mousewheel interaction for horizontal scrolling.
+    `HorizontalScrollContainer` is an extension of `Responder`, 
+
+    Read-only properties:
+     - `container.viewport`: the wrapped `OffsettedViewport`.
+]]
 function framework:HorizontalScrollContainer(body)
     local viewport = self:OffsettedViewport(body, framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL)
 
