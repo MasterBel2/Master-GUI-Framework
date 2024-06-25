@@ -8,7 +8,7 @@ local gl_Vertex = Include.gl.Vertex
 
 local Internal = Internal
 
--- Draws an image in a rect. The image is immutable, that is you cannot change the file.
+-- Draws an image in a rect. The image is immutable - that is, you cannot change the file.
 function framework:Image(fileName, tintColor)
     
     local DrawRoundedRect = Internal.DrawRoundedRect
