@@ -101,10 +101,10 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     local background = framework:Background(
         framework:MarginAroundRect(
             textStack,
-            framework:Dimension(8),
-            framework:Dimension(8),
-            framework:Dimension(8),
-            framework:Dimension(8)
+            framework:AutoScalingDimension(8),
+            framework:AutoScalingDimension(8),
+            framework:AutoScalingDimension(8),
+            framework:AutoScalingDimension(8)
         ), 
         { framework:Color(0, 0, 0, 0.7) }
     )
