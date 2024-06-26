@@ -142,7 +142,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
                 _dy = newFinalHeight - dragStartHeight
             end
 
-            self:NeedsLayout()
+            frame:NeedsLayout()
 
             movableFrame:SetOffset(dragStartX + _dx, dragStartY + _dy)
 
