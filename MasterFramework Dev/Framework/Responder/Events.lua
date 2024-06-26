@@ -16,10 +16,12 @@ function Internal.CheckElementUnderMouse(x, y)
 				if not success then
 					-- frameX contains the error if this fails
 					Error("CheckUnderMouse", "Element: " .. key, "PrimaryFrame:Geometry", frameX)
+					framework:RemoveElement(key)
 					break
 				end
 				if not (x and y and frameX and frameY and frameWidth and frameHeight) then
 					Error("CheckUnderMouse", "Element: " .. key, "PrimaryFrame:Geometry is incomplete: " .. (frameX or "nil") .. ", " .. (frameY or "nil") .. ", " .. (frameWidth or "nil") .. ", " .. (frameHeight or "nil"))
+					framework:RemoveElement(key)
 					break
 				end
 				if PointIsInRect(x, y, frameX, frameY, frameWidth, frameHeight) then
