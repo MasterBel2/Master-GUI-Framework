@@ -23,6 +23,7 @@ Misc other changes:
 - Remove elements with incomplete `PrimaryFrame` geometry, to prevent log spam and allow interaction
 - Various bugfixes
 - TextEntry & Button store their colours in constants, providing potential to override & set custom styles
+- `PrimaryFrame` no longer attempts recovery if `Layout` hasn't been called yet
 
 ## CV 42: Misc - kill funcs.lua, separate out constants, change WG access
 Extensions are now declared in `MasterFramework $VERSION/Utils`, and pre-loaded before the rest of the framework. These are provided the same global environment as the rest of the framework. `string` extensions now all have `_MasterFramework` at the end of their name, while the `table` extension overrides the `Include.table` table for the framework, and provides access to the customised version as `framework.table`. The definition of `Include.clear` has been moved to `Utils/table.lua`, and `table.joinStrings()` has been removed, since it was a slower reimplementation of `table.concat()`

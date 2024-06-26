@@ -16,21 +16,17 @@ function framework:PrimaryFrame(body)
 	end
 
 	function primaryFrame:Size()
-		if (not width) or (not height) then
-			return self:Layout(viewportWidth, viewportHeight)
-		else
-			return width, height
-		end
+		return width, height
 	end
 	
 	function primaryFrame:Layout(availableWidth, availableHeight)
+		Internal.activeElement.primaryFrame = self
 		width, height = body:Layout(availableWidth, availableHeight)
 		return width, height
 	end
 
 	function primaryFrame:Position(x, y)
 		body:Position(x, y)
-		Internal.activeElement.primaryFrame = self
 		cachedX = x
 		cachedY = y
 	end
