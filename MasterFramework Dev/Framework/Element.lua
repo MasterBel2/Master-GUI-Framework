@@ -177,6 +177,11 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		end
 		endProfile(self.key .. ":Layout()")
 
+		if not self.primaryFrame then
+			Error("widget:DrawScreen", "Element: " .. self.key, "No `PrimaryFrame` in view hierarchy!")
+			framework:RemoveElement(self.key)
+		end
+
 		startProfile(self.key .. ":Position()")
 
 		Internal.activeTooltip = element
