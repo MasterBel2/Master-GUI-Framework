@@ -45,6 +45,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
     local draggableColor = framework:Color(1, 1, 1, 1)
     local draggingColor = framework:Color(0.2, 1, 0.4, 1)
     local draggableDecoration = framework:Stroke(framework:AutoScalingDimension(1), draggableColor, false)
+    local draggingDecoration = framework:Stroke(framework:AutoScalingDimension(1), draggingColor)
 
     local highlightWhenDraggable = framework:Background(
         framework:MarginAroundRect(
@@ -88,7 +89,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
                 draggingTop = true
             end
 
-            draggableDecoration.color = draggingColor
+            highlightWhenDraggable:SetDecorations({ draggingDecoration })
 
             dragStartMouseDownX = x
             dragStartMouseDownY = y
@@ -157,13 +158,15 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
             draggingTop = false
             draggingBottom = false
 
-            draggableDecoration.color = draggableColor
+            highlightWhenDraggable:SetDecorations({})
         end
     )
 
     local mouseOverResponder = framework:MouseOverResponder(
         clickResponder,
         function(responder, x, y)
+            if draggingLeft or draggingRight or draggingTop or draggingBottom then return end
+
             local responderX, responderY, responderWidth, responderHeight = responder:Geometry()
             local scaledDraggableDistance = draggableDistance()
             if x - responderX <= scaledDraggableDistance or 
@@ -182,6 +185,7 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         function() end,
         function()
             draggable = false
+            if draggingLeft or draggingRight or draggingTop or draggingBottom then return end
             highlightWhenDraggable:SetDecorations({})
         end
     )
