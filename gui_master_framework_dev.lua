@@ -157,9 +157,9 @@ end
 function widget:TextInput(utf8char)
     if not frameworkInternal.focusTarget then return end
 
-	framework.startProfile(frameworkInternal .. focusTargetElementKey .. ":TextInput()")
+	framework.startProfile(frameworkInternal.focusTargetElementKey .. ":TextInput()")
 	local success, errorMessage = pcall(frameworkInternal.focusTarget.TextInput, frameworkInternal.focusTarget, utf8char)
-	framework.endProfile(frameworkInternal .. focusTargetElementKey .. ":TextInput()")
+	framework.endProfile(frameworkInternal.focusTargetElementKey .. ":TextInput()")
 	if not success then 
 		framework.Error("widget:TextInput", "focusTarget:TextInput", errorMessage)
 	end
