@@ -105,7 +105,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             framework:AutoScalingDimension(8),
             framework:AutoScalingDimension(8)
         ), 
-        textEntryStyles
+        textEntryStyles.defaultBackgroundDecorations
     )
     local selectionDetector = framework:MousePressResponder(
         background,
