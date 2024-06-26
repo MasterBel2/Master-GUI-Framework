@@ -18,7 +18,7 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
 
     local handleDecorations = { unhighlightedColor }
 
-    local handle = framework:Rect(handleDimension, handleDimension, nil, handleDecorations)
+    local handle = framework:Background(framework:Rect(handleDimension, handleDimension), handleDecorations)
 
     local selected = false
 
@@ -27,6 +27,7 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
         function(isOver)
             if not selected then
                 handleDecorations[1] = (isOver and framework.color.hoverColor) or nil
+                handle:SetDecorations(handleDecorations)
             end
         end
     )
@@ -34,6 +35,7 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
         handleHoverDetector,
         function()
             handleDecorations[1] = framework.color.pressColor
+            handle:SetDecorations(handleDecorations)
             selected = true
             return true
         end,
@@ -42,6 +44,7 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
         end,
         function()
             handleDecorations[1] = framework.color.hoverColor
+            handle:SetDecorations(handleDecorations)
             selected = false
         end
     )

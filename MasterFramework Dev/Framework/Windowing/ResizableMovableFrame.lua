@@ -171,18 +171,18 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
                 y - responderY <= scaledDraggableDistance or 
                 responderY + height - y <= scaledDraggableDistance then
                 draggable = true
-                highlightWhenDraggable.decorations = { draggableDecoration }
+                highlightWhenDraggable:SetDecorations({ draggableDecoration })
                 return true
             else
                 draggable = false
-                highlightWhenDraggable.decorations = {}
+                highlightWhenDraggable:SetDecorations({})
                 return false
             end
         end,
         function() end,
         function()
             draggable = false
-            highlightWhenDraggable.decorations = {}
+            highlightWhenDraggable:SetDecorations({})
         end
     )
 
