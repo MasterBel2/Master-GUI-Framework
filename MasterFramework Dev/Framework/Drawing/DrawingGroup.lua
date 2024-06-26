@@ -175,10 +175,10 @@ function framework:DrawingGroup(body, disableDrawList)
 
 
     function drawingGroup:Draw()
+        local previousDrawingGroup = activeDrawingGroup
+        activeDrawingGroup = self
+
         if self.disableDrawList then
-            local previousDrawingGroup = activeDrawingGroup
-            activeDrawingGroup = self
-            
             self.drawers = {}
             self.needsRedraw = false
 
@@ -188,13 +188,8 @@ function framework:DrawingGroup(body, disableDrawList)
             for i = 1, #childDrawingGroups do
                 childDrawingGroups[i]:Draw()
             end
-
-            activeDrawingGroup = previousDrawingGroup
         else 
             if self.needsRedraw then
-                local previousDrawingGroup = activeDrawingGroup
-                activeDrawingGroup = self
-
                 self.drawers = {}
                 self.needsRedraw = false
 
@@ -220,9 +215,9 @@ function framework:DrawingGroup(body, disableDrawList)
             for i = 1, #childDrawingGroups do
                 childDrawingGroups[i]:Draw()
             end
-
-            activeDrawingGroup = previousDrawingGroup
         end
+
+        activeDrawingGroup = previousDrawingGroup
     end
 
     function drawingGroup:LayoutUpdated(layoutComponent)
