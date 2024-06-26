@@ -55,7 +55,7 @@ Simply implements the (ctrl) argument of `textEntry:editDelete(ctrl)`, `textEntr
 
 ## CV 38: WrappingText, TextEntry & string:lines Performance Optimisations
 - rename `string:lines` to `string:lines_MasterFramework` to disambiguate from BAR's implementation
-- by default, don't extract a substring for each parsed line. Call `string:lines_MasterFramework(true) to return an array of strings containing each extracted line.
+- by default, don't extract a substring for each parsed line. Call `string:lines_MasterFramework(true)` to return an array of strings containing each extracted line.
 
 WrappingText and TextEntry use this optimised lines function for better performance.
 
@@ -84,7 +84,7 @@ Specify `true` for `allowInteractionBehind` when calling `framework:InsertElemen
 API changes:
  - Replace `autowidth` and `autoheight` arguments with `mode`
    `mode` specifies which axes the content can exceed the viewport's dimensions.
-   `mode can be one of the following:
+   `mode` can be one of the following:
     - `framework.OFFSETTED_VIEWPORT_MODE_HORIZONTAL_VERTICAL`
     - `framework.OFFSETTED_VIEWPORT_MODE_HORIZONTAL`
     - `framework.OFFSETTED_VIEWPORT_MODE_VERTICAL`
