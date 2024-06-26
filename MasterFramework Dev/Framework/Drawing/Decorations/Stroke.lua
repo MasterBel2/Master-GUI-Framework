@@ -8,7 +8,7 @@ local tostring = Include.tostring
 local Internal = Internal
 
 -- Draws a border around an object. NOTE: DOES NOT CURRENTLY WORK PROPERLY
-function framework:Stroke(width, color, inside)
+function framework:Stroke(thickness, color, inside)
 
 	local DrawRoundedRect = Internal.DrawRoundedRect
 	local DrawRectVertices = Internal.DrawRectVertices
@@ -27,7 +27,7 @@ function framework:Stroke(width, color, inside)
 	end
 
 	function stroke:Draw(rect, x, y, width, height)
-		local strokeWidth = width()
+		local strokeWidth = thickness()
 		if strokeWidth <= 0 then
 			return 
 		end
