@@ -87,12 +87,12 @@ function framework:OffsettedViewport(body, mode)
     local scrollStartMouse
     local scrollStartOffset
 
-    local horizontalScrollbarRect = framework:Rect(function() return width * width / viewport.contentWidth end, scrollbarThickness, nil, { framework.color.hoverColor })
+    local horizontalScrollbarRect = framework:Background(framework:Rect(function() return width * width / viewport.contentWidth end, scrollbarThickness), { framework.color.hoverColor }, nil)
     local horizontalScrollbar = framework:MouseOverResponder(
         framework:MousePressResponder(
             horizontalScrollbarRect,
             function(responder, x, y)
-                horizontalScrollbarRect.decorations[1] = framework.color.pressColor
+                horizontalScrollbarRect:SetDecorations({ framework.color.pressColor })
                 draggingHorizontal = true
                 scrollStartMouse = x
                 scrollStartOffset = xOffset
@@ -108,29 +108,29 @@ function framework:OffsettedViewport(body, mode)
                 ))
             end,
             function(responder, x, y)
-                horizontalScrollbarRect.decorations[1] = framework.color.hoverColor
+                horizontalScrollbarRect:SetDecorations({ framework.color.hoverColor })
                 draggingHorizontal = false
             end
         ),
         function(responder, x, y)
             if not draggingHorizontal then
-                horizontalScrollbarRect.decorations[1] = framework.color.selectedColor
+                horizontalScrollbarRect:SetDecorations({ framework.color.selectedColor })
             end
         end,
         function(responder) end,
         function(responder)
             if not draggingHorizontal then 
-                horizontalScrollbarRect.decorations[1] = framework.color.hoverColor
+                horizontalScrollbarRect:SetDecorations({ framework.color.hoverColor })
             end
         end
     )
-    local verticalScrollbarRect = framework:Rect(scrollbarThickness, function() return height * height / viewport.contentHeight end, nil, { framework.color.hoverColor })
+    local verticalScrollbarRect = framework:Background(framework:Rect(scrollbarThickness, function() return height * height / viewport.contentHeight end), { framework.color.hoverColor }, nil)
     local verticalScrollbar = framework:MouseOverResponder(
         framework:MousePressResponder(
             verticalScrollbarRect,
             function(responder, x, y)
                 draggingVertical = true
-                verticalScrollbarRect.decorations[1] = framework.color.pressColor
+                verticalScrollbarRect:SetDecorations({ framework.color.pressColor })
                 scrollStartMouse = y
                 scrollStartOffset = yOffset
                 return true
@@ -145,19 +145,19 @@ function framework:OffsettedViewport(body, mode)
                 ))
             end,
             function(responder, x, y)
-                verticalScrollbarRect.decorations[1] = framework.color.hoverColor
+                verticalScrollbarRect:SetDecorations({ framework.color.hoverColor })
                 draggingVertical = false
             end
         ),
         function(responder, x, y) end,
         function(responder)
             if not draggingVertical then
-                verticalScrollbarRect.decorations[1] = framework.color.selectedColor
+                verticalScrollbarRect:SetDecorations({ framework.color.selectedColor })
             end
         end,
         function(responder)
             if not draggingVertical then 
-                verticalScrollbarRect.decorations[1] = framework.color.hoverColor
+                verticalScrollbarRect:SetDecorations({ framework.color.hoverColor })
             end
         end
     )
