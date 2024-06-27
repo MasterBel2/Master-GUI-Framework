@@ -146,7 +146,9 @@ end
 
 function widget:GetTooltip(x, y)
 	-- IsAbove is called before GetTooltip, so we can use the element found by that.
+	framework.startProfile(frameworkInternal.elementBelowMouse.key .. ":GetTooltip")
 	local tooltip = framework.FindTooltip(x, y, frameworkInternal.elementBelowMouse.tooltips)
+	framework.endProfile(frameworkInternal.elementBelowMouse.key .. ":GetTooltip")
 	if not tooltip then return nil end
 
 	return tooltip.description
@@ -266,20 +268,21 @@ function widget:IsAbove(x, y)
 		end
 	end
 
-	-- startProfile("IsAbove")
+	startProfile("IsAbove")
+
 	local isAbove
-	-- for i=0,1000 do
-		isAbove = frameworkInternal.CheckElementUnderMouse(x, y)
-		if isAbove then
-			framework.startProfile(frameworkInternal.elementBelowMouse.key .. ":IsAbove")
-			isAboveThing:Search(frameworkInternal.elementBelowMouse.drawingGroup.responderCache[framework.events.mouseOver], x, y)
-			framework.endProfile(frameworkInternal.elementBelowMouse.key .. ":IsAbove")
-		else
-			isAboveThing:Reset()
-		end
-	-- end
-	-- endProfile()
+	isAbove = frameworkInternal.CheckElementUnderMouse(x, y)
+	if isAbove then
+		framework.startProfile(frameworkInternal.elementBelowMouse.key .. ":IsAbove")
+		isAboveThing:Search(frameworkInternal.elementBelowMouse.drawingGroup.responderCache[framework.events.mouseOver], x, y)
+		framework.endProfile(frameworkInternal.elementBelowMouse.key .. ":IsAbove")
+	else
+		isAboveThing:Reset()
+	end
 	isAboveChecked = true
+
+	endProfile("IsAbove")
+
 	return isAbove
 end
 function widget:Update()
