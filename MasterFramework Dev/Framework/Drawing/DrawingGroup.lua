@@ -61,10 +61,11 @@ function framework:DrawingGroup(body, disableDrawList)
     drawingGroup.childDrawingGroups = {}
     drawingGroup.layoutComponents = {}
 
-    local activeResponderCache = {}
+    local responderCache = {}
 
     for _, event in pairs(events) do
-		activeResponderCache[event] = { responders = {} }
+		responderCache[event] = framework:Responder(body, event, function() end)
+        body = responderCache[event]
 	end
 
     local textGroup = framework:TextGroup(body, name)
@@ -135,34 +136,19 @@ function framework:DrawingGroup(body, disableDrawList)
             cachedX = x
             cachedY = y
 
-            -- Cache responders that won't be drawn
-			for _, event in pairs(events) do
-				clear(activeResponderCache[event].responders)
-			end
-
             local previousDrawingGroup = activeDrawingGroup
             activeDrawingGroup = self
 
-            local previousResponders = Internal.activeResponders
-			Internal.activeResponders = activeResponderCache
-
             textGroup:Position(x, y)
 
-            Internal.activeResponders = previousResponders
             activeDrawingGroup = previousDrawingGroup
         end
 
         for _, event in pairs(events) do
 			local parentResponder = Internal.activeResponders[event]
 			local childrenOfParentResponder = parentResponder.responders
-			
-			local cachedResponders = activeResponderCache[event].responders
-
-			for index = 1, #cachedResponders do
-				local cachedResponder = cachedResponders[index]
-                childrenOfParentResponder[#childrenOfParentResponder + 1] = cachedResponder
-				cachedResponder.parent = parentResponder
-			end
+            childrenOfParentResponder[#childrenOfParentResponder + 1] = responderCache[event]
+            responderCache[event].parent = parentResponder
 		end
     end
 

@@ -267,6 +267,11 @@ end
 
 --[[
     A wrapper for `OffsettedViewport` that implements mousewheel interaction for vertical scrolling.
+    `VerticalScrollContainer` is an extension of `Responder`.
+
+    Since `DrawingGroup`'s default responder wrapping wraps the `OffsettedViewport`'s child - 
+    which we can expect to be larger than the `OffsettedViewport` itself -
+    we'll wrap it again outside to clip interaction to the bounds of `OffsettedViewport`.
 
     Read-only properties:
      - `container.viewport`: the wrapped `OffsettedViewport`.
@@ -293,7 +298,11 @@ end
 
 --[[
     A wrapper for `OffsettedViewport` that implements mousewheel interaction for horizontal scrolling.
-    `HorizontalScrollContainer` is an extension of `Responder`, 
+    `HorizontalScrollContainer` is an extension of `Responder`.
+
+    Since `DrawingGroup`'s default responder wrapping wraps the `OffsettedViewport`'s child - 
+    which we can expect to be larger than the `OffsettedViewport` itself -
+    we'll wrap it again outside to clip interaction to the bounds of `OffsettedViewport`.
 
     Read-only properties:
      - `container.viewport`: the wrapped `OffsettedViewport`.
