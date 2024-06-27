@@ -158,7 +158,6 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		body = body,
 		primaryFrame = nil,
 		tooltips = {},
-		baseResponders = {},
 		deselect = deselectAction or nullFunctionTrue
 	}
 	local drawingGroup = framework:DrawingGroup(body)
@@ -210,11 +209,12 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	local nullFunction = allowInteractionBehind and nullFunctionFalse or nullFunctionTrue
 
 	for _, event in pairs(events) do
-		element.baseResponders[event] = { responders = {}, action = nullFunction, _debugIdentifier = "Base responder for " .. event, _event = event }
+		element.drawingGroup.responderCache[event].action = nullFunction
+		element.drawingGroup.responderCache[event]._debugIdentifier = "Base responder for " .. event
 	end
-	element.baseResponders[events.mousePress].MouseMove = nullFunction
-	element.baseResponders[events.mouseOver].MouseEnter = nullFunction
-	element.baseResponders[events.mouseOver].MouseLeave = nullFunction
+	element.drawingGroup.responderCache[events.mousePress].MouseMove = nullFunction
+	element.drawingGroup.responderCache[events.mouseOver].MouseEnter = nullFunction
+	element.drawingGroup.responderCache[events.mouseOver].MouseLeave = nullFunction
 
 	-- Create key
 
