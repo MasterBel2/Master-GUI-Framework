@@ -90,5 +90,5 @@ Internal.SearchDownResponderTree = SearchDownResponderTree
 
 -- Calls the base responder for a given event on the current element below mouse. 
 function Internal.FindResponder(event, x, y, ...)
-	return SearchDownResponderTree(Internal.elementBelowMouse.baseResponders[event], x, y, ...)
+	return SearchDownResponderTree(Internal.elementBelowMouse.drawingGroup.responderCache[event], x, y, ...)
 end

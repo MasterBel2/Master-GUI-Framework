@@ -62,6 +62,7 @@ function framework:DrawingGroup(body, disableDrawList)
     drawingGroup.layoutComponents = {}
 
     local responderCache = {}
+    drawingGroup.responderCache = responderCache
 
     for _, event in pairs(events) do
 		responderCache[event] = framework:Responder(body, event, function() end)
@@ -144,12 +145,14 @@ function framework:DrawingGroup(body, disableDrawList)
             activeDrawingGroup = previousDrawingGroup
         end
 
-        for _, event in pairs(events) do
-			local parentResponder = Internal.activeResponders[event]
-			local childrenOfParentResponder = parentResponder.responders
-            childrenOfParentResponder[#childrenOfParentResponder + 1] = responderCache[event]
-            responderCache[event].parent = parentResponder
-		end
+        if activeDrawingGroup then
+            for _, event in pairs(events) do
+    			local parentResponder = Internal.activeResponders[event]
+    			local childrenOfParentResponder = parentResponder.responders
+                childrenOfParentResponder[#childrenOfParentResponder + 1] = responderCache[event]
+                responderCache[event].parent = parentResponder
+    		end
+        end
     end
 
     local function _Draw(self)

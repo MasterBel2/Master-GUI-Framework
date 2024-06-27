@@ -185,10 +185,6 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		startProfile(self.key .. ":Position()")
 
 		Internal.activeTooltip = element
-		Internal.activeResponders = element.baseResponders
-		for _, responder in pairs(Internal.activeResponders) do
-			clear(responder.responders)
-		end
 		if Internal.debugMode.draw then
 			element.activeDebugResponder.responders = {}
 		end

@@ -3,6 +3,8 @@ local insert = Include.table.insert
 local clear = Include.clear
 local Internal = Internal
 
+Internal.activeResponders = {}
+
 local responderID = 0
 
 function framework:Responder(rect, event, action)
@@ -43,8 +45,10 @@ function framework:Responder(rect, event, action)
 
 		-- Parent keeps track of the order of responders, and use that to decide who gets the interactions first
 		local previousActiveResponder = Internal.activeResponders[event]
-		insert(previousActiveResponder.responders, self)
-		self.parent = previousActiveResponder
+		if previousActiveResponder then
+			insert(previousActiveResponder.responders, self)
+			self.parent = previousActiveResponder
+		end
 
 		Internal.activeResponders[event] = self
 		clear(self.responders)

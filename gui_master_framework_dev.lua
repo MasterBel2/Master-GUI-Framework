@@ -272,7 +272,7 @@ function widget:IsAbove(x, y)
 		isAbove = frameworkInternal.CheckElementUnderMouse(x, y)
 		if isAbove then
 			framework.startProfile(frameworkInternal.elementBelowMouse.key .. ":IsAbove")
-			isAboveThing:Search(frameworkInternal.elementBelowMouse.baseResponders[framework.events.mouseOver], x, y)
+			isAboveThing:Search(frameworkInternal.elementBelowMouse.drawingGroup.responderCache[framework.events.mouseOver], x, y)
 			framework.endProfile(frameworkInternal.elementBelowMouse.key .. ":IsAbove")
 		else
 			isAboveThing:Reset()
