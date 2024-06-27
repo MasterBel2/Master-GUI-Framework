@@ -27,12 +27,12 @@ function framework:Cell(child)
 
     function cell:Layout(availableWidth, availableHeight)
         self:RegisterDrawingGroup()
-        local width, height = body:Layout(availableWidth, availableHeight)
+        width, height = child:Layout(availableWidth, availableHeight)
         return overrideWidth or width, overrideHeight or height
     end
 
     function cell:Position(x, y)
-        body:Position(x, y)
+        child:Position(x, y)
     end
 
     return cell
