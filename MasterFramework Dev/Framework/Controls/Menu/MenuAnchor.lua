@@ -65,7 +65,7 @@ function framework:MenuAnchor(wrappedRect, menuOptions, menuLayoutFunc, menuName
     function menuAnchor:Position(x, y)
         wrappedRect:Position(x, y)
         if menu then
-            menu.xOffset, menu.yOffset = menuLayoutFunc(x, y, width, height, menu)
+            menu:SetOffsets(menuLayoutFunc(x, y, width, height, menu))
         end
         conditionalShow = false
     end
