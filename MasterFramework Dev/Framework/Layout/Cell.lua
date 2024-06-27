@@ -14,8 +14,8 @@ local table_insert = Include.table.insert
 function framework:Cell(child)
     local cell = Component(true, false)
 
-    local overrideWidth
-    local overrideHeight
+    local overrideWidth, overrideHeight
+    local width, height
 
     function cell:SetOverrideDimensions(newOverrideWidth, newOverrideHeight)
         if newOverrideWidth ~= overrideWidth or newOverrideHeight ~= overrideHeight then
@@ -23,6 +23,10 @@ function framework:Cell(child)
             overrideHeight = newOverrideHeight
             self:NeedsLayout()
         end
+    end
+
+    function cell:Size()
+        return overrideWidth or width, overrideHeight or height
     end
 
     function cell:Layout(availableWidth, availableHeight)
