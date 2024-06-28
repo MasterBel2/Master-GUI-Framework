@@ -25,16 +25,14 @@ local Spring_SetClipboard = Include.Spring.SetClipboard
 -- Consider that to changing to 0 (before the first character) to string:len() (after the first character)
 function framework:TextEntry(string, placeholderString, color, font, maxLines)
     color = color or framework.color.white
-    local entry = {
-        text = framework:WrappingText(string, color, font, maxLines),
-        placeholder = framework:Text(placeholderString, framework:Color(color.r, color.g, color.b, 0.3), font, 1),
-        selectionBegin = string:len() + 1, -- index of character after selection begin
-        selectionEnd = string:len() + 1, -- index of character after selection end
-        canLoseFocus = false,
+    local entry = Drawer()
 
-        undoSingleCharAppendable = false,
-
-    }
+    entry.text = framework:WrappingText(string, color, font, maxLines)
+    entry.placeholder = framework:Text(placeholderString, framework:Color(color.r, color.g, color.b, 0.3), font, 1)
+    entry.selectionBegin = string:len() + 1 -- index of character after selection begin
+    entry.selectionEnd = string:len() + 1 -- index of character after selection end
+    entry.canLoseFocus = false
+    entry.undoSingleCharAppendable = false
 
     local undoLog = {}
     local redoLog = {}
@@ -56,6 +54,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     end
 
     function entry:MoveCursor(destinationIndex, isShift)
+        self:NeedsRedraw()
         selectionChangedClock = os_clock()
         if not isShift then
             self.selectionBegin = destinationIndex
@@ -518,6 +517,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     end
 
     function entry:Draw()
+        self:RegisterDrawingGroup()
         if (focused or selectFrom) and not self.hideSelection then
             -- this will be drawn after the background but before text, because we don't have our own TextGroup
 
