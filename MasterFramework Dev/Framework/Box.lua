@@ -16,6 +16,7 @@ function framework:Box(child)
     end
     
     function box:Layout(...)
+        self:RegisterDrawingGroup()
         return child:Layout(...)
     end
     function box:Position(...)
