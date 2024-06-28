@@ -8,14 +8,14 @@ function framework:CheckBox(scale, action)
     local highlightColor = framework.color.hoverColor
     local unhighlightedColor = framework.stroke.defaultBorder
 
-    local rect = framework:Rect(dimension, dimension, radius, { unhihlightedColor })
+    local rect = framework:Background(framework:Rect(dimension, dimension), { unhihlightedColor }, radius)
     
     checkbox = framework:MouseOverChangeResponder(
         framework:MousePressResponder(
             rect,
             function(self, x, y, button)
                 highlightColor = framework.color.pressColor
-                rect.decorations[1] = highlightColor
+                rect:SetDecorations({ highlightColor })
                 return true
             end,
             function(self, x, y, dx, dy)
@@ -29,14 +29,14 @@ function framework:CheckBox(scale, action)
             end
         ),
         function(isInside)
-            rect.decorations[1] = (isInside and highlightColor) or unhighlightedColor
+            rect:SetDecorations({ (isInside and highlightColor) or unhighlightedColor })
         end
     )
 
     function checkbox:SetChecked(newChecked)
         checked = newChecked
         unhighlightedColor = (checked and framework.color.selectedColor) or framework.stroke.defaultBorder
-        rect.decorations[1] = (isInside and highlightColor) or unhighlightedColor
+        rect:SetDecorations({ (isInside and highlightColor) or unhighlightedColor })
     end
 
     checkbox:SetChecked(checked)
