@@ -158,7 +158,10 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		body = body,
 		primaryFrame = nil,
 		tooltips = {},
-		deselect = deselectAction or nullFunctionTrue
+		deselect = deselectAction or nullFunctionTrue,
+
+		groupsNeedingLayout = {},
+		groupsNeedingPosition = {}
 	}
 	local drawingGroup = framework:DrawingGroup(body)
 	element.drawingGroup = drawingGroup
@@ -166,34 +169,31 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	function element:Draw()
 		startProfile(self.key)
 		Internal._debug_currentElementKey = self.key
-		Internal.activeElement = element
+		Internal.activeElement = self
 
-		startProfile(self.key .. ":Layout()")
-		local success, _error = pcall(drawingGroup.Layout, drawingGroup, viewportWidth, viewportHeight)
-		if not success then
-			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Layout", _error)
-			framework:RemoveElement(self.key)
+		startProfile(self.key .. ":UpdateLayout()")
+		local groupsNeedingLayout = self.groupsNeedingLayout
+		self.groupsNeedingLayout = {}
+		for drawingGroup, _ in pairs(groupsNeedingLayout) do
+			local success, _error = pcall(drawingGroup.UpdateLayout, drawingGroup)
+			if not success then
+				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:UpdateLayout", _error)
+				framework:RemoveElement(self.key)
+			end
 		end
-		endProfile(self.key .. ":Layout()")
+		endProfile(self.key .. ":UpdateLayout()")
 
-		if not self.primaryFrame then
-			Error("widget:DrawScreen", "Element: " .. self.key, "No `PrimaryFrame` in view hierarchy!")
-			framework:RemoveElement(self.key)
+		startProfile(self.key .. ":UpdatePosition()")
+		local groupsNeedingPosition = self.groupsNeedingPosition
+		self.groupsNeedingPosition = {}
+		for drawingGroup, _ in pairs(groupsNeedingPosition) do
+			local success, _error = pcall(drawingGroup.UpdatePosition, drawingGroup)
+			if not success then
+				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:UpdatePosition", _error)
+				framework:RemoveElement(self.key)
+			end
 		end
-
-		startProfile(self.key .. ":Position()")
-
-		Internal.activeTooltip = element
-		if Internal.debugMode.draw then
-			element.activeDebugResponder.responders = {}
-		end
-
-		local success, _error = pcall(drawingGroup.Position, drawingGroup, 0, 0)
-		if not success then
-			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Position", _error)
-			framework:RemoveElement(self.key)
-		end
-		endProfile(self.key .. ":Position()")
+		endProfile(self.key .. ":UpdatePosition()")
 
 		startProfile(self.key .. ":Draw()")
 		local success, _error = pcall(drawingGroup.Draw, drawingGroup, 0, 0)
@@ -245,6 +245,25 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	local wantedLayer = WantedLayer(layerRequest or self.layerRequest.anywhere())
 	table.insert(elementOrder, wantedLayer, key)
 	element.layerRequest = layerRequest
+
+	Internal.activeElement = element
+	local success, _error = pcall(element.drawingGroup.Layout, element.drawingGroup, viewportWidth, viewportHeight)
+	if not success then
+		Error("Element: " .. element.key, "drawingGroup:Layout(viewportWidth, viewportHeight)", _error)
+		framework:RemoveElement(element.key)
+	end
+
+	if not element.primaryFrame then
+		Error("Element: " .. element.key, "No `PrimaryFrame` in view hierarchy!")
+		framework:RemoveElement(element.key)
+	end
+
+	local success, _error = pcall(element.drawingGroup.Position, element.drawingGroup, 0, 0)
+	if not success then
+		Error("Element: " .. element.key, "drawingGroup:Position(0, 0)", _error)
+		framework:RemoveElement(element.key)
+	end
+	Internal.activeElement = nil
 
 	return key, element
 end

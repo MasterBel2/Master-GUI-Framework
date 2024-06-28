@@ -2,6 +2,7 @@ local Internal = Internal
 local min = Include.math.min
 local floor = Include.math.floor
 local pairs = Include.pairs
+local pcall = Include.pcall
 local setmetatable = Include.setmetatable
 
 relativeScaleFactor = 1
@@ -54,6 +55,17 @@ function Internal.updateScreenEnvironment(newWidth, newHeight, newScale)
 	for _, font in pairs(Internal.fonts) do
 		font:Scale(combinedScaleFactor)
 	end
+
+	for _, element in pairs(Internal.elements) do
+		Internal.activeElement = element
+		local success, _error = pcall(element.drawingGroup.Layout, element.drawingGroup, viewportWidth, viewportHeight)
+		if not success then
+			Error("Element: " .. element.key, "drawingGroup:Layout(viewportWidth, viewportHeight)", _error)
+			framework:RemoveElement(element.key)
+		end
+	end
+
+	Internal.activeElement = nil
 end
 
 function framework:SetScale(newScale)

@@ -21,8 +21,6 @@ local clear = Include.clear
      - `disableDrawList`: Disables drawList compilation, and instead performs a full draw every draw frame. 
 
     Properties:
-     - `drawingGroup.childNeedsLayout`: A boolean value indicating whether a new layout pass is needed; this may be set to true (but not false!) by a child.
-     - `drawingGroup.childNeedsPosition`: A boolean value indicating whether a new positioning pass is needed; this may be set to true (but not false!) by a child.
      - `drawingGroup.needsRedraw`: A boolean value indicating whether a new draw pass is needed; this may be set to true (but not false!) by a child.
 
      - `drawingGroup.disableDrawList`: A boolean (or nil) value indicating whether the `drawingGroup` should compile re-usable draw lists. 
@@ -50,8 +48,6 @@ local clear = Include.clear
 function framework:DrawingGroup(body, disableDrawList)
     local drawingGroup = {}
 
-    drawingGroup.childNeedsLayout = true
-    drawingGroup.childNeedsPosition = true
     drawingGroup.needsRedraw = true
     drawingGroup.disableDrawList = disableDrawList or Internal.debugMode.disableDrawList
 
@@ -60,6 +56,9 @@ function framework:DrawingGroup(body, disableDrawList)
     drawingGroup.drawTargets = {}
     drawingGroup.childDrawingGroups = {}
     drawingGroup.layoutComponents = {}
+
+    local element
+    local parentDrawingGroup
 
     local responderCache = {}
     drawingGroup.responderCache = responderCache
@@ -75,26 +74,9 @@ function framework:DrawingGroup(body, disableDrawList)
     -- debug
     local framesRedrawnInARow = 0
 
-    function drawingGroup:NeedsLayoutUpdate()
-        if self.childNeedsLayout then return true end
+    function drawingGroup:DimensionNeedsLayoutUpdate()
         for dimension, _ in pairs(drawingGroup.dimensions) do
             if dimension.ValueHasChanged() then
-                return true
-            end
-        end
-        local childDrawingGroups = drawingGroup.childDrawingGroups
-        for i = 1, #childDrawingGroups do
-            if childDrawingGroups[i]:NeedsLayoutUpdate() then
-                return true
-            end
-        end
-    end
-
-    function drawingGroup:NeedsPositionUpdate()
-        if self.childNeedsPosition then return true end
-        local childDrawingGroups = drawingGroup.childDrawingGroups
-        for i = 1, #childDrawingGroups do
-            if childDrawingGroups[i]:NeedsPositionUpdate() then
                 return true
             end
         end
@@ -103,56 +85,75 @@ function framework:DrawingGroup(body, disableDrawList)
     local cachedWidth, cachedHeight
     local cachedAvailableWidth, cachedAvailableHeight
     function drawingGroup:Layout(availableWidth, availableHeight)
-        local previousDrawingGroup = activeDrawingGroup
-        if previousDrawingGroup then
-            previousDrawingGroup.childDrawingGroups[#previousDrawingGroup.childDrawingGroups + 1] = self
+        element = Internal.activeElement
+        parentDrawingGroup = activeDrawingGroup
+        if parentDrawingGroup then
+            parentDrawingGroup.childDrawingGroups[#parentDrawingGroup.childDrawingGroups + 1] = self
         end
 
-        if self:NeedsLayoutUpdate() or availableWidth ~= cachedAvailableWidth or availableHeight ~= cachedAvailableHeight then
-            self.childNeedsLayout = false
-            self.childNeedsPosition = true
-            self.needsRedraw = true
-            self.dimensions = {}
-            self.layoutComponents = {}
-            self.childDrawingGroups = {}
-
+        if self:DimensionNeedsLayoutUpdate() or availableWidth ~= cachedAvailableWidth or availableHeight ~= cachedAvailableHeight then
             cachedAvailableWidth = availableWidth
             cachedAvailableHeight = availableHeight
 
-            activeDrawingGroup = self
-            cachedWidth, cachedHeight = textGroup:Layout(availableWidth, availableHeight)
-            activeDrawingGroup = previousDrawingGroup
+            self:UpdateLayout(true)
         end
 
         return cachedWidth, cachedHeight
     end
-    
-    local cachedX, cachedY
-    function drawingGroup:Position(x, y)
-        if self:NeedsPositionUpdate() or cachedX ~= x or cachedY ~= y then
-            self.childNeedsPosition = false
-            self.needsRedraw = true
-            self.drawTargets = {}
 
+    function drawingGroup:UpdateLayout(calledByParent)
+        element.groupsNeedingLayout[self] = nil
+        self.needsRedraw = true
+        self.dimensions = {}
+        self.layoutComponents = {}
+        self.childDrawingGroups = {}
+
+        element.groupsNeedingPosition[self] = true
+
+        local previousDrawingGroup = activeDrawingGroup
+        activeDrawingGroup = self
+        local newWidth, newHeight = textGroup:Layout(cachedAvailableWidth, cachedAvailableHeight)
+        activeDrawingGroup = previousDrawingGroup
+        if newWidth ~= cachedWidth or newHeight ~= cachedHeight then
+            cachedWidth = newWidth
+            cachedHeight = newHeight
+            if parentDrawingGroup and not calledByParent then
+                parentDrawingGroup:UpdateLayout()
+            end
+        end
+    end
+
+    local cachedX, cachedY
+    function drawingGroup:UpdatePosition()
+        element.groupsNeedingPosition[self] = nil
+
+        self.needsRedraw = true
+        self.drawTargets = {}
+
+        local previousDrawingGroup = activeDrawingGroup
+        activeDrawingGroup = self
+        textGroup:Position(cachedX, cachedY)
+
+        activeDrawingGroup = previousDrawingGroup
+    end
+    
+    function drawingGroup:Position(x, y)
+        if cachedX ~= x or cachedY ~= y then
+            
             cachedX = x
             cachedY = y
-
-            local previousDrawingGroup = activeDrawingGroup
-            activeDrawingGroup = self
-
-            textGroup:Position(x, y)
-
-            activeDrawingGroup = previousDrawingGroup
+            
+            self:UpdatePosition()
         end
 
-        if activeDrawingGroup then
-            for _, event in pairs(events) do
-    			local parentResponder = Internal.activeResponders[event]
+        for _, event in pairs(events) do
+			local parentResponder = Internal.activeResponders[event]
+            if parentResponder then
     			local childrenOfParentResponder = parentResponder.responders
                 childrenOfParentResponder[#childrenOfParentResponder + 1] = responderCache[event]
                 responderCache[event].parent = parentResponder
-    		end
-        end
+            end
+		end
     end
 
     local function _Draw(self)
@@ -161,7 +162,6 @@ function framework:DrawingGroup(body, disableDrawList)
             drawTargets[i]:Draw(self)
         end
     end
-
 
     function drawingGroup:Draw()
         local previousDrawingGroup = activeDrawingGroup
@@ -211,14 +211,14 @@ function framework:DrawingGroup(body, disableDrawList)
 
     function drawingGroup:LayoutUpdated(layoutComponent)
         if self.layoutComponents[layoutComponent] then
-            self.childNeedsLayout = true
+            element.groupsNeedingLayout[self] = true
             return true
         end
     end
 
     function drawingGroup:PositionsUpdated(layoutComponent)
         if self.layoutComponents[layoutComponent] then
-            self.childNeedsPosition = true
+            element.groupsNeedingPosition[self] = true
             return true
         end
     end
