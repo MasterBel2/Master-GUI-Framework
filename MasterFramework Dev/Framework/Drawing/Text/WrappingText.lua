@@ -11,11 +11,11 @@ local Internal = Internal
 -- Set `maxLines = 1` to disable wrapping. (`framework:Text()` is an alias for `framework:WrappingText` that sets `maxLines = 1`.)
 --
 -- Note that raw/display index conversion updates only on layout, so between when the raw string is updated and layout occurs, index conversion to or from the display string will be invalid.
-function framework:WrappingText(string, color, font, maxLines)
+function framework:WrappingText(string, baseColor, font, maxLines)
 	maxLines = maxLines or math_huge
 	font = font or framework.defaultFont
-	color = color or framework.color.white
-	local wrappingText = Component(true, false)
+	baseColor = baseColor or framework.color.white
+	local wrappingText = Component(true, true)
 
 	wrappingText._readOnly_font = font
 	wrappingText.type = "Wrapping Text"
@@ -31,6 +31,16 @@ function framework:WrappingText(string, color, font, maxLines)
 	local removedSpaces = wrappingText.removedSpaces
 
 	local stringChanged = true
+
+	function wrappingText:SetBaseColor(newBaseColor)
+		if baseColor ~= newBaseColor then
+			baseColor = newBaseColor
+			self:NeedsRedraw()
+		end
+	end
+	function wrappingText:GetBaseColor()
+		return baseColor
+	end
 
 	-- Sets the raw string.
 	-- 
@@ -241,8 +251,8 @@ function framework:WrappingText(string, color, font, maxLines)
 	--
 	-- Called by the `framework:TextGroup` that `wrappingText:Position(x, y)` registered us with.
 	function wrappingText:Draw(glFont)
-		glFont:SetTextColor(color:GetRawValues())
-		color:RegisterDrawingGroup()
+		glFont:SetTextColor(baseColor:GetRawValues())
+		baseColor:RegisterDrawingGroup()
 
 		-- height - 1 is because it appeared to be drawing 1 pixel too high - for the default font, at least. I haven't checked with any other font size yet.
 		-- I don't know what to do about text that's supposed to be centred vertically in a cell, because this method of drawing means the descender pushes the text up a bunch.
