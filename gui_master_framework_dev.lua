@@ -268,7 +268,7 @@ function widget:IsAbove(x, y)
 		end
 	end
 
-	startProfile("IsAbove")
+	framework.startProfile("IsAbove")
 
 	local isAbove
 	isAbove = frameworkInternal.CheckElementUnderMouse(x, y)
@@ -281,7 +281,7 @@ function widget:IsAbove(x, y)
 	end
 	isAboveChecked = true
 
-	endProfile("IsAbove")
+	framework.endProfile("IsAbove")
 
 	return isAbove
 end
