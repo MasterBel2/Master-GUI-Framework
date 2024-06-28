@@ -16,11 +16,10 @@ function framework:Box(child)
     end
     
     function box:Layout(...)
-        cachedChild = self.child
-        return cachedChild:Layout(...)
+        return child:Layout(...)
     end
     function box:Position(...)
-        return cachedChild:Position(...)
+        return child:Position(...)
     end
 
     return box
