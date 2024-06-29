@@ -186,7 +186,6 @@ function framework:OffsettedViewport(body, mode)
     function viewport:Position(x, y)
         _x = x
         _y = y
-        if height <= 0 or width <= 0 then return end
 
         _Position(self, x - xOffset, y + yOffset + height - self.contentHeight)
 
