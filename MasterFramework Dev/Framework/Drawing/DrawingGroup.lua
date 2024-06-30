@@ -9,6 +9,17 @@ local gl_CreateList = Include.gl.CreateList
 local gl_CallList = Include.gl.CallList
 local clear = Include.clear
 
+
+DRAWING_GROUP_PASS = {
+    LAYOUT = 1,
+    POSITION = 2,
+    DRAW = 3
+}
+
+local DRAWING_GROUP_PASS_LAYOUT = DRAWING_GROUP_PASS.LAYOUT
+local DRAWING_GROUP_PASS_POSITION = DRAWING_GROUP_PASS.POSITION
+local DRAWING_GROUP_PASS_DRAW = DRAWING_GROUP_PASS.DRAW
+
 --[[
     `DrawingGroup` is a component that collects any child component that wishes to draw, and instructs them when to perform their draw.
 
@@ -74,14 +85,6 @@ function framework:DrawingGroup(body, disableDrawList)
     -- debug
     local framesRedrawnInARow = 0
 
-    function drawingGroup:DimensionNeedsLayoutUpdate()
-        for dimension, _ in pairs(drawingGroup.dimensions) do
-            if dimension.ValueHasChanged() then
-                return true
-            end
-        end
-    end
-
     local cachedWidth, cachedHeight
     local cachedAvailableWidth, cachedAvailableHeight
     function drawingGroup:Layout(availableWidth, availableHeight)
@@ -91,7 +94,7 @@ function framework:DrawingGroup(body, disableDrawList)
             parentDrawingGroup.childDrawingGroups[#parentDrawingGroup.childDrawingGroups + 1] = self
         end
 
-        if self:DimensionNeedsLayoutUpdate() or availableWidth ~= cachedAvailableWidth or availableHeight ~= cachedAvailableHeight then
+        if availableWidth ~= cachedAvailableWidth or availableHeight ~= cachedAvailableHeight then
             cachedAvailableWidth = availableWidth
             cachedAvailableHeight = availableHeight
 
@@ -112,7 +115,9 @@ function framework:DrawingGroup(body, disableDrawList)
 
         local previousDrawingGroup = activeDrawingGroup
         activeDrawingGroup = self
+        self.pass = DRAWING_GROUP_PASS_LAYOUT
         local newWidth, newHeight = textGroup:Layout(cachedAvailableWidth, cachedAvailableHeight)
+        self.pass = nil
         activeDrawingGroup = previousDrawingGroup
         if newWidth ~= cachedWidth or newHeight ~= cachedHeight then
             cachedWidth = newWidth
@@ -132,7 +137,9 @@ function framework:DrawingGroup(body, disableDrawList)
 
         local previousDrawingGroup = activeDrawingGroup
         activeDrawingGroup = self
+        self.pass = DRAWING_GROUP_PASS_POSITION
         textGroup:Position(cachedX, cachedY)
+        self.pass = nil
 
         activeDrawingGroup = previousDrawingGroup
     end
@@ -166,6 +173,7 @@ function framework:DrawingGroup(body, disableDrawList)
     function drawingGroup:Draw()
         local previousDrawingGroup = activeDrawingGroup
         activeDrawingGroup = self
+        self.pass = DRAWING_GROUP_PASS_DRAW
 
         if self.disableDrawList then
             self.drawers = {}
@@ -206,6 +214,7 @@ function framework:DrawingGroup(body, disableDrawList)
             end
         end
 
+        self.pass = nil
         activeDrawingGroup = previousDrawingGroup
     end
 

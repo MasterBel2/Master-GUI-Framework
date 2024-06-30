@@ -22,16 +22,17 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
     local dragStartHeight
 
     local scale = framework:AutoScalingDimension(1)
-    local oldScale = scale()
+    local cachedScale = scale.RawValue()
 
     if key then
+        if not ConfigData.frameSizeCache then ConfigData.frameSizeCache = {} end
         if ConfigData.frameSizeCache[key] then
             local cachedWidth = ConfigData.frameSizeCache[key].width
             local cachedHeight = ConfigData.frameSizeCache[key].height
-            width = (cachedHeight and (cachedHeight * oldScale)) or width
-            height = (cachedHeight and (cachedHeight * oldScale)) or width
+            width = (cachedWidth and (cachedWidth * cachedScale)) or width
+            height = (cachedHeight and (cachedHeight * cachedScale)) or height
         else
-            ConfigData.frameSizeCache[key] = { width = width / oldScale, height = height / oldScale }
+            ConfigData.frameSizeCache[key] = { width = width / cachedScale, height = height / cachedScale }
         end
     end
 
@@ -106,41 +107,22 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
             local dMouseX = mouseX - dragStartMouseDownX
             local dMouseY = mouseY - dragStartMouseDownY
 
-            local newProspectiveWidth = width
-            local newProspectiveHeight = height
-            if draggingLeft then
-                newProspectiveWidth = dragStartWidth - dMouseX
-            elseif draggingRight then
-                newProspectiveWidth = dragStartWidth + dMouseX
-            end
-            if draggingBottom then
-                newProspectiveHeight = dragStartHeight - dMouseY
-            elseif draggingTop then
-                newProspectiveHeight = dragStartHeight + dMouseY
-            end
-            
-            -- TODO: This could break some things under the new model, since layout is expected to have a drawing group!
-            local new_Width, new_Height = child:Layout(newProspectiveWidth, newProspectiveHeight)
-            local newFinalWidth = math.min(new_Width, newProspectiveWidth) -- I tried commenting these out for some debugging thing and it appears
-            local newFinalHeight = math.min(new_Height, newProspectiveHeight) -- clamping works even when we don't do this???
-
-            -- local newFinalWidth = newProspectiveWidth
-            -- local newFinalHeight = newProspectiveHeight
-
             local _dx = 0
             local _dy = 0
 
+            local newProspectiveWidth = width
+            local newProspectiveHeight = height
             if draggingLeft then
-                width = newFinalWidth
-                _dx = dragStartWidth - newFinalWidth
+                width = dragStartWidth - dMouseX
+                _dx = dragStartWidth - width
             elseif draggingRight then
-                width = newFinalWidth
+                width = dragStartWidth + dMouseX
             end
             if draggingBottom then
-                height = newFinalHeight
+                height = dragStartHeight - dMouseY
             elseif draggingTop then
-                height = newFinalHeight
-                _dy = newFinalHeight - dragStartHeight
+                height = dragStartHeight + dMouseY
+                _dy = height - dragStartHeight
             end
 
             frame:NeedsLayout()
@@ -148,8 +130,8 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
             movableFrame:SetOffset(dragStartX + _dx, dragStartY + _dy)
 
             if key then
-                ConfigData.frameSizeCache[key].width = width / oldScale
-                ConfigData.frameSizeCache[key].height = height / oldScale
+                ConfigData.frameSizeCache[key].width = width / cachedScale
+                ConfigData.frameSizeCache[key].height = height / cachedScale
             end
         end,
         function(responder, x, y)
@@ -194,7 +176,13 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         local control = {}
 
         function control:Layout(availableWidth, availableHeight)
-            width, height = child:Layout(width, height)
+            if width ~= width then width = defaultWidth end
+            if height ~= height then height = defaultHeight end
+            width, height = child:Layout(math.min(width, availableWidth), math.min(height, availableHeight))
+            if key then
+                ConfigData.frameSizeCache[key].width = width / cachedScale
+                ConfigData.frameSizeCache[key].height = height / cachedScale
+            end
             return width, height
         end
         function control:Position(...)
@@ -210,12 +198,13 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
 
     function frame:Layout(availableWidth, availableHeight)
         self:RegisterDrawingGroup()
-        local currentScale = scale()
-        if currentScale ~= oldScale then
-            scaleTranslation = currentScale / oldScale
+        local currentScale = scale.RawValue()
+        if currentScale ~= cachedScale then
+            Log("Updating scale!")
+            scaleTranslation = currentScale / cachedScale
             width = width * scaleTranslation
             height = height * scaleTranslation
-            oldScale = currentScale
+            cachedScale = currentScale
         end
 
         movableFrame:Layout(availableWidth, availableHeight)

@@ -10,11 +10,22 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
     local frame = Component(true, false)
 
     local handleDimension = framework:AutoScalingDimension(20)
-    local xOffset = defaultX -- offsets are to top left corner
+    
+    -- offsets are to top left corner
+    local xOffset = defaultX
     local yOffset = defaultY
 
     local scale = framework:AutoScalingDimension(1)
-    local oldScale = scale() -- Maybe cache this?
+    local cachedScale = scale.RawValue()
+
+    if key then
+        if ConfigData.framePositionCache[key] then
+            local cachedXOffset = ConfigData.framePositionCache[key].xOffset
+            local cachedYOffset = ConfigData.framePositionCache[key].yOffset
+            xOffset = (cachedXOffset and (cachedXOffset * scale.RawValue())) or xOffset
+            yOffset = (cachedYOffset and (cachedYOffset * scale.RawValue())) or yOffset
+        end
+    end
 
     local handleDecorations = { unhighlightedColor }
 
@@ -62,32 +73,25 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
         }
     end
     
+    local cachedAvailableWidth, cachedAvailableHeight
     function frame:Layout(availableWidth, availableHeight)
         self:RegisterDrawingGroup()
         width, height = zStack:Layout(availableWidth, availableHeight)
-        if xOffset > availableWidth - 5 then
-            xOffset = availableWidth - 5
-            if key then
-                ConfigData.framePositionCache[key].xOffset = xOffset / oldScale
-            end
-        end
-        if yOffset > availableHeight then
-            yOffset = availableHeight
-            if key then
-                ConfigData.framePositionCache[key].yOffset = yOffset / oldScale
-            end
-        end
+        cachedAvailableWidth = availableWidth
+        cachedAvailableHeight = availableHeight
             
         return availableWidth, availableHeight
     end
 
     function frame:Position(x, y)
-        local currentScale = scale()
-        if currentScale ~= oldScale then
-            scaleTranslation = currentScale / oldScale
+        local newScale = scale.RawValue()
+        if newScale ~= cachedScale then
+            scaleTranslation = newScale / cachedScale
             xOffset = xOffset * scaleTranslation
-            yOffset = yOffset * scaleTranslation
-            oldScale = currentScale
+            self:SetOffset(xOffset * scaleTranslation, yOffset * scaleTranslation, true)
+            cachedScale = newScale
+        else
+            self:SetOffset(xOffset, yOffset)
         end
 
         zStack:Position(x + xOffset, y + yOffset - height)
@@ -97,27 +101,35 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
         return xOffset, yOffset
     end
 
-    function frame:SetOffset(x, y)
-        self:NeedsPosition()
-        xOffset = math.min(math.max(x, 0), framework.viewportWidth - 5)
-        yOffset = math.min(math.max(y, 5), framework.viewportHeight)
+    function frame:SetOffset(x, y, skipNeedsPosition)
+        local newXOffset = math.min(math.max(x, 0), cachedAvailableWidth - 5)
+        local newYOffset = math.min(math.max(y, 5), cachedAvailableHeight)
+        if newXOffset ~= newXOffset then -- nan
+            newXOffset = 0
+        end
+        if newYOffset ~= newYOffset then --nan
+            newYOffset = 5
+        end
+
+        if not skipNeedsPosition and (newXOffset ~= xOffset or newYOffset ~= yOffset) then
+            self:NeedsPosition()
+        end
+        xOffset = newXOffset
+        yOffset = newYOffset
 
         if key then
-            ConfigData.framePositionCache[key].xOffset = x / oldScale
-            ConfigData.framePositionCache[key].yOffset = y / oldScale
-        end
-    end
+            ConfigData.framePositionCache[key].xOffset = xOffset / scale.RawValue()
+            ConfigData.framePositionCache[key].yOffset = yOffset / scale.RawValue()
 
-    if key then
-        if ConfigData.framePositionCache[key] then
-            local cachedXOffset = ConfigData.framePositionCache[key].xOffset
-            local cachedYOffset = ConfigData.framePositionCache[key].yOffset
-            frame:SetOffset(
-                (cachedXOffset and (cachedXOffset * oldScale)) or xOffset, 
-                (cachedYOffset and (cachedYOffset * oldScale)) or yOffset
-            )
-        else
-            ConfigData.framePositionCache[key] = { xOffset = xOffset / oldScale, yOffset = yOffset / oldScale }
+            -- Log("cachedAvailableWidth:" .. cachedAvailableWidth)
+            -- Log("cachedAvailableHeight:" .. cachedAvailableHeight)
+            -- Log("xOffset:" .. ConfigData.framePositionCache[key].xOffset)
+            -- Log("yOffset:" .. ConfigData.framePositionCache[key].yOffset)
+            -- Log("newXOffset:" .. newXOffset)
+            -- Log("newYOffset:" .. newYOffset)
+            -- Log("x:" .. x)
+            -- Log("y:" .. y)
+            -- Log("scale.RawValue():" .. scale.RawValue())
         end
     end
 

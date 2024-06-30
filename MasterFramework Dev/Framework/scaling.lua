@@ -1,32 +1,75 @@
 local Internal = Internal
 local min = Include.math.min
 local floor = Include.math.floor
+local ceil = Include.math.ceil
 local pairs = Include.pairs
 local pcall = Include.pcall
 local setmetatable = Include.setmetatable
 
 relativeScaleFactor = 1
+combinedScaleFactor = 1
 
 Internal.autoScalingDimensions = {}
 
-function framework:Dimension(generator)
+function framework:Dimension(generator, ...)
 	local dimension = { registeredDrawGroups = {} }
-	local cachedValue
+	local cachedRawValue
+	local cachedCeilValue
+	local cachedFloorValue
+	local cacheRoundValue
 
-	function dimension.ValueHasChanged()
-		return floor(generator()) ~= cachedValue
+	function dimension.Update(...)
+		local newRawValue = generator(...)
+		if newRawValue ~= cachedRawValue then
+			cachedRawValue = newRawValue
+			cachedCeilValue = ceil(cachedRawValue)
+			cachedFloorValue = floor(cachedRawValue)
+			cachedRoundValue = floor(cachedRawValue + 0.5)
+
+			for drawingGroup, pass in pairs(dimension.registeredDrawGroups) do
+				if pass == DRAWING_GROUP_PASS.LAYOUT then
+					drawingGroup:LayoutUpdated()
+				elseif pass == DRAWING_GROUP_PASS.POSITION then
+					drawingGroup:PositionsUpdated()
+				elseif pass == DRAWING_GROUP_PASS.DRAW then
+					drawingGroup:DrawerUpdated()
+				end
+			end
+		end
 	end
 
-	function dimension.ComputedValue()
+	dimension.Update(...)
+
+	local function Register()
 		if activeDrawingGroup then
-			activeDrawingGroup.dimensions[dimension] = true
+			dimension.registeredDrawGroups[activeDrawingGroup] = activeDrawingGroup.pass
+			if activeDrawingGroup.pass == DRAWING_GROUP_PASS.DRAW then
+				activeDrawingGroup.drawers[self] = true
+			else
+				activeDrawingGroup.layoutComponents[self] = true
+			end
 		end
-		cachedValue = floor(generator())
-		return cachedValue
+	end
+
+	function dimension.FloorValue()
+		Register()
+		return cachedFloorValue
+	end
+	function dimension.CeilValue()
+		Register()
+		return cachedCeilValue
+	end
+	function dimension.RoundValue()
+		Register()
+		return cachedRoundValue
+	end
+	function dimension.RawValue()
+		Register()
+		return cachedRawValue
 	end
 
 	setmetatable(dimension, {
-		__call = dimension.ComputedValue
+		__call = dimension.FloorValue
 	})
 
 	return dimension
@@ -54,6 +97,10 @@ function Internal.updateScreenEnvironment(newWidth, newHeight, newScale)
 
 	for _, font in pairs(Internal.fonts) do
 		font:Scale(combinedScaleFactor)
+	end
+
+	for _, dimension in pairs(Internal.autoScalingDimensions) do
+		dimension.Update()
 	end
 
 	for _, element in pairs(Internal.elements) do
