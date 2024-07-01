@@ -1,3 +1,4 @@
+local error = Include.error
 local pairs = Include.pairs
 local ipairs = Include.ipairs
 local table = Include.table
