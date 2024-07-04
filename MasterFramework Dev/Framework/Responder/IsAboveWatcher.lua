@@ -5,10 +5,8 @@ local watcherID = 0
 -- Tracks which responders the mouse cursor is above along the entire responder chain, and notifies them
 -- when the cursor enters and leaves their bounds.
 Internal.IsAboveWatcher = function()
-	local object = { id = watcherID }
+	local object = {}
 	local lastResponderBelow
-
-	watcherID = watcherID + 1
 
 	local nestedWatcher
 
