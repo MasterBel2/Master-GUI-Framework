@@ -1,6 +1,5 @@
-local ConfigData = Internal.ConfigData.MovableFrame or {
-    framePositionCache = {}
-}
+local ConfigData = Internal.ConfigData.MovableFrame or {}
+ConfigData.framePositionCache = ConfigData.framePositionCache or {}
 Internal.ConfigData.MovableFrame = ConfigData
 local math = Include.math
 
@@ -118,8 +117,10 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
         yOffset = newYOffset
 
         if key then
-            ConfigData.framePositionCache[key].xOffset = xOffset / scale.RawValue()
-            ConfigData.framePositionCache[key].yOffset = yOffset / scale.RawValue()
+            local framePosition = ConfigData.framePositionCache[key] or {}
+            framePosition.xOffset = xOffset / scale.RawValue()
+            framePosition.yOffset = yOffset / scale.RawValue()
+            ConfigData.framePositionCache[key] = framePosition
 
             -- Log("cachedAvailableWidth:" .. cachedAvailableWidth)
             -- Log("cachedAvailableHeight:" .. cachedAvailableHeight)
