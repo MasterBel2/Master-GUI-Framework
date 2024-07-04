@@ -5,6 +5,7 @@ local gl_Color = Include.gl.Color
 local gl_Rect = Include.gl.Rect
 local gl_Vertex = Include.gl.Vertex
 local pairs = Include.pairs
+local error = Include.error
 
 local Internal = Internal
 
@@ -23,13 +24,23 @@ function framework:Color(r, g, b, a)
 
 	local color = Drawer()
 
+	if not r or not g or not b or not a then 
+		error("Arguments to framework:Color are incomplete! r: " .. (r or "nil") .. ", g: " .. (g or "nil") .. ", b: " .. (b or "nil") .. ", a: " .. (a or "nil"))
+	end
+
 	function color:Set()
 		self:RegisterDrawingGroup()
 		gl_Color(r, g, b, a)
 	end
-	function color:SetRawValues(...)
+	function color:SetRawValues(_r, _g, _b, _a)
+		if not _r or not _g or not _b or not _a then 
+			error("Arguments to color:SetRawValues(r, g, b, a) are incomplete! r: " .. (r or "nil") .. ", g: " .. (g or "nil") .. ", b: " .. (b or "nil") .. ", a: " .. (a or "nil")) 
+		end
 		self:NeedsRedraw()
-		r, g, b, a = ...
+		r = _r
+		g = _g
+		b = _b
+		a = _a
 	end
 	function color:GetRawValues()
 		return r, g, b, a
