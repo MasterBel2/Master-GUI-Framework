@@ -28,7 +28,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     local entry = Drawer()
 
     entry.text = framework:WrappingText(string, color, font, maxLines)
-    entry.placeholder = framework:Text(placeholderString, framework:Color(color.r, color.g, color.b, 0.3), font, 1)
+    local placeholderR, placeholderG, placeholderB = color:GetRawValues()
+    entry.placeholder = framework:Text(placeholderString, framework:Color(placeholderR, placeholderG, placeholderB, 0.3), font, 1)
     entry.selectionBegin = string:len() + 1 -- index of character after selection begin
     entry.selectionEnd = string:len() + 1 -- index of character after selection end
     entry.canLoseFocus = false
