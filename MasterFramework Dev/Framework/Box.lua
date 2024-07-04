@@ -10,7 +10,7 @@ function framework:Box(child)
 
     function box:SetChild(newChild)
         if child ~= newChild then
-            chlid = newChild
+            child = newChild
             self:NeedsLayout()
         end
     end
