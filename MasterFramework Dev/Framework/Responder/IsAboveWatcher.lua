@@ -16,7 +16,7 @@ Internal.IsAboveWatcher = function()
 	function object:Update(responderUnderMouse, x, y)
 
 		if lastResponderBelow then
-			if (not responderUnderMouse) or (responderUnderMouse.id ~= lastResponderBelow.id) then
+			if (not responderUnderMouse) or (responderUnderMouse ~= lastResponderBelow) then
 				local success, errorMessage = pcall(lastResponderBelow.MouseLeave, lastResponderBelow)
 				if not success then
 					Error("IsAboveWatcher:Update", "lastResponderBelow:MouseLeave", errorMessage)
@@ -27,7 +27,7 @@ Internal.IsAboveWatcher = function()
 		end
 
 		if responderUnderMouse then
-			if (not lastResponderBelow) or (lastResponderBelow.id ~= responderUnderMouse.id) then
+			if (not lastResponderBelow) or (lastResponderBelow ~= responderUnderMouse) then
 				local success, errorMessage = pcall(responderUnderMouse.MouseEnter, responderUnderMouse)
 				if not success then
 					Error("IsAboveWatcher:Update", "responderUnderMouse:MouseEnter", errorMessage)

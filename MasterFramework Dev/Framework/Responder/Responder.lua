@@ -5,8 +5,6 @@ local Internal = Internal
 
 Internal.activeResponders = {}
 
-local responderID = 0
-
 function framework:Responder(rect, event, action)
 	local responder = { action = action, responders = {}, _event = event }
 
