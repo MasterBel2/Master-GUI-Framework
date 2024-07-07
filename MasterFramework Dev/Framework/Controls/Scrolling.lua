@@ -2,6 +2,7 @@ local gl = Include.gl
 local table_insert = Include.table.insert
 local math = Include.math
 local error = Include.error
+local pairs = Include.pairs
 
 framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL_VERTICAL = 0
 framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL = 1
@@ -40,6 +41,11 @@ function framework:OffsettedViewport(body, mode)
     viewport.contentWidth = 0
     viewport.contentHeight = 0
 
+    local component = Component(true, false)
+    for key, func in pairs(component) do
+        viewport[key] = func
+    end
+
     if (not mode) or mode < 0 or mode > 2 then
         error("OffsettedViewport mode must be one of `framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL_VERTICAL`, `framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL`, and `framework.OFFSETED_VIEWPORT_MODE_VERTICAL`")
     end
@@ -68,13 +74,13 @@ function framework:OffsettedViewport(body, mode)
     function viewport:SetXOffset(_xOffset)
         if xOffset ~= _xOffset then
             xOffset = _xOffset
-            self.childNeedsPosition = true
+            self:NeedsPosition()
         end
     end
     function viewport:SetYOffset(_yOffset)
         if yOffset ~= _yOffset then
             yOffset = _yOffset
-            self.childNeedsPosition = true
+            self:NeedsPosition()
         end
     end
 
@@ -184,6 +190,7 @@ function framework:OffsettedViewport(body, mode)
     
     local _Position = viewport.Position
     function viewport:Position(x, y)
+        self:RegisterDrawingGroup()
         _x = x
         _y = y
 
