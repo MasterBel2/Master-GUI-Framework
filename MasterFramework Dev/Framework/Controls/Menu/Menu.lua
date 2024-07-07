@@ -79,8 +79,8 @@ function framework:Menu(options, anchor)
         function(responder) end,
         function(responder)
             if highlightedMenuItem then
-                highlightedMenuItem = nil
                 highlightedMenuItem:SetDecorations({})
+                highlightedMenuItem = nil
             end
         end
     )
