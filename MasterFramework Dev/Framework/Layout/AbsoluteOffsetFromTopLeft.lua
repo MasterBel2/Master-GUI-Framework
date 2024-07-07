@@ -12,6 +12,7 @@ function framework:AbsoluteOffsetFromTopLeft(body, xOffset, yOffset)
 	end
 
 	function absoluteOffset:Layout(availableWidth, availableHeight)
+		self:RegisterDrawingGroup()
 		_availableHeight = availableHeight
 		width, height = body:Layout(availableWidth - xOffset, availableHeight - yOffset)
 		return width + xOffset, height + (availableHeight - yOffset)
