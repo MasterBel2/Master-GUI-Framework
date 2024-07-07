@@ -253,6 +253,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	function wrappingText:Draw(glFont)
 		glFont:SetTextColor(baseColor:GetRawValues())
 		baseColor:RegisterDrawingGroup()
+		self:RegisterDrawingGroup()
 
 		-- height - 1 is because it appeared to be drawing 1 pixel too high - for the default font, at least. I haven't checked with any other font size yet.
 		-- I don't know what to do about text that's supposed to be centred vertically in a cell, because this method of drawing means the descender pushes the text up a bunch.
