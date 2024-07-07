@@ -62,11 +62,11 @@ function framework:Menu(options, anchor)
             local menuItem, index = menuItemAtCoordinates(x, y)
 
             if menuItem ~= highlightedMenuItem and highlightedMenuItem then
-                highlightedMenuItem.decorations[1] = nil
+                highlightedMenuItem:SetDecorations({})
             end
             if menuItem then
                 if options[index].subOptions or options[index].action then
-                    menuItem.decorations[1] = framework.color.hoverColor
+                    menuItem:SetDecorations({ framework.color.hoverColor })
                 end
                 
                 if options[index].subOptions then
@@ -80,7 +80,7 @@ function framework:Menu(options, anchor)
         function(responder)
             if highlightedMenuItem then
                 highlightedMenuItem = nil
-                highlightedMenuItem.decorations[1] = nil
+                highlightedMenuItem:SetDecorations({})
             end
         end
     )

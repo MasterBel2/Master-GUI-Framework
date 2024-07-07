@@ -15,7 +15,10 @@ function framework:CelledVerticalStack(contents, spacing)
     local _SetMembers = celledStack.SetMembers
     function celledStack:SetMembers(newMembers)
         _SetMembers(self, imap(newMembers, function(_, member)
-            return framework:Cell(member, {}, framework:AutoScalingDimension(0))
+            local cell = framework:Cell(member)
+            local cellWrapper = framework:Background(cell, {})
+            cellWrapper.cell = cell
+            return cellWrapper
         end))
     end
 
@@ -26,7 +29,7 @@ function framework:CelledVerticalStack(contents, spacing)
         local width, height = self:_Layout(availableWidth, availableHeight)
         local members = self:GetMembers()
         for i = 1, #members do
-            members[i]:SetOverrideDimensions(width, nil)
+            members[i].cell:SetOverrideDimensions(width, nil)
         end
         return width, height
     end
