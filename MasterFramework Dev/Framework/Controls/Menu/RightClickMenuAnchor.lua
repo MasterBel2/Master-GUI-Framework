@@ -15,7 +15,7 @@ function framework:RightClickMenuAnchor(wrappedRect, options, menuTag)
         wrappedRect, 
         options, 
         function(anchorX, anchorY, anchorWidth, anchorHeight, menu)
-            return anchorX + xOffset - 5, framework.viewportHeight - anchorY - yOffset - menu.topMargin()
+            return xOffset - 5, framework.viewportHeight - yOffset - menu.topMargin()
         end,
         "Right-Click Menu for " .. menuTag
     )
@@ -24,9 +24,8 @@ function framework:RightClickMenuAnchor(wrappedRect, options, menuTag)
         anchor,
         function(responder, x, y, button)
             if button == 3 then
-                local responderX, responderY = responder:CachedPosition()
-                xOffset = x - responderX
-                yOffset = y - responderY
+                xOffset = x
+                yOffset = y
                 anchor:ShowMenu()
             end
         end,
