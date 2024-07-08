@@ -273,7 +273,7 @@ end
 --
 -- Parameters:
 --  - key: the key returned from `framework:InsertElement()` when the element was inserted.
-function framework:RemoveElement(key) 
+function framework:RemoveElement(key)
 	if key ~= nil then
 		Log("Removed " .. key)
 		Internal.elements[key] = nil
