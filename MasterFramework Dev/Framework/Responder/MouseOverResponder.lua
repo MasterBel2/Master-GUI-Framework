@@ -4,18 +4,13 @@ function framework:MouseOverResponder(rect, hoverAction, enterAction, leaveActio
 	-- arguments for mouseOver: responder, x, y
 	local responder = self:Responder(rect, events.mouseOver, hoverAction)
 
-	local mouseIsOver = false
+	responder.mouseIsOver = false
 
 	function responder:MouseEnter()
-		mouseIsOver = true
 		enterAction(self)
 	end
 	function responder:MouseLeave()
-		mouseIsOver = false
 		leaveAction(self)
-	end
-	function responder:MouseIsOver()
-		return mouseIsOver
 	end
 
 	return responder

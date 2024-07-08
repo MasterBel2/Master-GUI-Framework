@@ -64,8 +64,6 @@ local framework = {
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
 
-local isAboveThing
-
 function widget:SetConfigData(data)
 	frameworkInternal.ConfigData = data or {}
 end
@@ -131,8 +129,6 @@ function widget:Initialize()
 	frameworkInternal.updateScreenEnvironment(viewSizeX, viewSizeY, framework.relativeScaleFactor)
 
 	frameworkInternal.SetDebugMode(true, false, false)
-
-    isAboveThing = frameworkInternal.IsAboveWatcher()
 
     framework.Internal = nil
     framework.Include = nil
@@ -258,8 +254,9 @@ end
 
 local isAbove
 local isAboveChecked = false
+
 function widget:IsAbove(x, y)
-	if isAboveChecked then return end
+	if isAboveChecked then return frameworkInternal.elementBelowMouse ~= nil end
 
 	if frameworkInternal.debugMode.draw then
 		frameworkInternal.DebugInfo.elementBelowMouse = {}
@@ -270,20 +267,85 @@ function widget:IsAbove(x, y)
 
 	framework.startProfile("IsAbove")
 
-	local isAbove
-	isAbove = frameworkInternal.CheckElementUnderMouse(x, y)
-	if isAbove then
-		framework.startProfile(frameworkInternal.elementBelowMouse.key .. ":IsAbove")
-		isAboveThing:Search(frameworkInternal.elementBelowMouse.drawingGroup.responderCache[framework.events.mouseOver], x, y)
-		framework.endProfile(frameworkInternal.elementBelowMouse.key .. ":IsAbove")
-	else
-		isAboveThing:Reset()
+	local element, responder = framework.HighestResponderAtPoint(x, y, framework.events.mouseOver)
+	frameworkInternal.elementBelowMouse = element
+
+	frameworkInternal.DebugInfo.responderUnderMouse = responder and responder._debugUniqueIdentifier
+
+	if responder ~= frameworkInternal.mouseOverResponder then
+		local previousResponder = frameworkInternal.mouseOverResponder
+		frameworkInternal.mouseOverResponder = responder
+		local highestCommonResponder
+		do
+			local _responder = responder
+			while _responder do
+				if _responder.mouseIsOver then
+					highestCommonResponder = _responder
+					break
+				else
+					_responder.mouseIsOver = true
+					_responder = responder.parent
+				end
+			end
+		end
+		do
+			local _responder = previousResponder
+			while _responder and _responder ~= highestCommonResponder do
+				_responder.mouseIsOver = false
+				_responder = _responder.parent
+			end
+		end
+		do
+			local _responder = previousResponder
+			while _responder and _responder ~= highestCommonResponder do
+					if _responder.MouseLeave then
+						local success, maybeError = pcall(_responder.MouseLeave, _responder)
+						if not success then
+							framework.Error("IsAbove", "responder:MouseLeave", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+							framework:RemoveElement(element.key)
+							break
+						end
+					end
+				-- end
+				_responder = _responder.parent
+			end
+		end
+		do
+			local _responder = responder
+			while _responder and _responder ~= highestCommonResponder do
+				if _responder.MouseEnter then
+					local success, maybeError = pcall(_responder.MouseEnter, _responder)
+					if not success then
+						framework.Error("IsAbove", "responder:MouseEnter", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+						framework:RemoveElement(element.key)
+						break
+					end
+				end
+				_responder = _responder.parent
+			end
+		end
 	end
+
+	do
+		local _responder = responder
+		while _responder do
+			local success, maybeError = pcall(_responder.action, _responder, x, y)
+			if success then
+				_responder = _responder.parent
+			else
+				framework.Error("IsAbove", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+				framework:RemoveElement(element.key)
+				break
+			end
+			
+		end
+	end
+
 	isAboveChecked = true
 
 	framework.endProfile("IsAbove")
 
-	return isAbove
+	return element ~= nil
 end
 function widget:Update()
 	-- widget:IsAbove seems to be called multiple times a frame. To mitigate this, we'll call it once per function we *know* is called once per frame - in this case, Update().

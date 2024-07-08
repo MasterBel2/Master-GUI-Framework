@@ -37,6 +37,9 @@ function framework:Responder(rect, event, action)
 		cachedY = y
 	end
 
+	function responder:ContainsPoint(x, y)
+		return PointIsInRect(x, y, cachedX, cachedY, width, height)
+	end
 	
 	return responder
 end

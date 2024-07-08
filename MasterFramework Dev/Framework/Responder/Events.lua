@@ -4,6 +4,39 @@ local pcall = Include.pcall
 local pairs = Include.pairs
 local Spring_Echo = Include.Spring.Echo
 
+function HighestResponderAtPoint(x, y, event)
+	for _, index in ipairs(Internal.elementOrder) do
+		local element = Internal.elements[index]
+		local responders = element.drawingGroup.responderCache[event].responders
+		
+		local currentMatchingResponder
+		
+		local i = 0
+		while i <= #responders - 1 do
+			local responder = responders[#responders - i]
+			local success, pointIsContained = pcall(responder.ContainsPoint, responder, x, y)
+			if success then
+				if pointIsContained then
+					currentMatchingResponder = responder
+					responders = responder.responders
+					i = 0
+				else
+					i = i + 1
+				end
+			else
+				Error("HighestReceiverAtPoint", "Element: " .. element.key, "Responder:ContainsPoint", x, y, event, pointIsContained, responder._debugTypeIdentifier, responder._debugUniqueIdentifier)
+				framework:RemoveElement(element.key)
+				currentMatchingResponder = nil
+				break
+			end
+		end
+
+		if currentMatchingResponder then
+			return element, currentMatchingResponder
+		end
+	end
+end
+
 -- Finds the topmost element whose PrimaryFrame contains the given point.
 function Internal.CheckElementUnderMouse(x, y)
 	if not Internal.hasCheckedElementBelowMouse then
