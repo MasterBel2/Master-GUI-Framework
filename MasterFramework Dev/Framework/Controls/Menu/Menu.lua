@@ -1,4 +1,5 @@
 local imap = Include.table.imap
+local pairs = Include.pairs
 
 --[[
     A floating, auto-hiding menu displaying a list of options.
@@ -36,6 +37,8 @@ function framework:Menu(options, anchor)
     local titleColor = framework:Color(0.7, 0.7, 0.7, 1)
     local celledStack
 
+    local shownSubmenu
+    local shownSubmenuItem
     local optionElements = {}
 
     celledStack = framework:CelledVerticalStack(optionElements, framework:AutoScalingDimension(0))
@@ -60,6 +63,11 @@ function framework:Menu(options, anchor)
         ),
         function(responder, x, y)
             local menuItem, index = menuItemAtCoordinates(x, y)
+            if shownSubmenuItem and shownSubmenuItem ~= menuItem then
+                shownSubmenuItem = nil
+                shownSubmenu:HideMenu()
+                shownSubmenu = nil
+            end
 
             if menuItem ~= highlightedMenuItem and highlightedMenuItem then
                 highlightedMenuItem:SetDecorations({})
@@ -71,6 +79,8 @@ function framework:Menu(options, anchor)
                 
                 if options[index].subOptions then
                     optionElements[index]:ShowMenu()
+                    shownSubmenu = optionElements[index]
+                    shownSubmenuItem = menuItem
                 end
             end
 
@@ -78,7 +88,12 @@ function framework:Menu(options, anchor)
         end,
         function(responder) end,
         function(responder)
-            if highlightedMenuItem then
+            if shownSubmenu and not shownSubmenu:GetMenu():IsMouseOver() then
+                shownSubmenuItem = nil
+                shownSubmenu:HideMenu()
+                shownSubmenu = nil
+            end
+            if highlightedMenuItem and highlightedMenuItem ~= shownSubmenuItem then
                 highlightedMenuItem:SetDecorations({})
                 highlightedMenuItem = nil
             end
@@ -114,7 +129,11 @@ function framework:Menu(options, anchor)
             framework:AutoScalingDimension(5)
         ),
         function(isOver)
-            menu.mouseIsOver = isOver
+            if not isOver then
+                if not (menu:IsMouseOver() or (shownSubmenu and shownSubmenu:GetMenu() and shownSubmenu:GetMenu():IsMouseOver())) then
+                    anchor:HideMenu()
+                end
+            end
         end
     )
 
@@ -125,6 +144,10 @@ function framework:Menu(options, anchor)
         0, 0
     )
 
+    function menu:IsMouseOver()
+        return body.mouseIsOver or (shownSubmenu and shownSubmenu:GetMenu() and shownSubmenu:GetMenu():IsMouseOver())
+    end
+
     menu.leftMargin = leftMargin
     menu.topMargin = topMargin
     menu.rightMargin = rightMargin
@@ -132,31 +155,36 @@ function framework:Menu(options, anchor)
 
     function menu:SetOptions(newOptions)
         optionElements = imap(options, function(index, option)
-            local component
-            if option.action then -- enabled is ignored for now
-                component = framework:Text(option.title)
-            elseif option.subOptions then
-                component = framework:MenuAnchor(
-                    framework:Text(option.title),
-                    option.subOptions,
-                    function(anchorX, anchorY, anchorWidth, anchorHeight, submenu)
-                        anchor:ShowMenu()
-                        local cellX, cellY, cellWidth, cellHeight = celledStack:GetMembers()[index]:Geometry()
-                        return cellX + cellWidth, framework.viewportHeight - cellY - cellHeight - submenu.topMargin()
-                    end,
-                    option.title
-                )
-            else -- title only
-                component = framework:Text(option.title, titleColor)
-            end
-
-            return framework:MarginAroundRect(
-                component,
+            local text = framework:Text(option.title)
+            local component = framework:MarginAroundRect(
+                text, 
                 framework:AutoScalingDimension(8),
                 framework:AutoScalingDimension(1),
                 framework:AutoScalingDimension(8),
                 framework:AutoScalingDimension(1)
             )
+            if option.subOptions then
+                component = framework:MenuAnchor(
+                    component,
+                    option.subOptions,
+                    function(anchorX, anchorY, anchorWidth, anchorHeight, submenu)
+                        local cellX, cellY, cellWidth, cellHeight = celledStack:GetMembers()[index]:Geometry()
+                        return cellX + cellWidth, framework.viewportHeight - cellY - cellHeight - submenu.topMargin()
+                    end,
+                    option.title
+                )
+                local _HideMenu = component.HideMenu
+                component.HideMenu = function(self)
+                    _HideMenu(self)
+                    if not menu:IsMouseOver() then
+                        anchor:HideMenu()
+                    end
+                end
+            elseif not option.action then
+                text:SetBaseColor(titleColor)
+            end
+
+            return component
         end)
 
         celledStack:SetMembers(optionElements)

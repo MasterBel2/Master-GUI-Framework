@@ -22,7 +22,6 @@ function framework:MenuAnchor(wrappedRect, menuOptions, menuLayoutFunc, menuName
 
     local menu
     local menuKey
-    local conditionalShow
 
     local cachedX, cachedY
     local width, height
@@ -40,14 +39,17 @@ function framework:MenuAnchor(wrappedRect, menuOptions, menuLayoutFunc, menuName
     -- 
     -- This must be called every frame that the menu must be shown. 
     function menuAnchor:ShowMenu()
-        conditionalShow = true
-        if (not menu) and conditionalShow then
+        if (not menu) then
             menu = framework:Menu(menuOptions, self)
             if cachedX and cachedY and width and height then
                 menu:SetOffsets(menuLayoutFunc(cachedX, cachedY, width, height, menu))
             end
             menuKey = framework:InsertElement(menu, "Menu: " .. menuName, framework.layerRequest.top())
         end
+    end
+    
+    function menuAnchor:GetMenu()
+        return menu
     end
 
     function menuAnchor:HideMenu()
@@ -58,10 +60,6 @@ function framework:MenuAnchor(wrappedRect, menuOptions, menuLayoutFunc, menuName
     end
 
     function menuAnchor:Layout(availableWidth, availableHeight)
-        if menu and not (menu.mouseIsOver or conditionalShow) then
-            self:HideMenu()
-        end
-
         width, height = wrappedRect:Layout(availableWidth, availableHeight)
         return width, height
     end
@@ -73,7 +71,6 @@ function framework:MenuAnchor(wrappedRect, menuOptions, menuLayoutFunc, menuName
         if menu then
             menu:SetOffsets(menuLayoutFunc(cachedX, cachedY, width, height, menu))
         end
-        conditionalShow = false
     end
 
     return menuAnchor

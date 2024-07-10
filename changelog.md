@@ -19,6 +19,11 @@ To facilitate this:
 - `Dimension` now has a base constructor that registers for updates with the drawing group; the previous functionality of the `Dimension` function has moved to `AutoScalingDimension`.
 - `OffsettedViewport` is now an overriding extension of `DrawingGroup`.
 
+Changes to `Menu`:
+- `MenuAnchor` now provides `menuAnchor:GetMenu()` to allow accessing its menu.
+- `Menu` provides `menu:IsMouseOver()` which returns whether the user's cursor is over the menu or one of its submenus.
+- `Menu`'s submenu menu items are now a `MenuAnchor` at the top level, rather than a `MarginAroundRect` at the top level. (This probably shouldn't be of practical concern to users of the framework.)
+
 Misc other changes:
 - Remove elements with incomplete `PrimaryFrame` geometry, to prevent log spam and allow interaction
 - Various bugfixes
