@@ -289,7 +289,7 @@ function framework:VerticalScrollContainer(body)
         local _, yOffset = viewport:GetOffsets()
         viewport:SetYOffset(math.max(
             math.min(
-                yOffset - value * 20,
+                yOffset - value * framework.dimension.scrollMultiplier(),
                 viewport.contentHeight - responderHeight -- Must not leave any unneccessary blank space at the bottom of the scroll box
             ),
             0  -- Must not leave any unneccessary blank space at the top of the scroll box
@@ -321,7 +321,7 @@ function framework:HorizontalScrollContainer(body)
         local xOffset, _ = viewport:GetOffsets()
         viewport:SetXOffset(math.max(
             math.min(
-                xOffset - value * 20,
+                xOffset - value * framework.dimension.scrollMultiplier(),
                 viewport.contentWidth - responderWidth -- Must not leave any unneccessary blank space at the bottom of the scroll box
             ),
             0  -- Must not leave any unneccessary blank space at the top of the scroll box

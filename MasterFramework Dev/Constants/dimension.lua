@@ -3,5 +3,7 @@ framework.dimension = {
     defaultMargin = framework:AutoScalingDimension(8),
     defaultCornerRadius = framework:AutoScalingDimension(5),
     elementSpacing = framework:AutoScalingDimension(1),
-    groupSpacing = framework:AutoScalingDimension(5)
+    groupSpacing = framework:AutoScalingDimension(5),
+
+    scrollMultiplier = framework:AutoScalingDimension(20),
 }

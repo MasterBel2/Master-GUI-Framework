@@ -30,6 +30,7 @@ Misc other changes:
 - TextEntry & Button store their colours in constants, providing potential to override & set custom styles
 - `PrimaryFrame` no longer attempts recovery if `Layout` hasn't been called yet
 - `Element`s are removed if no `PrimaryFrame` is present in the view hierarchy
+- `HorizontalScrollContainer` and `VerticalScrollContainer` now use the customisable `framework.dimension.scrollMultiplier` to configure their scroll speed. This should provide the same scrolling experience on a 1080p display, and scale better to larger resolutions.
 
 ## CV 42: Misc - kill funcs.lua, separate out constants, change WG access
 Extensions are now declared in `MasterFramework $VERSION/Utils`, and pre-loaded before the rest of the framework. These are provided the same global environment as the rest of the framework. `string` extensions now all have `_MasterFramework` at the end of their name, while the `table` extension overrides the `Include.table` table for the framework, and provides access to the customised version as `framework.table`. The definition of `Include.clear` has been moved to `Utils/table.lua`, and `table.joinStrings()` has been removed, since it was a slower reimplementation of `table.concat()`
