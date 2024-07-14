@@ -156,7 +156,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         if selectionBegin == selectionEnd then
             if selectionBegin == 1 then return true end
             if isCtrl then
-                local begin = self.text:GetRawString():sub(1, self.selectionBegin - 1):find(reverseCtrlSkipPattern)
+                local begin = self.text:GetRawString():sub(1, self.selectionBegin - 1):find(reverseCtrlSkipPattern) or 0
                 deletedText = string:sub(begin + 1, selectionBegin - 1)
             else
                 deletedText = string:sub(selectionBegin - 1, selectionBegin - 1)
