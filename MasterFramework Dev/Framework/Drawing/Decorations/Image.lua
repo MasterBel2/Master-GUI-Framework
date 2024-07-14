@@ -10,6 +10,7 @@ local Internal = Internal
 
 -- Draws an image in a rect. The image is immutable - that is, you cannot change the file.
 function framework:Image(fileName, tintColor)
+	tintColor = tintColor or framework.color.white
     
     local DrawRoundedRect = Internal.DrawRoundedRect
     local DrawRect = Internal.DrawRect
