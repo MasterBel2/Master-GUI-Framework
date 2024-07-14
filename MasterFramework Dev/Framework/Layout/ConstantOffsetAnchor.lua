@@ -1,9 +1,6 @@
 function framework:ConstantOffsetAnchor(rectToAnchorTo, anchoredRect, xOffset, yOffset)
 	local anchor = Component(true, false)
 
-	local xOffset
-	local yOffset
-
 	function anchor:SetOffsets(newXOffset, newYOffset)
 		if newXOffset ~= xOffset or newYOffset ~= yOffset then
 			xOffset = newXOffset
