@@ -162,7 +162,7 @@ end
 
 Some brief notes on the internal code of MasterFramework (i.e. within the `MasterFramework Dev/` folder):
 
-- The global environment (also the `framework` entry in the global environment) refers to the framework itself, that is registered in `WG["MasterFramework Dev]"`. 
+- The global environment (also the `framework` entry in the global environment) refers to the framework itself, that is registered in `WG["MasterFramework Dev"]`. 
 - A table `Internal` is provided in the global environment during framework initialisation only; this should be cached if needed. Post initialisation, it is removed from the global environment, to restrict access to users of the framework.
 - A table `Include` is provided in the global environment during framework initialisation only; this provides access to a portion of the standard global environment. This is also removed post-initialisation, to reduce unneccessary clutter.
 - Code is loaded in an unpredictable order; avoid top-level code in these files if at all possible. Instead, provide any necessary initialisation in [https://github.com/MasterBel2/Master-GUI-Framework/tree/main/gui_master_framework_42.lua] after the contents of [https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2042] have been loaded.
