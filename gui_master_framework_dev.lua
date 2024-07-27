@@ -83,6 +83,7 @@ function widget:Initialize()
         error = error,
         pairs = pairs,
         ipairs = ipairs,
+		next = next,
         type = type,
         string = string,
         math = math,

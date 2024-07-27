@@ -3,6 +3,7 @@ local table_insert = Include.table.insert
 local insert = Include.table.insert
 local tostring = Include.tostring
 local pairs = Include.pairs
+local next = Include.next
 local os_clock = Include.os.clock
 local gl_DeleteList = Include.gl.DeleteList
 local gl_CreateList = Include.gl.CreateList
@@ -67,6 +68,7 @@ function framework:DrawingGroup(body, disableDrawList)
     drawingGroup.drawTargets = {}
     drawingGroup.childDrawingGroups = {}
     drawingGroup.layoutComponents = {}
+    drawingGroup.continuouslyUpdatingDrawers = {}
 
     local element
     local parentDrawingGroup
@@ -183,7 +185,7 @@ function framework:DrawingGroup(body, disableDrawList)
         activeDrawingGroup = self
         self.pass = DRAWING_GROUP_PASS_DRAW
 
-        if self.disableDrawList then
+        if self.disableDrawList or next(self.continuouslyUpdatingDrawers) then
             self.drawers = {}
             self.needsRedraw = false
 
@@ -192,6 +194,12 @@ function framework:DrawingGroup(body, disableDrawList)
             local childDrawingGroups = self.childDrawingGroups
             for i = 1, #childDrawingGroups do
                 childDrawingGroups[i]:Draw()
+            end
+
+            for drawer, _ in pairs(self.continuouslyUpdatingDrawers) do
+                if not self.drawers[drawer] then
+                    self.continuouslyUpdatingDrawers[drawer] = nil
+                end
             end
         else 
             if self.needsRedraw then
@@ -243,6 +251,28 @@ function framework:DrawingGroup(body, disableDrawList)
     function drawingGroup:DrawerUpdated(drawer)
         if self.drawers[drawer] then
             self.needsRedraw = true
+            return true
+        end
+    end
+
+    -- Signals to the drawing group that it should not compile draw lists for the time being.
+    -- 
+    -- Use this when the component is frequently updating, to avoid unnecessary performance penalty.
+    function drawingGroup:DrawerWillContinuouslyUpdate(drawer)
+        if self.drawers[drawer] then
+            self.continuouslyUpdatingDrawers[drawer] = true
+            return true
+        end
+    end
+
+    -- Signals to the drawing group that this component no longer requires avoidance of draw lists.
+    -- 
+    -- Use this when the component is no longer frequently updating, to avoid unnecessary performance penalty.
+    -- Note that if any drawer is continuously updating, every drawer in the drawing group will draw every frame. 
+    -- If some drawers are known to update less frequently, consider wrapping them in a separate drawing group.
+    function drawingGroup:DrawerWillNotContinuouslyUpdate(drawer)
+        if self.drawers[drawer] then
+            self.continuouslyUpdatingDrawers[drawer] = nil
             return true
         end
     end

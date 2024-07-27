@@ -57,15 +57,25 @@ function Component(hasLayout, draws)
 	local drawingGroups = {}
 
 	local component = {}
+	local continuouslyUpdating = false
 
 	function component:RegisterDrawingGroup()
 		if not activeDrawingGroup then return end
+
 		if draws then
 			activeDrawingGroup.drawers[self] = true
+			
+			if continuouslyUpdating then
+				activeDrawingGroup:DrawerWillContinuouslyUpdate(self)
+			-- else
+			-- 	activeDrawingGroup:DrawerWillNotContinuouslyUpdate(self)
+			end
 		end
+
 		if hasLayout then
 			activeDrawingGroup.layoutComponents[self] = true
 		end
+
 		drawingGroups[activeDrawingGroup] = true
 	end
 
@@ -91,6 +101,36 @@ function Component(hasLayout, draws)
 			for drawingGroup, _ in pairs(drawingGroups) do
 				if not drawingGroup:DrawerUpdated(self) then
 					drawingGroups[drawingGroup] = nil
+				end
+			end
+		end
+
+		-- Signals to the drawing group that it should not compile draw lists for the time being.
+		-- 
+		-- Use this when the component is frequently updating, to avoid unnecessary performance penalty.
+		function component:EnableContinuousRedrawing()
+			if not continuouslyUpdating then
+				continuouslyUpdating = true
+
+				for drawingGroup, _ in pairs(drawingGroups) do
+					if not drawingGroup:DrawerWillContinuouslyUpdate(self) then
+						drawingGroups[drawingGroup] = nil
+					end
+				end
+			end
+		end
+
+		-- Signals to the drawing group that this component no longer requires avoidance of draw lists.
+		-- 
+		-- Use this when the component is no longer frequently updating, to avoid unnecessary performance penalty.
+		function component:DisableContinuousRedrawing()
+			if continuouslyUpdating then
+				continuouslyUpdating = false
+
+				for drawingGroup, _ in pairs(drawingGroups) do
+					if not drawingGroup:DrawerWillNotContinuouslyUpdate(self) then
+						drawingGroups[drawingGroup] = nil
+					end
 				end
 			end
 		end
