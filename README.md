@@ -15,29 +15,29 @@ A GUI framework for the Spring Engine. For support, MasterBel2 can be contacted 
 
 ### Installation
 
-Copy/symlink `gui_master_framework_dev.lua` to your Spring installation's `LuaUI/Widgets/` folder, and the `MasterFramework Dev` folder to your `LuaUI/` folder, forming the path `LuaUI/MasterFramework Dev/`.
+Copy/symlink `gui_master_framework_43.lua` to your Spring installation's `LuaUI/Widgets/` folder, and the `MasterFramework 43` folder to your `LuaUI/` folder, forming the path `LuaUI/MasterFramework 43/`.
 
 As a result, your LuaUI directory should look like this:
 ```
 LuaUI/
-    MasterFramework Dev/
+    MasterFramework 43/
     Widgets/
-        gui_master_framework_dev.lua
+        gui_master_framework_43.lua
         ...
     ...
 ```
 
-Once installed, make sure you enable `MasterBel2's GUI Framework (Dev)` in Widget Selector. See [below](#Using-MasterFramework-to-build-your-UI) for how to use MasterFramework in your project.
+Once installed, make sure you enable `MasterBel2's GUI Framework (43)` in Widget Selector. See [below](#Using-MasterFramework-to-build-your-UI) for how to use MasterFramework in your project.
 
 ### Importing MasterFramework
 
 MasterFramework supports multiple installed versions, available in the table `WG` after the widget handler calls `widget:Initialize()` on the framework. 
-`MasterFramework Dev` is stored under `WG["MasterFramework Dev"]`.
+`MasterFramework 43` is stored under `WG["MasterFramework 43"]`.
 See the example below:
 
 ```lua
 local framework
-local requiredFrameworkVersion = "Dev"
+local requiredFrameworkVersion = "43"
 
 widget:Initialize()
     MasterFramework = WG["MasterFramework " .. requiredFrameworkVersion]
@@ -130,7 +130,7 @@ function widget:GetInfo()
 end
 
 local MasterFramework
-local requiredFrameworkVersion = "Dev"
+local requiredFrameworkVersion = "43"
 
 local key
 
@@ -160,9 +160,9 @@ end
 
 ## Contributing to MasterFramework
 
-Some brief notes on the internal code of MasterFramework (i.e. within the `MasterFramework Dev/` folder):
+Some brief notes on the internal code of MasterFramework (i.e. within the `MasterFramework 43/` folder):
 
-- The global environment (also the `framework` entry in the global environment) refers to the framework itself, that is registered in `WG["MasterFramework Dev]"`. 
+- The global environment (also the `framework` entry in the global environment) refers to the framework itself, that is registered in `WG["MasterFramework 43"]`. 
 - A table `Internal` is provided in the global environment during framework initialisation only; this should be cached if needed. Post initialisation, it is removed from the global environment, to restrict access to users of the framework.
 - A table `Include` is provided in the global environment during framework initialisation only; this provides access to a portion of the standard global environment. This is also removed post-initialisation, to reduce unneccessary clutter.
 - Code is loaded in an unpredictable order; avoid top-level code in these files if at all possible. Instead, provide any necessary initialisation in [https://github.com/MasterBel2/Master-GUI-Framework/tree/main/gui_master_framework_42.lua] after the contents of [https://github.com/MasterBel2/Master-GUI-Framework/tree/main/MasterFramework%2042] have been loaded.

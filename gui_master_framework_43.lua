@@ -4,7 +4,7 @@
 
 -- https://github.com/MasterBel2/Master-GUI-Framework
 
-local compatabilityVersion = "Dev"
+local compatabilityVersion = "43"
 
 function widget:GetInfo()
 	return {
@@ -129,7 +129,7 @@ function widget:Initialize()
 
 	frameworkInternal.updateScreenEnvironment(viewSizeX, viewSizeY, framework.relativeScaleFactor)
 
-	frameworkInternal.SetDebugMode(true, false, false)
+	frameworkInternal.SetDebugMode(false, false, false)
 
     framework.Internal = nil
     framework.Include = nil

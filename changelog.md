@@ -1,6 +1,6 @@
 # Changelog
 
-## CV 43 (WIP): Limit unnecessary layout / position / draw passes
+## CV 43: Limit unnecessary layout / position / draw passes
 
 Agressive changes have been made to how updates are made to reduce the necessary fequency of calculations:
 - `Rasterizer` has been merged into `DrawingGroup`.
