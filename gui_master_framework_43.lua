@@ -169,24 +169,31 @@ end
 function widget:KeyPress(key, mods, isRepeat, label, utf32char, scanCode, actionList)
     if not frameworkInternal.focusTarget then return end
 
-	framework.startProfile(frameworkInternal.focusTargetElementKey .. ":KeyPress()")
+	local profileName = frameworkInternal.focusTargetElementKey .. ":KeyPress()"
+	framework.startProfile(profileName)
+	
 	local success, errorMessage = pcall(frameworkInternal.focusTarget.KeyPress, frameworkInternal.focusTarget, key, mods, isRepeat, label, utf32char, scanCode, actionList)
 	if not success then 
 		framework.Error("widget:KeyPress", "focusTarget:KeyPress", errorMessage)
 	end
-	framework.endProfile(frameworkInternal.focusTargetElementKey .. ":KeyPress()")
+	
+	framework.endProfile(profileName)
 
     return true
 end
 
 function widget:KeyRelease(key, mods, label, utf32char, scanCode, actionList)
 	if not frameworkInternal.focusTarget then return end
-	framework.startProfile(frameworkInternal.focusTargetElementKey .. ":KeyRelease()")
+
+	local profileName = frameworkInternal.focusTargetElementKey .. ":KeyRelease()"
+	framework.startProfile(profileName)
+	
 	local success, errorMessage = pcall(frameworkInternal.focusTarget.KeyRelease, frameworkInternal.focusTarget, key, mods, label, utf32char, scanCode, actionList)
-	framework.endProfile(frameworkInternal.focusTargetElementKey .. ":KeyRelease()")
 	if not success then 
 		framework.Error("widget:KeyRelease", "focusTarget:KeyRelease", errorMessage)
 	end
+	
+	framework.endProfile(profileName)
 	
 	return true
 end
