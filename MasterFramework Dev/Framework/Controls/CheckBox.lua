@@ -1,15 +1,15 @@
-function framework:CheckBox(scale, action)
+function framework:CheckBox(scale, defaultState, action)
     local checkbox
     local dimension = framework:AutoScalingDimension(scale)
     local radius = framework:AutoScalingDimension(scale / 2)
-    
-    local checked = false
+
+    local checked = defaultState
 
     local highlightColor = framework.color.hoverColor
     local unhighlightedColor = framework.stroke.defaultBorder
 
-    local rect = framework:Background(framework:Rect(dimension, dimension), { unhihlightedColor }, radius)
-    
+    local rect = framework:Background(framework:Rect(dimension, dimension), { unhighlightedColor }, radius)
+
     checkbox = framework:MouseOverChangeResponder(
         framework:MousePressResponder(
             rect,
@@ -40,5 +40,6 @@ function framework:CheckBox(scale, action)
     end
 
     checkbox:SetChecked(checked)
+    action(checkbox, checked)
     return checkbox
 end
