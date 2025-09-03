@@ -2,7 +2,8 @@ function framework:CheckBox(scale, defaultState, action)
     local checkbox
     local dimension = framework:AutoScalingDimension(scale)
     local radius = framework:AutoScalingDimension(scale / 2)
-    local checked
+
+    local checked = defaultState
 
     local highlightColor = framework.color.hoverColor
     local unhighlightedColor = framework.stroke.defaultBorder
@@ -23,6 +24,7 @@ function framework:CheckBox(scale, defaultState, action)
                 highlightColor = framework.color.hoverColor
                 if framework.PointIsInRect(x, y, self:Geometry()) then
                     checkbox:SetChecked(not checked)
+                    action(checkbox, checked)
                 end
             end
         ),
@@ -35,9 +37,9 @@ function framework:CheckBox(scale, defaultState, action)
         checked = newChecked
         unhighlightedColor = (checked and framework.color.selectedColor) or framework.stroke.defaultBorder
         rect:SetDecorations({ (isInside and highlightColor) or unhighlightedColor })
-        action(checkbox, checked)
     end
 
-    checkbox:SetChecked(defaultState)
+    checkbox:SetChecked(checked)
+    action(checkbox, checked)
     return checkbox
 end
