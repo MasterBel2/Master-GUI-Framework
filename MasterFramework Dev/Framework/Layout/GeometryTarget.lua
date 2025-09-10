@@ -25,5 +25,9 @@ function framework:GeometryTarget(body)
 		return self:Size(), self:CachedPosition()
 	end
 
+    function geometryTarget:ContainsPoint(x, y)
+		return PointIsInRect(x, y, cachedX, cachedY, width, height)
+	end
+
     return geometryTarget
 end

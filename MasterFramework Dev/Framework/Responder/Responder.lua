@@ -6,19 +6,12 @@ local Internal = Internal
 Internal.activeResponders = {}
 
 function framework:Responder(rect, event, action)
-	local responder = { action = action, responders = {}, _event = event }
+	local responder = self:GeometryTarget(rect)
+	responder.action = action
+	responder.responders = {}
+	responder._event = event
 
-	local width, height
-	local cachedX, cachedY
-
-	function responder:Size() return width, height end
-	function responder:CachedPosition() return cachedX, cachedY end
-	function responder:Geometry() return cachedX, cachedY, width, height end
-
-	function responder:Layout(...)
-		width, height = rect:Layout(...)
-		return width, height
-	end
+	local _Position = responder.Position
 
 	function responder:Position(x, y)
 		-- Parent keeps track of the order of responders, and use that to decide who gets the interactions first
@@ -30,15 +23,8 @@ function framework:Responder(rect, event, action)
 
 		Internal.activeResponders[event] = self
 		clear(self.responders)
-		rect:Position(x, y)
+		_Position(self, x, y)
 		Internal.activeResponders[event] = previousActiveResponder
-		
-		cachedX = x
-		cachedY = y
-	end
-
-	function responder:ContainsPoint(x, y)
-		return PointIsInRect(x, y, cachedX, cachedY, width, height)
 	end
 	
 	return responder
