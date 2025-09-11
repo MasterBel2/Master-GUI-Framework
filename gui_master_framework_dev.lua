@@ -19,6 +19,13 @@ function widget:GetInfo()
 	}
 end
 
+local pcall = function(func, ...)
+	local args = { ... }
+	return xpcall(function()
+		return func(unpack(args))
+	end, debug.traceback)
+end
+
 local remove = table.remove
 
 local function ForAllFiles(fileTree, action, ...)
