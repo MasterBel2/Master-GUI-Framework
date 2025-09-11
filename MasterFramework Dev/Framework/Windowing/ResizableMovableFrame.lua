@@ -154,14 +154,16 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
             local responderWidth, responderHeight = responder:Size()
             local scaledDraggableDistance = draggableDistance()
             
-            if x - responderX <= scaledDraggableDistance or 
+            if (x - responderX <= scaledDraggableDistance or 
                 responderX + width - x <= scaledDraggableDistance or
                 y - responderY <= scaledDraggableDistance or 
-                responderY + height - y <= scaledDraggableDistance then
-                draggable = true
-                highlightWhenDraggable:SetDecorations({ draggableDecoration })
-                return true
-            else
+                responderY + height - y <= scaledDraggableDistance) then
+                if not draggable then
+                    draggable = true
+                    highlightWhenDraggable:SetDecorations({ draggableDecoration })
+                    return true
+                end
+            elseif draggable then
                 draggable = false
                 highlightWhenDraggable:SetDecorations({})
                 return false
