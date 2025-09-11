@@ -60,10 +60,10 @@ function framework:Gradient(color1, color2, color3, color4)
 		local cornerRadius = rect.cornerRadius() or 0
 
 		if cornerRadius > 0 then
-			local beyondLeft = x <= 0
-			local belowBottom = y <= 0
-			local beyondRight = (x + width) >= viewportWidth
-			local beyondTop = (y + height) >= viewportHeight
+			-- local beyondLeft = x <= 0
+			-- local belowBottom = y <= 0
+			-- local beyondRight = (x + width) >= viewportWidth
+			-- local beyondTop = (y + height) >= viewportHeight
 
 			gl_BeginEnd(GL_POLYGON, DrawRoundedRect, width, height, cornerRadius, drawRoundedRectVertex, belowBottom or beyondLeft, beyondRight or belowBottom, beyondRight or beyondTop, beyondLeft or beyondTop, x, y, width, height)
 		else

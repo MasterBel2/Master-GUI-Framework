@@ -53,8 +53,8 @@ function framework:Stroke(thickness, color, inside)
 		-- end
 
 		if cachedCornerRadius > 0 then
-			gl_BeginEnd(GL_LINE_LOOP, DrawRoundedRect, cachedWidth, cachedHeight, cachedCornerRadius, strokePixel, 
-				x <= 0 or y <= 0, x + cachedWidth >= viewportWidth or y <= 0, x + cachedWidth >= viewportWidth or y + cachedHeight >= viewportHeight, x == 0 or y + cachedHeight >= viewportHeight)
+			gl_BeginEnd(GL_LINE_LOOP, DrawRoundedRect, cachedWidth, cachedHeight, cachedCornerRadius, strokePixel--[[, 
+				x <= 0 or y <= 0, x + cachedWidth >= viewportWidth or y <= 0, x + cachedWidth >= viewportWidth or y + cachedHeight >= viewportHeight, x == 0 or y + cachedHeight >= viewportHeight]])
 		else
 			gl_BeginEnd(GL_LINE_LOOP, DrawRectVertices, cachedWidth, cachedHeight, strokePixel)
 		end
