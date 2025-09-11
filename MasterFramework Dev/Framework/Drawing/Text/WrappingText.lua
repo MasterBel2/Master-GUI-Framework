@@ -238,6 +238,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			removedSpaces[i] = nil
 		end
 
+		-- We don't return here since we're only using this to coerce the `GeometryTarget` into caching width, height for us
 		_Layout(self, width, height)
 		
 		return width, height
