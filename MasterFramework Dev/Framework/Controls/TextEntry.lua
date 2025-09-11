@@ -17,7 +17,7 @@ local forwardCtrlSkipPattern = "[%s\n]*[^%s\n]+[%s\n]"
 local reverseCtrlSkipPattern = "[%s\n][^%s\n]+[%s\n]*$"
 
 local nextNewlinePattern = ".[^\n]*[\n]"
-local previousNewlinePattern = "[\n][^\n]*.$"
+local previousNewlinePattern = "[\n][^\n]*$"
 
 local Spring_GetClipboard = Include.Spring.GetClipboard
 local Spring_SetClipboard = Include.Spring.SetClipboard
@@ -309,12 +309,12 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             else
                 local displayString = self.text:GetDisplayString()
                 local displayIndex = self.text:RawIndexToDisplayIndex(self:CurrentCursorIndex())
-                local substring = displayString:sub(1, displayIndex)
+                local substring = displayString:sub(1, displayIndex - 1)
                 
                 local previousNewlineIndex = substring:find(previousNewlinePattern)
                 
                 if previousNewlineIndex then
-                    local previousLineStart = (substring:sub(1, previousNewlineIndex):find(previousNewlinePattern) or 0)
+                    local previousLineStart = (substring:sub(1, previousNewlineIndex - 1):find(previousNewlinePattern) or 0)
                     if previousLineStart then
                         local targetWidth = self.text._readOnly_font.glFont:GetTextWidth(substring:sub(previousNewlineIndex + 1, displayIndex - 1)) * self.text._readOnly_font:ScaledSize()
                         destinationIndex = self:IndexAtXOffsetBetweenDisplayNewlineIndices(previousLineStart, previousNewlineIndex, targetWidth)
