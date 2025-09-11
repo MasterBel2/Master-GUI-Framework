@@ -157,15 +157,15 @@ function EnableDebugMode(target)
 								_debugTypeIdentifier = temp[1]._debugTypeIdentifier,
 								_debugUniqueIdentifier = temp[1]._debugUniqueIdentifier,
 	
-								ContainsAbsolutePoint = function(x, y)
-									local drawingGroupOffsetX, drawingGroupOffsetY = SearchDownResponderTree
+								ContainsAbsolutePoint = function(_, x, y)
+									local drawingGroupOffsetX, drawingGroupOffsetY = activeDrawingGroup:AbsolutePosition()
 									return PointIsInRect(x, y, cachedX + drawingGroupOffsetX, cachedY + drawingGroupOffsetY, cachedWidth, cachedHeight)
 								end,
 
 								MouseEnter = function() end,
 								MouseLeave = function() end,
 								action = function(_, x, y)
-									local drawingGroupOffsetX, drawingGroupOffsetY = drawingGroup:AbsolutePosition()
+									local drawingGroupOffsetX, drawingGroupOffsetY = activeDrawingGroup:AbsolutePosition()
 									Internal.DebugInfo.elementBelowMouse[elementKey] = {
 										type = key,
 										path = key,
@@ -183,7 +183,7 @@ function EnableDebugMode(target)
 									}
 									local x = temp[1]._debug_mouseOverResponder.parent
 									for i = 1, 1000 do
-										if not x then break end
+										if not x or x == x.parent  then break end
 										Internal.DebugInfo.elementBelowMouse[elementKey].path = (x._debugTypeIdentifier or "Unknown") .. "/" .. Internal.DebugInfo.elementBelowMouse[elementKey].path
 										x = x.parent
 									end
@@ -194,7 +194,7 @@ function EnableDebugMode(target)
 						end
 
 						if temp[1].Position then
-							temp[1]._debug_cachedPosition = temp[1]._debug_cachedPosition or temp[1].Position
+							local _Position = temp[1].Position
 							temp[1].Position = function(...)
 								if not temp[1].laidOut then
 									-- local x = temp[1]._debug_mouseOverResponder.parent
@@ -207,46 +207,48 @@ function EnableDebugMode(target)
 									Log("Position called before Layout for " .. temp[1]._debugTypeIdentifier .. " " .. temp[1]._debugUniqueIdentifier)
 								end
 								LogDrawCall(key .. ":Position", false)
-								elementKey = Internal._debug_currentElementKey
+								elementKey = Internal.activeElement.key
 
-								local previousActiveDebugResponder = Internal.elements[elementKey].activeDebugResponder
-								if temp[1]._debug_mouseOverResponder then
-									temp[1]._debug_mouseOverResponder.parent = previousActiveDebugResponder
-									table_insert(previousActiveDebugResponder.responders, temp[1]._debug_mouseOverResponder)
-									temp[1]._debug_mouseOverResponder.responders = {}
-									Internal.elements[elementKey].activeDebugResponder = temp[1]._debug_mouseOverResponder
+								local previousActiveDebugResponder
+								if Internal.activeElement then
+									previousActiveDebugResponder = Internal.activeElement.activeDebugResponder
+									if temp[1]._debug_mouseOverResponder then
+										temp[1]._debug_mouseOverResponder.parent = previousActiveDebugResponder
+										table_insert(previousActiveDebugResponder.responders, temp[1]._debug_mouseOverResponder)
+										temp[1]._debug_mouseOverResponder.responders = {}
+										Internal.activeElement.activeDebugResponder = temp[1]._debug_mouseOverResponder
+									end
 								end
 
-								temp[1]._debug_cachedPosition(...)
+								_Position(...)
 
-								Internal.elements[elementKey].activeDebugResponder = previousActiveDebugResponder
+								Internal.activeElement.activeDebugResponder = previousActiveDebugResponder
 
-								if cachedWidth and cachedHeight then
-									local args = { ... }
-									cachedX, cachedY = args[2], args[3]
-									framework.stroke.defaultBorder:Draw(dummyRect, cachedX, cachedY, cachedWidth, cachedHeight)
-								end
+								local args = { ... }
+								cachedX, cachedY = args[2], args[3]
+								table_insert(activeDrawingGroup.drawTargets, { Draw = function()
+									local drawingGroupOffsetX, drawingGroupOffsetY = activeDrawingGroup:AbsolutePosition()
+									framework.stroke.defaultBorder:Draw(dummyRect, cachedX + drawingGroupOffsetX, cachedY + drawingGroupOffsetY, cachedWidth, cachedHeight)
+								end })
 								LogDrawCall(key .. ":Position", true)
 							end
 						end
 						if temp[1].NeedsLayout then
-							temp[1]._debug_cachedNeedsLayout = temp[1]._debug_cachedNeedsLayout or temp[1].NeedsLayout
+							local _NeedsLayout = temp[1].NeedsLayout
 							temp[1].NeedsLayout = function(...)
-									needsLayout = temp[1]._debug_cachedNeedsLayout(...) or false
-									temp[1]._debug_needsLayout = needsLayout
+								needsLayout = _NeedsLayout(...) or false
+								temp[1]._debug_needsLayout = needsLayout
 								return needsLayout
 							end
 						end
 						
 						if temp[1].Layout then
 							temp[1].laidOut = true
-							if temp[1]._debug_cachedLayout then
-								Log("Overriding layout for " .. temp[1]._debugTypeIdentifier .. " " .. temp[1]._debugUniqueIdentifier)
-							end
-							temp[1]._debug_cachedLayout = temp[1]._debug_cachedLayout or temp[1].Layout
+							local _Layout = temp[1].Layout
 							temp[1].Layout = function(...)
+								activeDrawingGroup = framework.activeDrawingGroup or temp[1]
 								LogDrawCall(key .. ":Layout", false)
-								cachedWidth, cachedHeight = temp[1]._debug_cachedLayout(...)
+								cachedWidth, cachedHeight = _Layout(...)
 								LogDrawCall(key .. ":Layout", true)
 								return cachedWidth, cachedHeight
 							end

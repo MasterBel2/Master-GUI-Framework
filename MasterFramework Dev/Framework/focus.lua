@@ -7,7 +7,7 @@ function framework:TakeFocus(newFocusTarget)
 	end
 	if widgetHandler:OwnText() then
 		Internal.focusTarget = newFocusTarget
-		Internal.focusTargetElementKey = Internal._debug_currentElementKey
+		Internal.focusTargetElementKey = Internal.activeElement.key
 		return true
 	end
 end

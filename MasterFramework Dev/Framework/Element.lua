@@ -169,7 +169,6 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 
 	function element:Draw()
 		startProfile(self.key)
-		Internal._debug_currentElementKey = self.key
 		Internal.activeElement = self
 
 		startProfile(self.key .. ":UpdateLayout()")
@@ -226,15 +225,16 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 			_debugTypeIdentifier = "Base Debug Responder",
 			responders = {},
 			-- FIXME
-			Geometry = function() return 0, 0, viewportWidth, viewportHeight end,
+			ContainsAbsolutePoint = function(_, x, y) 
+				return PointIsInRect(x, y, 0, 0, viewportWidth, viewportHeight)
+			end,
 			action = function(self)
-				local cachedX, cachedY, cachedWidth, cachedHeight = self:Geometry()
 				Internal.DebugInfo.elementBelowMouse[key] = {
 					type = "Base",
-					cachedX = cachedX,
-					cachedY = cachedY,
-					cachedWidth = cachedWidth,
-					cachedHeight = cachedHeight,
+					cachedX = 0,
+					cachedY = 0,
+					cachedWidth = viewportWidth,
+					cachedHeight = viewportHeight,
 					_debugTypeIdentifier = "Base Debug Responder for \"" .. key .. "\""  
 				}
 			end

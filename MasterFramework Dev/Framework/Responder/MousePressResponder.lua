@@ -13,7 +13,7 @@ function framework:MousePressResponder(rect, downAction, moveAction, releaseActi
 	function responder:action(x, y, button)
 		responder.button = button
 		Internal.dragListeners[button] = responder
-		Internal.dragListenerElementKeys[button] = Internal._debug_currentElementKey
+		Internal.dragListenerElementKeys[button] = Internal.activeElement.key
 		return responder:downAction(x, y, button)
 	end
 
