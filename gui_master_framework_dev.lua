@@ -61,7 +61,7 @@ local frameworkInternal = {
 }
 local framework = {
     compatabilityVersion = compatabilityVersion,
-	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
+	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver", tooltip = "tooltip" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
 
 function widget:SetConfigData(data)
@@ -143,12 +143,14 @@ end
 
 function widget:GetTooltip(x, y)
 	-- IsAbove is called before GetTooltip, so we can use the element found by that.
-	framework.startProfile(frameworkInternal.elementBelowMouse.key .. ":GetTooltip")
-	local tooltip = framework.FindTooltip(x, y, frameworkInternal.elementBelowMouse.tooltips)
-	framework.endProfile(frameworkInternal.elementBelowMouse.key .. ":GetTooltip")
-	if not tooltip then return nil end
 
-	return tooltip.description
+	if not frameworkInternal.elementBelowMouse then return nil end
+
+	framework.startProfile(frameworkInternal.elementBelowMouse.key .. ":GetTooltip")
+	local tooltip = frameworkInternal.FindResponder(framework.events.tooltip, x, y)
+	framework.endProfile(frameworkInternal.elementBelowMouse.key .. ":GetTooltip")
+
+	return tooltip and tooltip.description
 end
 function widget:TweakGetTooltip(x, y)
 end
