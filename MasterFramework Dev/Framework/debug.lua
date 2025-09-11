@@ -151,9 +151,6 @@ function EnableDebugMode(target)
 							temp[1]._debug_mouseOverResponder = {
 								responders = {},
 	
-								-- FIXME: wait, this can never be nil???
-								noRect = temp[1] == nil,
-	
 								_isDebugResponder = true,
 								_debugTypeIdentifier = temp[1]._debugTypeIdentifier,
 								_debugUniqueIdentifier = temp[1]._debugUniqueIdentifier,
