@@ -343,13 +343,13 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
                 local _, nextNewlineIndex = displayString:find("\n", displayIndex)
                 if nextNewlineIndex then
                     local _, endOfNextLine = displayString:find(nextNewlinePattern, nextNewlineIndex)
+                    endOfNextLine = endOfNextLine or displayString:len() + 1
                     local currentLineStart = (displayString:sub(1, displayIndex):find(previousNewlinePattern) or 0) + 1
-                    endOfNextLine = endOfNextLine or self.text:GetRawString():len()
 
                     local targetWidth = self.text._readOnly_font.glFont:GetTextWidth(displayString:sub(currentLineStart, displayIndex - 1)) * self.text._readOnly_font:ScaledSize()
                     destinationIndex = self:IndexAtXOffsetBetweenDisplayNewlineIndices(nextNewlineIndex, endOfNextLine, targetWidth)
                 else
-                    destinationIndex = self.text:GetRawString():len()
+                    destinationIndex = self.text:GetRawString():len() + 1
                 end
             end
             
