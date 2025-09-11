@@ -22,7 +22,7 @@ function framework:CheckBox(scale, action)
             end,
             function(self, x, y)
                 highlightColor = framework.color.hoverColor
-                if framework.PointIsInRect(x, y, self:Geometry()) then
+                if self:ContainsAbsolutePoint(x, y) then
                     checkbox:SetChecked(not checked)
                     action(checkbox, checked)
                 end

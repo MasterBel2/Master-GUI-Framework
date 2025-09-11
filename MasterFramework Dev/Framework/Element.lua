@@ -225,6 +225,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		element.activeDebugResponder = {
 			_debugTypeIdentifier = "Base Debug Responder",
 			responders = {},
+			-- FIXME
 			Geometry = function() return 0, 0, viewportWidth, viewportHeight end,
 			action = function(self)
 				local cachedX, cachedY, cachedWidth, cachedHeight = self:Geometry()

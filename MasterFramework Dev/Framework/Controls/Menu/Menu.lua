@@ -101,7 +101,7 @@ function framework:Menu(options, anchor)
     )
 
     menuItemAtCoordinates = function(x, y)
-        local responderX, responderY = menuOptions:CachedPosition()
+        local responderX, responderY = menuOptions:CachedPositionTranslatedToGlobalContext()
         local stackMembers = celledStack:GetMembers()
         for i = 1, #stackMembers do
             local member = stackMembers[i]
@@ -168,7 +168,9 @@ function framework:Menu(options, anchor)
                     component,
                     option.subOptions,
                     function(anchorX, anchorY, anchorWidth, anchorHeight, submenu)
-                        local cellX, cellY, cellWidth, cellHeight = celledStack:GetMembers()[index]:Geometry()
+                        local cell = celledStack:GetMembers()[index]
+                        local cellX, cellY = cell:CachedPositionTranslatedToGlobalContext()
+                        local cellWidth, cellHeight = cell:Size()
                         return cellX + cellWidth, framework.viewportHeight - cellY - cellHeight - submenu.topMargin()
                     end,
                     option.title

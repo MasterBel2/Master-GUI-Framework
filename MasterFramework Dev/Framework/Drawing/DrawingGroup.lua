@@ -8,8 +8,8 @@ local os_clock = Include.os.clock
 local gl_DeleteList = Include.gl.DeleteList
 local gl_CreateList = Include.gl.CreateList
 local gl_CallList = Include.gl.CallList
+local gl_Translate = Include.gl.Translate
 local clear = Include.clear
-
 
 DRAWING_GROUP_PASS = {
     LAYOUT = 1,
@@ -148,18 +148,17 @@ function framework:DrawingGroup(body, disableDrawList)
         local previousDrawingGroup = activeDrawingGroup
         activeDrawingGroup = self
         self.pass = DRAWING_GROUP_PASS_POSITION
-        textGroup:Position(cachedX, cachedY)
+        textGroup:Position(0, 0)
         self.pass = nil
 
         activeDrawingGroup = previousDrawingGroup
     end
     
     function drawingGroup:Position(x, y)
-        if cachedX ~= x or cachedY ~= y then
-            
-            cachedX = x
-            cachedY = y
-            
+        cachedX = x
+        cachedY = y
+
+        if element.groupsNeedingPosition[self] then
             self:UpdatePosition()
         end
 
@@ -171,6 +170,14 @@ function framework:DrawingGroup(body, disableDrawList)
                 responderCache[event].parent = parentResponder
             end
 		end
+    end
+
+    function drawingGroup:AbsolutePosition()
+        local parentX, parentY = 0,0
+        if parentDrawingGroup then
+            parentX, parentY = parentDrawingGroup:AbsolutePosition()
+        end
+        return cachedX + parentX, cachedY + parentY
     end
 
     local function _Draw(self)
@@ -222,7 +229,10 @@ function framework:DrawingGroup(body, disableDrawList)
                 -- framesRedrawnInARow = 0
             end
 
+            local x, y = self:AbsolutePosition()
+            gl_Translate(x, y, 0)
             gl_CallList(drawList)
+            gl_Translate(-x, -y, 0)
 
             local childDrawingGroups = self.childDrawingGroups
             for i = 1, #childDrawingGroups do

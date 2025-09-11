@@ -61,7 +61,7 @@ local frameworkInternal = {
 }
 local framework = {
     compatabilityVersion = compatabilityVersion,
-	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver", tooltip = "tooltip" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
+	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver", tooltip = "tooltip", _debug_mouseOver = "_debug_mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
 
 function widget:SetConfigData(data)

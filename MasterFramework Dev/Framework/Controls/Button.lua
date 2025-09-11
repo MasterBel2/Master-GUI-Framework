@@ -18,7 +18,7 @@ function framework:Button(visual, action)
             background,
             function(self, x, y, button)
                 if button ~= 1 then return false end
-                if framework.PointIsInRect(x, y, self:Geometry()) then
+                if self:ContainsAbsolutePoint(x, y) then
                     background:SetDecorations(buttonStyles.selectedBackgroundDecorations)
                 else
                     background:SetDecorations(buttonStyles.defaultBackgroundDecorations)
@@ -26,14 +26,14 @@ function framework:Button(visual, action)
                 return true
             end,
             function(self, x, y, dx, dy)
-                if framework.PointIsInRect(x, y, self:Geometry()) then
+                if self:ContainsAbsolutePoint(x, y) then
                     background:SetDecorations(buttonStyles.selectedBackgroundDecorations)
                 else
                     background:SetDecorations(buttonStyles.defaultBackgroundDecorations)
                 end
             end, 
             function(self, x, y)
-                if framework.PointIsInRect(x, y, self:Geometry()) then
+                if self:ContainsAbsolutePoint(x, y) then
                     background:SetDecorations(buttonStyles.hoverBackgroundDecorations)
                     button.action(button)
                 else

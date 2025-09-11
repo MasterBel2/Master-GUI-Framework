@@ -77,7 +77,8 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
 
             local scaledDraggableDistance = draggableDistance()
 
-            local responderX, responderY, responderWidth, responderHeight = responder:Geometry()
+            local responderX, responderY = responder:CachedPositionTranslatedToGlobalContext()
+            local responderWidth, responderHeight = responder:Size()
 
             if x - responderX <= scaledDraggableDistance then
                 draggingLeft = true
@@ -149,8 +150,10 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         function(responder, x, y)
             if draggingLeft or draggingRight or draggingTop or draggingBottom then return end
 
-            local responderX, responderY, responderWidth, responderHeight = responder:Geometry()
+            local responderX, responderY = responder:CachedPositionTranslatedToGlobalContext()
+            local responderWidth, responderHeight = responder:Size()
             local scaledDraggableDistance = draggableDistance()
+            
             if x - responderX <= scaledDraggableDistance or 
                 responderX + width - x <= scaledDraggableDistance or
                 y - responderY <= scaledDraggableDistance or 

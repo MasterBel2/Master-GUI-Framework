@@ -15,7 +15,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	maxLines = maxLines or math_huge
 	font = font or framework.defaultFont
 	baseColor = baseColor or framework.color.white
-	local wrappingText = Component(true, true)
+	local wrappingText = table.mergeInPlace(Component(true, true), framework:GeometryTarget({ Layout = function(_, ...) return ... end, Position = function() end }))
 
 	wrappingText._readOnly_font = font
 	wrappingText.type = "Wrapping Text"
@@ -25,7 +25,6 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 
 	local coloredString
 	local wrappedText, lineCount
-	local cachedX, cachedY, cachedWidth, cachedHeight
 	local cachedAvailableWidth, cachedAvailableHeight, cachedFontKey, cachedFontScaledSize, cachedFontScaledSize
 	local addedCharacters = wrappingText.addedCharacters
 	local removedSpaces = wrappingText.removedSpaces
@@ -121,8 +120,9 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 
 	-- Converts a screen coordinate to an index in the display string. 
 	function wrappingText:CoordinateToCharacterDisplayIndex(x, y)
-		local xOffset = x - cachedX
-		local yOffset = y - cachedY
+		local absoluteX, absoluteY = self:CachedPositionTranslatedToGlobalContext()
+		local xOffset = x - absoluteX
+		local yOffset = y - absoluteY
 
 		local glFont = font.glFont
 		local scaledFontSize = font:ScaledSize()
@@ -169,6 +169,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		return rawString
 	end
 
+	local _Layout = wrappingText.Layout
 	function wrappingText:Layout(availableWidth, availableHeight, profile)
 		self:RegisterDrawingGroup()
 		availableWidth = math_min(availableWidth, 2147483647) -- if we allow math.huge, `glFont:WrapText()` will fail. 
@@ -176,7 +177,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local fontScaledSize = font:ScaledSize()
 		local glFont = font.glFont
 		if availableWidth == cachedAvailableWidth and availableHeight == cachedAvailableHeight and not stringChanged and fontScaledSize == cachedFontScaledSize and font.key == cachedFontKey then
-			return cachedWidth, cachedHeight
+			return self:Size()
 		end
 
 		if stringChanged then
@@ -193,8 +194,8 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local maxHeight = math_min(availableHeight, maxLines * trueLineHeight)
 
 		wrappedText, lineCount = glFont:WrapText(coloredString, availableWidth + 0.1, maxHeight, cachedFontScaledSize) -- Apparently this adds an extra character ("\r") even when line breaks already
-		cachedWidth = math_min(glFont:GetTextWidth(wrappedText) * cachedFontScaledSize, availableWidth)
-		cachedHeight = math_min(maxHeight, lineCount * trueLineHeight)
+		local width = math_min(glFont:GetTextWidth(wrappedText) * cachedFontScaledSize, availableWidth)
+		local height = math_min(maxHeight, lineCount * trueLineHeight)
 
 		local addedCharacterCount = 0
 		local removedSpacesCount = 0
@@ -236,14 +237,15 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		for i = removedSpacesCount + 2, #removedSpaces do
 			removedSpaces[i] = nil
 		end
-		
-		return cachedWidth, cachedHeight
-	end
-	
-	function wrappingText:Position(x, y)
-		cachedX = x
-		cachedY = y
 
+		_Layout(self, width, height)
+		
+		return width, height
+	end
+
+	local _Position = wrappingText.Position
+	function wrappingText:Position(x, y)
+		_Position(self, x, y)
 		Internal.activeTextGroup:AddElement(self)
 	end
 
@@ -255,22 +257,12 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		baseColor:RegisterDrawingGroup()
 		self:RegisterDrawingGroup()
 
+		local cachedX, cachedY = self:CachedPositionRemainingInLocalContext()
+		local cachedWidth, cachedHeight = self:Size()
+
 		-- height - 1 is because it appeared to be drawing 1 pixel too high - for the default font, at least. I haven't checked with any other font size yet.
 		-- I don't know what to do about text that's supposed to be centred vertically in a cell, because this method of drawing means the descender pushes the text up a bunch.
 		glFont:Print(wrappedText, cachedX, cachedY + cachedHeight - 1, font:ScaledSize(), "ao")
-	end
-
-	-- Returns the x,y coordinates provided in the last call of `wrappingText:Position(x, y)`
-	function wrappingText:CachedPosition()
-		return cachedX, cachedY
-	end
-	-- Returns the `wrappingText's` cached position and cached size.
-	function wrappingText:Geometry()
-		return cachedX, cachedY, cachedWidth, cachedHeight
-	end
-	-- Returns the width, height calculated in the last call of `wrappingText:Layout(availableWidth, availableHeight)`
-	function wrappingText:Size()
-		return cachedWidth, cachedHeight
 	end
 
 	return wrappingText

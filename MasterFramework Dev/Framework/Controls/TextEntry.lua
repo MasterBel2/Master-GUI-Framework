@@ -114,6 +114,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             
             -- TODO: selection matching, click & drag text if you drag where already selected??
             local _, _, _, shift = Spring_GetModKeyState()
+
             entry:MoveCursor(entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY), shift)
             
             entry:TakeFocus()
@@ -127,7 +128,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         function(responder, mouseX, mouseY)
             entry:MoveCursor(entry.text:CoordinateToCharacterRawIndex(mouseX, mouseY), true)
             
-            -- if framework.PointIsInRect(mouseX, mouseY, responder:Geometry()) then
+            -- if responder:ContainsAbsolutePoint(mouseX, mouseY) then
             --     selectedStroke.color = pressColor
             --     background.decorations[2] = selectedStroke
             -- elseif framework:FocusTarget() == entry then
@@ -138,7 +139,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             -- end
         end,
         function(responder, mouseX, mouseY)
-            if framework.PointIsInRect(mouseX, mouseY, responder:Geometry()) and framework:FocusTarget() == entry then
+            if responder:ContainsAbsolutePoint(mouseX, mouseY) and framework:FocusTarget() == entry then
                 background:SetDecorations(textEntryStyles.selectedBackgroundDecorations)
             else
                 background:SetDecorations(textEntryStyles.defaultBackgroundDecorations)
@@ -523,7 +524,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
             -- this will be drawn after the background but before text, because we don't have our own TextGroup
 
             local font = self.text._readOnly_font
-            local textX, textY, textWidth, textHeight = self.text:Geometry()
+            local textX, textY = self.text:CachedPositionTranslatedToContext(activeDrawingGroup)
+            local textWidth, textHeight = self.text:Size()
 
             local trueLineHeight = font.glFont.lineheight * font:ScaledSize()
 

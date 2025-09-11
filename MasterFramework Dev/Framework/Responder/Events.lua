@@ -14,7 +14,7 @@ function HighestResponderAtPoint(x, y, event)
 		local i = 0
 		while i <= #responders - 1 do
 			local responder = responders[#responders - i]
-			local success, pointIsContained = pcall(responder.ContainsPoint, responder, x, y)
+			local success, pointIsContained = pcall(responder.ContainsAbsolutePoint, responder, x, y)
 			if success then
 				if pointIsContained then
 					currentMatchingResponder = responder
@@ -45,21 +45,16 @@ function Internal.CheckElementUnderMouse(x, y)
 			local element = Internal.elements[key]
 			local primaryFrame = element.primaryFrame
 			if primaryFrame ~= nil then -- Check for pre-initialised elements.
-				local success, frameX, frameY, frameWidth, frameHeight = pcall(primaryFrame.Geometry, primaryFrame)
-				if not success then
-					-- frameX contains the error if this fails
-					Error("CheckUnderMouse", "Element: " .. key, "PrimaryFrame:Geometry", frameX)
+				local success, containsPoint = pcall(primaryFrame.ContainsAbsolutePoint, primaryFrame, x, y)
+				if success then
+					if containsPoint then
+						Internal.elementBelowMouse = element
+						return true
+					end
+				else
+					Error("CheckUnderMouse", "Element: " .. key, "PrimaryFrame:ContainsAbsolutePoint", containsPoint)
 					framework:RemoveElement(key)
 					break
-				end
-				if not (x and y and frameX and frameY and frameWidth and frameHeight) then
-					Error("CheckUnderMouse", "Element: " .. key, "PrimaryFrame:Geometry is incomplete: " .. (frameX or "nil") .. ", " .. (frameY or "nil") .. ", " .. (frameWidth or "nil") .. ", " .. (frameHeight or "nil"))
-					framework:RemoveElement(key)
-					break
-				end
-				if PointIsInRect(x, y, frameX, frameY, frameWidth, frameHeight) then
-					Internal.elementBelowMouse = element
-					return true
 				end
 			end
 		end
@@ -97,18 +92,13 @@ local function SearchDownResponderTree(responder, x, y, ...)
 	local childResponderCount = #responder.responders
 	for i = 0, childResponderCount - 1 do
 		local childResponder = responder.responders[childResponderCount - i]
-		local success, responderX, responderY, responderWidth, responderHeight = pcall(childResponder.Geometry, childResponder)
+		local success, containsPoint = pcall(childResponder.ContainsAbsolutePoint, childResponder, x, y)
 		if not success then
-			-- responderX contains the error if this fails
-			Error("SearchDownResponderTree", "childResponder:Geometry", responderX)
-			break
-		end
-		if not (responderX and responderY and responderWidth and responderHeight) then
-			Error("SearchDownResponderTree", "childResponder:Geometry is incomplete: " .. (responderX or "nil") .. ", " .. (responderY or "nil") .. ", " .. (responderWidth or "nil") .. ", " .. (responderHeight or "nil"), responder._debugTypeIdentifier or "nil", (responder._isDebugResponder and "true") or "false", (responder.noRect and "true") or "false")
+			Error("SearchDownResponderTree", "childResponder:ContainsAbsolutePoint", containsPoint)
 			break
 		end
 
-		if PointIsInRect(x, y, responderX, responderY, responderWidth, responderHeight) then
+		if containsPoint then
 			local favouredResponder = SearchDownResponderTree(childResponder, x, y, ...)
 			if favouredResponder then
 				return favouredResponder

@@ -39,9 +39,10 @@ function framework:MultiOptionBox(options, selectAction)
         anchor,
         function(responder, x, y, button)
             if button == 1 then
-                local responderX, responderY = responder:CachedPosition()
-                xOffset = x - responderX
-                yOffset = y - responderY
+                -- FIXME: Wait, we don't actually use these coordinates?
+                -- local responderX, responderY = responder:CachedPositionTranslatedToGlobalContext()
+                -- xOffset = x - responderX
+                -- yOffset = y - responderY
                 anchor:ShowMenu()
             end
             return true
