@@ -6,6 +6,7 @@ local type = Include.type
 local pairs = Include.pairs
 local ipairs = Include.ipairs
 local string = Include.string
+local error = Include.error
 local table_insert = Include.table.insert
 
 local Spring_GetTimer
@@ -195,7 +196,20 @@ function EnableDebugMode(target)
 
 						if temp[1].Position then
 							local _Position = temp[1].Position
-							temp[1].Position = function(...)
+							temp[1].Position = function(self, x, y)
+								if type(self) ~= "table" then
+									Log(temp[1]._debugTypeIdentifier .. ":Position", "Unique Identifier: " .. temp[1]._debugUniqueIdentifier)
+									error("erroneous argument: missing self!")
+								end
+								if not x then
+									Log(temp[1]._debugTypeIdentifier .. ":Position", "Unique Identifier: " .. temp[1]._debugUniqueIdentifier)
+									error("erroneous argument: x is nil!")
+								end
+								if not y then
+									Log(temp[1]._debugTypeIdentifier .. ":Position", "Unique Identifier: " .. temp[1]._debugUniqueIdentifier)
+									error("erroneous argument: y is nil!")
+								end
+
 								if not temp[1].laidOut then
 									-- local x = temp[1]._debug_mouseOverResponder.parent
 									-- local path = temp[1]._debugTypeIdentifier
@@ -220,12 +234,11 @@ function EnableDebugMode(target)
 									end
 								end
 
-								_Position(...)
+								_Position(self, x, y)
 
 								Internal.activeElement.activeDebugResponder = previousActiveDebugResponder
 
-								local args = { ... }
-								cachedX, cachedY = args[2], args[3]
+								cachedX, cachedY = x, y
 								table_insert(activeDrawingGroup.drawTargets, { Draw = function()
 									local drawingGroupOffsetX, drawingGroupOffsetY = activeDrawingGroup:AbsolutePosition()
 									framework.stroke.defaultBorder:Draw(dummyRect, cachedX + drawingGroupOffsetX, cachedY + drawingGroupOffsetY, cachedWidth, cachedHeight)
@@ -245,10 +258,30 @@ function EnableDebugMode(target)
 						if temp[1].Layout then
 							temp[1].laidOut = true
 							local _Layout = temp[1].Layout
-							temp[1].Layout = function(...)
+							temp[1].Layout = function(self, availableWidth, availableHeight)
+								if type(self) ~= "table" then
+									Log(temp[1]._debugTypeIdentifier .. ":Layout", "Unique Identifier: " .. temp[1]._debugUniqueIdentifier)
+									error("erroneous argument: missing self!")
+								end
+								if not availableWidth then
+									Log(temp[1]._debugTypeIdentifier .. ":Layout", "Unique Identifier: " .. temp[1]._debugUniqueIdentifier)
+									error("erroneous argument: availableWidth is nil!")
+								end
+								if not availableHeight then
+									Log(temp[1]._debugTypeIdentifier .. ":Layout", "Unique Identifier: " .. temp[1]._debugUniqueIdentifier)
+									error("erroneous argument: availableHeight is nil!")
+								end
 								activeDrawingGroup = framework.activeDrawingGroup or temp[1]
 								LogDrawCall(key .. ":Layout", false)
-								cachedWidth, cachedHeight = _Layout(...)
+								cachedWidth, cachedHeight = _Layout(self, availableWidth, availableHeight)
+								if not cachedWidth then
+									Log(temp[1]._debugTypeIdentifier .. ":Layout", "Unique Identifier: " .. temp[1]._debugUniqueIdentifier)
+									error("Erroneous return value: width is nil!")
+								end
+								if not cachedHeight then
+									Log(temp[1]._debugTypeIdentifier .. ":Layout", "Unique Identifier: " .. temp[1]._debugUniqueIdentifier)
+									error("Erroneous return value: height is nil!")
+								end
 								LogDrawCall(key .. ":Layout", true)
 								return cachedWidth, cachedHeight
 							end
