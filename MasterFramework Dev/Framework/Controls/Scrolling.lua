@@ -170,6 +170,7 @@ function framework:OffsettedViewport(body, mode)
 
     local _Layout = viewport.Layout
     function viewport:Layout(availableWidth, availableHeight)
+        self:RegisterDrawingGroup()
         cachedScrollbarThickness = scrollbarThickness()
         local _width, _height = _Layout(self, allowHorizontalScrolling and math.huge or availableWidth, allowVerticalScrolling and math.huge or availableHeight)
         self.contentWidth = _width
@@ -190,7 +191,6 @@ function framework:OffsettedViewport(body, mode)
     
     local _Position = viewport.Position
     function viewport:Position(x, y)
-        self:RegisterDrawingGroup()
         _x = x
         _y = y
 
