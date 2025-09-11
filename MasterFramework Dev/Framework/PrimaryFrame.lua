@@ -4,7 +4,7 @@ local nextID = 0
 function framework:PrimaryFrame(body)
 	local primaryFrame = self:GeometryTarget(body)
 
-	local _Layout = self.Layout
+	local _Layout = primaryFrame.Layout
 	function primaryFrame:Layout(availableWidth, availableHeight)
 		if not Internal.activeElement.primaryFrame then
 			Internal.activeElement.primaryFrame = self
