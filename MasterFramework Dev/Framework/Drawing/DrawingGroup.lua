@@ -196,7 +196,10 @@ function framework:DrawingGroup(body, disableDrawList)
             self.drawers = {}
             self.needsRedraw = false
 
+            local x, y = self:AbsolutePosition()
+            gl_Translate(x, y, 0)
             _Draw(self)
+            gl_Translate(-x, -y, 0)
 
             local childDrawingGroups = self.childDrawingGroups
             for i = 1, #childDrawingGroups do
