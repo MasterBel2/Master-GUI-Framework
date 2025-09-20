@@ -170,6 +170,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	function element:Draw()
 		startProfile(self.key)
 		Internal.activeElement = self
+		activeDrawingGroup = nil
 
 		startProfile(self.key .. ":UpdateLayout()")
 		local groupsNeedingLayout = self.groupsNeedingLayout
@@ -249,6 +250,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	element.layerRequest = layerRequest
 
 	Internal.activeElement = element
+	activeDrawingGroup = nil
 	local success, _error = pcall(element.drawingGroup.Layout, element.drawingGroup, viewportWidth, viewportHeight)
 	if not success then
 		Error("Element: " .. element.key, "drawingGroup:Layout(viewportWidth, viewportHeight)", _error)
