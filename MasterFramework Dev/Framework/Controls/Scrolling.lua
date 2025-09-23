@@ -194,8 +194,6 @@ function framework:OffsettedViewport(body, mode)
         _x = x
         _y = y
 
-        _Position(self, x - xOffset, y + yOffset + height - self.contentHeight)
-
         self:SetYOffset(math.max(
             math.min(
                 yOffset,
