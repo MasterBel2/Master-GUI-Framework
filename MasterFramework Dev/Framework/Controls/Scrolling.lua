@@ -243,9 +243,11 @@ function framework:OffsettedViewport(body, mode)
             clipY = clipY + cachedScrollbarThickness
         end
         
-        gl.Scissor(_x, clipY, clipWidth, clipHeight)
-        _Draw(self)
-        gl.Scissor(false)
+        if clipWidth > 0 and clipHeight > 0 then
+            gl.Scissor(_x, clipY, clipWidth, clipHeight)
+            _Draw(self)
+            gl.Scissor(false)
+        end
     end
 
     return viewport
