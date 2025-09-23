@@ -54,10 +54,9 @@ end
 	                              This also checks whether the component is still registered with the `DrawingGroup`s, and removes any `DrawingGroup`s that the component is no longer a member of.
 ]]
 function Component(hasLayout, draws)
-	local drawingGroups = {}
-
 	local component = {}
 	local continuouslyUpdating = false
+	local drawingGroup
 
 	function component:RegisterDrawingGroup()
 		if not activeDrawingGroup then return end
@@ -76,32 +75,30 @@ function Component(hasLayout, draws)
 			activeDrawingGroup.layoutComponents[self] = true
 		end
 
-		drawingGroups[activeDrawingGroup] = true
+		drawingGroup = activeDrawingGroup
+	end
+
+	function component:RegisteredDrawingGroup()
+		return drawingGroup
 	end
 
 	if hasLayout then
 		function component:NeedsLayout()
-			for drawingGroup, _ in pairs(drawingGroups) do
-				if not drawingGroup:LayoutUpdated(self) then
-					drawingGroups[drawingGroup] = nil
-				end
+			if drawingGroup and not drawingGroup:LayoutUpdated(self) then
+				drawingGroup = nil
 			end
 		end
 		function component:NeedsPosition()
-			for drawingGroup, _ in pairs(drawingGroups) do
-				if not drawingGroup:PositionsUpdated(self) then
-					drawingGroups[drawingGroup] = nil
-				end
+			if drawingGroup and not drawingGroup:PositionsUpdated(self) then
+				drawingGroup = nil
 			end
 		end
 	end
 
 	if draws then
 		function component:NeedsRedraw()
-			for drawingGroup, _ in pairs(drawingGroups) do
-				if not drawingGroup:DrawerUpdated(self) then
-					drawingGroups[drawingGroup] = nil
-				end
+			if drawingGroup and not drawingGroup:DrawerUpdated(self) then
+				drawingGroup = nil
 			end
 		end
 
@@ -112,10 +109,8 @@ function Component(hasLayout, draws)
 			if not continuouslyUpdating then
 				continuouslyUpdating = true
 
-				for drawingGroup, _ in pairs(drawingGroups) do
-					if not drawingGroup:DrawerWillContinuouslyUpdate(self) then
-						drawingGroups[drawingGroup] = nil
-					end
+				if drawingGroup and not drawingGroup:DrawerWillContinuouslyUpdate(self) then
+					drawingGroup = nil
 				end
 			end
 		end
@@ -127,10 +122,8 @@ function Component(hasLayout, draws)
 			if continuouslyUpdating then
 				continuouslyUpdating = false
 
-				for drawingGroup, _ in pairs(drawingGroups) do
-					if not drawingGroup:DrawerWillNotContinuouslyUpdate(self) then
-						drawingGroups[drawingGroup] = nil
-					end
+				if drawingGroup and not drawingGroup:DrawerWillNotContinuouslyUpdate(self) then
+					drawingGroup = nil
 				end
 			end
 		end
