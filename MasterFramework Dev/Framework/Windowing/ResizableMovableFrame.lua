@@ -58,8 +58,6 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         ),
     {})
 
-    frame.background = highlightWhenDraggable
-
     function frame:DebugInfo()
         return {
             width = width,
@@ -205,7 +203,6 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         self:RegisterDrawingGroup()
         local currentScale = scale.RawValue()
         if currentScale ~= cachedScale then
-            Log("Updating scale!")
             scaleTranslation = currentScale / cachedScale
             width = width * scaleTranslation
             height = height * scaleTranslation

@@ -53,7 +53,5 @@ function framework:Button(visual, action)
         responder:Position(...)
     end
 
-    button.background = background
-
     return button
 end

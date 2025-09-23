@@ -121,16 +121,6 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
             framePosition.xOffset = xOffset / scale.RawValue()
             framePosition.yOffset = yOffset / scale.RawValue()
             ConfigData.framePositionCache[key] = framePosition
-
-            -- Log("cachedAvailableWidth:" .. cachedAvailableWidth)
-            -- Log("cachedAvailableHeight:" .. cachedAvailableHeight)
-            -- Log("xOffset:" .. ConfigData.framePositionCache[key].xOffset)
-            -- Log("yOffset:" .. ConfigData.framePositionCache[key].yOffset)
-            -- Log("newXOffset:" .. newXOffset)
-            -- Log("newYOffset:" .. newYOffset)
-            -- Log("x:" .. x)
-            -- Log("y:" .. y)
-            -- Log("scale.RawValue():" .. scale.RawValue())
         end
     end
 
