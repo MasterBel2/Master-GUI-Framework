@@ -28,11 +28,11 @@ function framework:Dimension(generator, ...)
 
 			for drawingGroup, pass in pairs(dimension.registeredDrawGroups) do
 				if pass == DRAWING_GROUP_PASS.LAYOUT then
-					drawingGroup:LayoutUpdated()
+					drawingGroup:LayoutUpdated(dimension)
 				elseif pass == DRAWING_GROUP_PASS.POSITION then
-					drawingGroup:PositionsUpdated()
+					drawingGroup:PositionsUpdated(dimension)
 				elseif pass == DRAWING_GROUP_PASS.DRAW then
-					drawingGroup:DrawerUpdated()
+					drawingGroup:DrawerUpdated(dimension)
 				end
 			end
 		end
@@ -44,9 +44,9 @@ function framework:Dimension(generator, ...)
 		if activeDrawingGroup then
 			dimension.registeredDrawGroups[activeDrawingGroup] = activeDrawingGroup.pass
 			if activeDrawingGroup.pass == DRAWING_GROUP_PASS.DRAW then
-				activeDrawingGroup.drawers[self] = true
+				activeDrawingGroup.drawers[dimension] = true
 			else
-				activeDrawingGroup.layoutComponents[self] = true
+				activeDrawingGroup.layoutComponents[dimension] = true
 			end
 		end
 	end
