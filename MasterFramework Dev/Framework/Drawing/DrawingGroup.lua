@@ -247,6 +247,10 @@ function framework:DrawingGroup(body, disableDrawList)
         activeDrawingGroup = previousDrawingGroup
     end
 
+    function drawingGroup:CachedSize()
+        return cachedWidth, cachedHeight
+    end
+
     function drawingGroup:LayoutUpdated(layoutComponent)
         if self.layoutComponents[layoutComponent] then
             element.groupsNeedingLayout[self] = true
