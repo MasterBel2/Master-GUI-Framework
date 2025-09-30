@@ -94,8 +94,6 @@ function Internal.updateScreenEnvironment(newWidth, newHeight, newScale)
 	relativeScaleFactor = newScale
 	combinedScaleFactor = min(viewportWidth / 1920, viewportHeight / 1080) * relativeScaleFactor
 	
-	viewportDidChange = 1
-
 	for _, font in pairs(Internal.fonts) do
 		font:Scale(combinedScaleFactor)
 	end

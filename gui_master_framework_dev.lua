@@ -382,7 +382,6 @@ function widget:DrawScreen()
 
 		index = index - 1
 	end
-	framework.viewportDidChange = false
 	if frameworkInternal.debugMode.draw then
 		-- framework.Log("####")
 		-- for caller, callCount in pairs(frameworkInternal.drawCalls) do
