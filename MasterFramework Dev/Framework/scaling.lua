@@ -42,7 +42,8 @@ function framework:Dimension(generator, ...)
 
 	local function Register()
 		if activeDrawingGroup then
-			dimension.registeredDrawGroups[activeDrawingGroup] = activeDrawingGroup.pass
+			-- Each pass triggers every pass after it, so we only have to record the first.
+			dimension.registeredDrawGroups[activeDrawingGroup] = dimension.registeredDrawGroups[activeDrawingGroup] or activeDrawingGroup.pass
 			if activeDrawingGroup.pass == DRAWING_GROUP_PASS.DRAW then
 				activeDrawingGroup.drawers[dimension] = true
 			else
