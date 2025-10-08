@@ -70,6 +70,8 @@ local framework = {
     compatabilityVersion = compatabilityVersion,
 	events = { mousePress = "mousePress", mouseWheel = "mouseWheel", mouseOver = "mouseOver", tooltip = "tooltip", _debug_mouseOver = "_debug_mouseOver" }, -- mouseMove = "mouseMove", mouseRelease = "mouseRelease" (Handled differently to other events – see dragListeners)
 }
+local isAbove
+local isAboveChecked = false
 
 function widget:SetConfigData(data)
 	frameworkInternal.ConfigData = data or {}
@@ -144,6 +146,7 @@ function widget:Initialize()
 		for i = 1, #callInNames do
 			local callIn = widget[callInNames[i]]
 			widget[callInNames[i]] = function(...)
+				if callInNames[i] == "IsAbove" and isAboveChecked then return callIn(...) end
 				framework.startProfile(callInNames[i])
 				local temp = { callIn(...) }
 				framework.endProfile(callInNames[i])
@@ -259,10 +262,9 @@ function widget:MouseWheel(up, value)
 	end
 end
 
-local isAbove
-local isAboveChecked = false
-
 function widget:IsAbove(x, y)
+	-- BAR's widget handler calls this a second time because we have a tooltip.
+	-- That messes with profiling!
 	if isAboveChecked then return frameworkInternal.elementBelowMouse ~= nil end
 
 	if frameworkInternal.debugMode.draw then
