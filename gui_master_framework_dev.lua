@@ -293,68 +293,65 @@ function widget:IsAbove(x, y)
 		local previousResponder = frameworkInternal.mouseOverResponder
 		frameworkInternal.mouseOverResponder = responder
 		local highestCommonResponder
-		do
-			local _responder = responder
-			while _responder do
-				if _responder.mouseIsOver then
-					highestCommonResponder = _responder
+
+		-- 
+		local _responder = responder
+		while _responder do
+			if _responder.mouseIsOver then
+				highestCommonResponder = _responder
+				break
+			else
+				_responder.mouseIsOver = true
+				_responder = responder.parent
+			end
+		end
+		
+		-- Remove isOver status from previous responders
+		_responder = previousResponder
+		while _responder and _responder ~= highestCommonResponder do
+			_responder.mouseIsOver = false
+			_responder = _responder.parent
+		end
+
+		-- Call MouseLeave on responders that left
+		_responder = previousResponder
+		while _responder and _responder ~= highestCommonResponder do
+			if _responder.MouseLeave then
+				local success, maybeError = pcall(_responder.MouseLeave, _responder)
+				if not success then
+					framework.Error("IsAbove", "responder:MouseLeave", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+					framework:RemoveElement(element.key)
 					break
-				else
-					_responder.mouseIsOver = true
-					_responder = responder.parent
 				end
 			end
+			_responder = _responder.parent
 		end
-		do
-			local _responder = previousResponder
-			while _responder and _responder ~= highestCommonResponder do
-				_responder.mouseIsOver = false
-				_responder = _responder.parent
-			end
-		end
-		do
-			local _responder = previousResponder
-			while _responder and _responder ~= highestCommonResponder do
-					if _responder.MouseLeave then
-						local success, maybeError = pcall(_responder.MouseLeave, _responder)
-						if not success then
-							framework.Error("IsAbove", "responder:MouseLeave", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
-							framework:RemoveElement(element.key)
-							break
-						end
-					end
-				-- end
-				_responder = _responder.parent
-			end
-		end
-		do
-			local _responder = responder
-			while _responder and _responder ~= highestCommonResponder do
-				if _responder.MouseEnter then
-					local success, maybeError = pcall(_responder.MouseEnter, _responder)
-					if not success then
-						framework.Error("IsAbove", "responder:MouseEnter", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
-						framework:RemoveElement(element.key)
-						break
-					end
+
+		-- Call MouseEnter on all responders that didn't have mouseOver before. 
+		_responder = responder
+		while _responder and _responder ~= highestCommonResponder do
+			if _responder.MouseEnter then
+				local success, maybeError = pcall(_responder.MouseEnter, _responder)
+				if not success then
+					framework.Error("IsAbove", "responder:MouseEnter", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+					framework:RemoveElement(element.key)
+					break
 				end
-				_responder = _responder.parent
 			end
+			_responder = _responder.parent
 		end
 	end
 
-	do
-		local _responder = responder
-		while _responder do
-			local success, maybeError = pcall(_responder.action, _responder, x, y)
-			if success then
-				_responder = _responder.parent
-			else
-				framework.Error("IsAbove", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
-				framework:RemoveElement(element.key)
-				break
-			end
-			
+	-- Call action on all responders under mouse
+	local _responder = responder
+	while _responder do
+		local success, maybeError = pcall(_responder.action, _responder, x, y)
+		if success then
+			_responder = _responder.parent
+		else
+			framework.Error("IsAbove", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+			framework:RemoveElement(element.key)
+			break
 		end
 	end
 
