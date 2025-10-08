@@ -290,6 +290,14 @@ function widget:IsAbove(x, y)
 				break
 			else
 				_responder.mouseIsOver = true
+				if _responder.MouseEnter then
+					local success, maybeError = pcall(_responder.MouseEnter, _responder)
+					if not success then
+						framework.Error("IsAbove", "responder:MouseEnter", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+						framework:RemoveElement(element.key)
+						break
+					end
+				end
 				_responder = responder.parent
 			end
 		end
@@ -298,30 +306,10 @@ function widget:IsAbove(x, y)
 		_responder = previousResponder
 		while _responder and _responder ~= highestCommonResponder do
 			_responder.mouseIsOver = false
-			_responder = _responder.parent
-		end
-
-		-- Call MouseLeave on responders that left
-		_responder = previousResponder
-		while _responder and _responder ~= highestCommonResponder do
 			if _responder.MouseLeave then
 				local success, maybeError = pcall(_responder.MouseLeave, _responder)
 				if not success then
 					framework.Error("IsAbove", "responder:MouseLeave", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
-					framework:RemoveElement(element.key)
-					break
-				end
-			end
-			_responder = _responder.parent
-		end
-
-		-- Call MouseEnter on all responders that didn't have mouseOver before. 
-		_responder = responder
-		while _responder and _responder ~= highestCommonResponder do
-			if _responder.MouseEnter then
-				local success, maybeError = pcall(_responder.MouseEnter, _responder)
-				if not success then
-					framework.Error("IsAbove", "responder:MouseEnter", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
 					framework:RemoveElement(element.key)
 					break
 				end
