@@ -155,6 +155,33 @@ function widget:Initialize()
 		end
 	end
 
+	if frameworkInternal.debugMode.draw then
+		local _IsAbove = widget.IsAbove
+		widget.IsAbove = function(self, x, y)
+			if isAboveChecked then return isAbove end  
+			if frameworkInternal.debugMode.draw then
+				frameworkInternal.DebugInfo.elementBelowMouse = {}
+				for _, element in pairs(frameworkInternal.elements) do
+					frameworkInternal.SearchDownResponderTree(element.activeDebugResponder, x, y)
+				end
+			end
+			return _IsAbove(self, x, y)
+		end
+
+		local _DrawScreen = widget.DrawScreen
+		widget.DrawScreen = function(...)
+			_DrawScreen(...)
+			if frameworkInternal.debugMode.draw then
+				-- framework.Log("####")
+				-- for caller, callCount in pairs(frameworkInternal.drawCalls) do
+				-- 	framework.Log(caller .. ": " .. callCount)
+				-- end
+				frameworkInternal.drawCalls = {}
+			end
+		end
+
+	end
+
     framework.Internal = nil
     framework.Include = nil
 
@@ -267,13 +294,6 @@ function widget:IsAbove(x, y)
 	-- That messes with profiling!
 	if isAboveChecked then return frameworkInternal.elementBelowMouse ~= nil end
 
-	if frameworkInternal.debugMode.draw then
-		frameworkInternal.DebugInfo.elementBelowMouse = {}
-		for _, element in pairs(frameworkInternal.elements) do
-			frameworkInternal.SearchDownResponderTree(element.activeDebugResponder, x, y)
-		end
-	end
-
 	local element, responder = framework.HighestResponderAtPoint(x, y, framework.events.mouseOver)
 	frameworkInternal.elementBelowMouse = element
 
@@ -352,13 +372,6 @@ function widget:DrawScreen()
 		frameworkInternal.elements[key]:Draw()
 
 		index = index - 1
-	end
-	if frameworkInternal.debugMode.draw then
-		-- framework.Log("####")
-		-- for caller, callCount in pairs(frameworkInternal.drawCalls) do
-		-- 	framework.Log(caller .. ": " .. callCount)
-		-- end
-		frameworkInternal.drawCalls = {}
 	end
 end
 
