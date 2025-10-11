@@ -5,8 +5,8 @@ local pairs = Include.pairs
 local Spring_Echo = Include.Spring.Echo
 
 function HighestResponderAtPoint(x, y, event)
-	for _, index in ipairs(Internal.elementOrder) do
-		local element = Internal.elements[index]
+	for j = 1, #Internal.elementOrder do
+		local element = Internal.elements[Internal.elementOrder[j]]
 		local responders = element.drawingGroup.responderCache[event].responders
 		
 		local currentMatchingResponder
