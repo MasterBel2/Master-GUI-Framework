@@ -107,16 +107,13 @@ function framework:DrawingGroup(body, disableDrawList)
     end
 
     function drawingGroup:UpdateLayout(calledByParent)
-        if not cachedAvailableWidth or not cachedAvailableHeight then
-            parentDrawingGroup:UpdateLayout()
-        end
-
         element.groupsNeedingLayout[self] = nil
-        self.needsRedraw = true
+
         self.dimensions = {}
         self.layoutComponents = {}
         self.childDrawingGroups = {}
 
+        -- This indirectly triggers self.needsRedraw
         element.groupsNeedingPosition[self] = true
 
         local previousDrawingGroup = activeDrawingGroup
@@ -136,10 +133,6 @@ function framework:DrawingGroup(body, disableDrawList)
 
     local cachedX, cachedY
     function drawingGroup:UpdatePosition()
-        if not cachedX or not cachedY then
-            parentDrawingGroup:UpdatePosition()
-        end
-
         element.groupsNeedingPosition[self] = nil
 
         self.needsRedraw = true
