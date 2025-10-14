@@ -40,7 +40,6 @@ end
 -- Finds the topmost element whose PrimaryFrame contains the given point.
 function Internal.CheckElementUnderMouse(x, y)
 	if not Internal.hasCheckedElementBelowMouse then
-		startProfile("MasterFramework:CheckUnderMouse")
 		for index = 1, #Internal.elementOrder do
 			local element = Internal.elements[Internal.elementOrder[index]]
 			local primaryFrame = element.primaryFrame
@@ -58,7 +57,6 @@ function Internal.CheckElementUnderMouse(x, y)
 				end
 			end
 		end
-		endProfile("MasterFramework:CheckUnderMouse")
 	end
 
 	return Internal.elementBelowMouse ~= nil

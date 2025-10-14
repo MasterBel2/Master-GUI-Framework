@@ -172,7 +172,6 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		Internal.activeElement = self
 		activeDrawingGroup = nil
 
-		startProfile(self.key .. ":UpdateLayout()")
 		local groupsNeedingLayout = self.groupsNeedingLayout
 		if next(groupsNeedingLayout) then
 			self.groupsNeedingLayout = {}
@@ -184,9 +183,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 				end
 			end
 		end
-		endProfile(self.key .. ":UpdateLayout()")
 
-		startProfile(self.key .. ":UpdatePosition()")
 		local groupsNeedingPosition = self.groupsNeedingPosition
 		if next(groupsNeedingPosition) then
 			self.groupsNeedingPosition = {}
@@ -198,7 +195,6 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 				end
 			end
 		end
-		endProfile(self.key .. ":UpdatePosition()")
 
 		local success, _error = pcall(drawingGroup.Draw, drawingGroup, 0, 0)
 		if not success then
