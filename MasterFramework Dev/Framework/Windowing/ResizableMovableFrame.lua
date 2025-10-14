@@ -179,8 +179,6 @@ function framework:ResizableMovableFrame(key, child, defaultX, defaultY, default
         local control = {}
 
         function control:Layout(availableWidth, availableHeight)
-            if width ~= width then width = defaultWidth end
-            if height ~= height then height = defaultHeight end
             width, height = child:Layout(math.min(width, availableWidth), math.min(height, availableHeight))
             if key then
                 ConfigData.frameSizeCache[key].width = width / cachedScale

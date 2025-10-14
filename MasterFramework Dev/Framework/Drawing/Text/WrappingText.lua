@@ -4,7 +4,6 @@ local math_huge = Include.math.huge
 local math_max = Include.math.max
 local math_min = Include.math.min
 local table = Include.table
-local ipairs = Include.ipairs
 local Internal = Internal
 
 -- Automatically wrapping text. 

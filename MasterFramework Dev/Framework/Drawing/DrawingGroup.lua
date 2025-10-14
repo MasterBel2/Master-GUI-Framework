@@ -216,20 +216,8 @@ function framework:DrawingGroup(body, disableDrawList)
                 self.drawers = {}
                 self.needsRedraw = false
 
-                -- if Internal.debugMode.general then
-                --     Log("Recompiling drawlist for (" .. self._debugUniqueIdentifier .. ") " .. self._debugTypeIdentifier .. "(" .. os_clock() .. ")" .. tostring(not drawList) .. ", " .. tostring(self.needsRedraw))
-                --     recalculatingRasterizer = true
-                --     if framesRedrawnInARow > 0 then
-                --         Log("Recompiling drawlist for (" .. self._debugUniqueIdentifier .. ") " .. self._debugTypeIdentifier ..  " " .. framesRedrawnInARow .. " frame(s) in a row")
-                --     end
-                -- end
-
                 gl_DeleteList(drawList)
                 drawList = gl_CreateList(_Draw, self)
-                
-                -- framesRedrawnInARow = framesRedrawnInARow + 1
-            -- else
-                -- framesRedrawnInARow = 0
             end
 
             local x, y = self:AbsolutePosition()
