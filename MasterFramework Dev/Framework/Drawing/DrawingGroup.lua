@@ -72,6 +72,7 @@ function framework:DrawingGroup(body, disableDrawList)
 
     local element
     local parentDrawingGroup
+    local parentX, parentY = 0, 0
 
     local responderCache = {}
     drawingGroup.responderCache = responderCache
@@ -151,6 +152,11 @@ function framework:DrawingGroup(body, disableDrawList)
         cachedX = x
         cachedY = y
 
+        local childDrawingGroups = self.childDrawingGroups
+        for i = 1, #childDrawingGroups do
+            childDrawingGroups[i]:SetParentGroupPosition(x + parentX, y + parentY)
+        end
+
         if element.groupsNeedingPosition[self] then
             self:UpdatePosition()
         end
@@ -165,11 +171,16 @@ function framework:DrawingGroup(body, disableDrawList)
 		end
     end
 
-    function drawingGroup:AbsolutePosition()
-        local parentX, parentY = 0,0
-        if parentDrawingGroup then
-            parentX, parentY = parentDrawingGroup:AbsolutePosition()
+    function drawingGroup:SetParentGroupPosition(x, y)
+        parentX = x
+        parentY = y
+
+        local childDrawingGroups = self.childDrawingGroups
+        for i = 1, #childDrawingGroups do
+            childDrawingGroups[i]:SetParentGroupPosition(cachedX + x, cachedY + y)
         end
+    end
+    function drawingGroup:AbsolutePosition()
         return cachedX + parentX, cachedY + parentY
     end
 
