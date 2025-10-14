@@ -152,13 +152,13 @@ function framework:DrawingGroup(body, disableDrawList)
         cachedX = x
         cachedY = y
 
+        if element.groupsNeedingPosition[self] then
+            self:UpdatePosition()
+        end
+
         local childDrawingGroups = self.childDrawingGroups
         for i = 1, #childDrawingGroups do
             childDrawingGroups[i]:SetParentGroupPosition(x + parentX, y + parentY)
-        end
-
-        if element.groupsNeedingPosition[self] then
-            self:UpdatePosition()
         end
 
         for _, event in pairs(events) do
