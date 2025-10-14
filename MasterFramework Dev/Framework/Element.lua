@@ -6,6 +6,7 @@ local clear = Include.clear
 local pcall = Include.pcall
 local Internal = Internal
 local type = Include.type
+local next = Include.next
 local Spring_Echo = Include.Spring.Echo
 
 ------------------------------------------------------------------------------------------------------------
@@ -173,24 +174,28 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 
 		startProfile(self.key .. ":UpdateLayout()")
 		local groupsNeedingLayout = self.groupsNeedingLayout
-		self.groupsNeedingLayout = {}
-		for drawingGroup, _ in pairs(groupsNeedingLayout) do
-			local success, _error = pcall(drawingGroup.UpdateLayout, drawingGroup)
-			if not success then
-				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:UpdateLayout", _error)
-				framework:RemoveElement(self.key)
+		if next(groupsNeedingLayout) then
+			self.groupsNeedingLayout = {}
+			for drawingGroup, _ in pairs(groupsNeedingLayout) do
+				local success, _error = pcall(drawingGroup.UpdateLayout, drawingGroup)
+				if not success then
+					Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:UpdateLayout", _error)
+					framework:RemoveElement(self.key)
+				end
 			end
 		end
 		endProfile(self.key .. ":UpdateLayout()")
 
 		startProfile(self.key .. ":UpdatePosition()")
 		local groupsNeedingPosition = self.groupsNeedingPosition
-		self.groupsNeedingPosition = {}
-		for drawingGroup, _ in pairs(groupsNeedingPosition) do
-			local success, _error = pcall(drawingGroup.UpdatePosition, drawingGroup)
-			if not success then
-				Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:UpdatePosition", _error)
-				framework:RemoveElement(self.key)
+		if next(groupsNeedingPosition) then
+			self.groupsNeedingPosition = {}
+			for drawingGroup, _ in pairs(groupsNeedingPosition) do
+				local success, _error = pcall(drawingGroup.UpdatePosition, drawingGroup)
+				if not success then
+					Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:UpdatePosition", _error)
+					framework:RemoveElement(self.key)
+				end
 			end
 		end
 		endProfile(self.key .. ":UpdatePosition()")
