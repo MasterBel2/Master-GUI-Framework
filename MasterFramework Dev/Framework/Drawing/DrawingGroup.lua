@@ -195,20 +195,17 @@ function framework:DrawingGroup(body, disableDrawList)
         local previousDrawingGroup = activeDrawingGroup
         activeDrawingGroup = self
         self.pass = DRAWING_GROUP_PASS_DRAW
+        
+        local x, y = self:AbsolutePosition()
+        if (x ~= 0) or (y ~= 0) then
+            gl_Translate(x, y, 0)
+        end
 
         if self.disableDrawList or next(self.continuouslyUpdatingDrawers) then
             self.drawers = {}
             self.needsRedraw = false
 
-            local x, y = self:AbsolutePosition()
-            gl_Translate(x, y, 0)
             _Draw(self)
-            gl_Translate(-x, -y, 0)
-
-            local childDrawingGroups = self.childDrawingGroups
-            for i = 1, #childDrawingGroups do
-                childDrawingGroups[i]:Draw()
-            end
 
             for drawer, _ in pairs(self.continuouslyUpdatingDrawers) do
                 if not self.drawers[drawer] then
@@ -224,17 +221,18 @@ function framework:DrawingGroup(body, disableDrawList)
                 drawList = gl_CreateList(_Draw, self)
             end
 
-            local x, y = self:AbsolutePosition()
-            gl_Translate(x, y, 0)
             gl_CallList(drawList)
-            gl_Translate(-x, -y, 0)
-
-            local childDrawingGroups = self.childDrawingGroups
-            for i = 1, #childDrawingGroups do
-                childDrawingGroups[i]:Draw()
-            end
+            
         end
-
+        if (x ~= 0) or (y ~= 0) then
+            gl_Translate(-x, -y, 0)
+        end
+        
+        local childDrawingGroups = self.childDrawingGroups
+        for i = 1, #childDrawingGroups do
+            childDrawingGroups[i]:Draw()
+        end
+        
         self.pass = nil
         activeDrawingGroup = previousDrawingGroup
     end
