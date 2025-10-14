@@ -41,8 +41,8 @@ end
 function Internal.CheckElementUnderMouse(x, y)
 	if not Internal.hasCheckedElementBelowMouse then
 		startProfile("MasterFramework:CheckUnderMouse")
-		for _, key in ipairs(Internal.elementOrder) do
-			local element = Internal.elements[key]
+		for index = 1, #Internal.elementOrder do
+			local element = Internal.elements[Internal.elementOrder[index]]
 			local primaryFrame = element.primaryFrame
 			if primaryFrame ~= nil then -- Check for pre-initialised elements.
 				local success, containsPoint = pcall(primaryFrame.ContainsAbsolutePoint, primaryFrame, x, y)
