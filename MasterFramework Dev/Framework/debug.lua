@@ -126,6 +126,28 @@ function EnableDebugMode(target)
 
 	if not general then return end
 
+	local _InsertElement = framework.InsertElement
+	framework.InsertElement = function(...)
+		local key, element = _InsertElement(...)
+		local _Draw = element.Draw
+		
+		element.Draw = function(...)
+			startProfile(key)
+			_Draw(...)
+			endProfile(key)
+		end
+		
+		local drawProfileKey = key .. ":Draw()"
+		local _drawingGroup_Draw = element.drawingGroup.Draw
+		element.drawingGroup.Draw = function(...)
+			startProfile(drawProfileKey)
+			_drawingGroup_Draw(...)
+			endProfile(drawProfileKey)
+		end
+
+		return key, element
+	end
+
 	local dummyRect
 	if draw then
 		dummyRect = { cornerRadius = function() return 0 end }

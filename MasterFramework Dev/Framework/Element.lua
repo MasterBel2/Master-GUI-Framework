@@ -168,7 +168,6 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	element.drawingGroup = drawingGroup
 
 	function element:Draw()
-		startProfile(self.key)
 		Internal.activeElement = self
 		activeDrawingGroup = nil
 
@@ -196,15 +195,11 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		end
 		endProfile(self.key .. ":UpdatePosition()")
 
-		startProfile(self.key .. ":Draw()")
 		local success, _error = pcall(drawingGroup.Draw, drawingGroup, 0, 0)
 		if not success then
 			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Draw", _error)
 			framework:RemoveElement(self.key)
 		end
-		endProfile(self.key .. ":Draw()")
-
-		endProfile(self.key)
 	end
 
 	local nullFunction = allowInteractionBehind and nullFunctionFalse or nullFunctionTrue
