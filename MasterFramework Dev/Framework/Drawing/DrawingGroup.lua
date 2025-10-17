@@ -73,6 +73,7 @@ function framework:DrawingGroup(body, disableDrawList)
     local element
     local parentDrawingGroup
     local parentX, parentY = 0, 0
+    local absoluteX, absoluteY = 0, 0
 
     local responderCache = {}
     drawingGroup.responderCache = responderCache
@@ -113,6 +114,7 @@ function framework:DrawingGroup(body, disableDrawList)
         self.dimensions = {}
         self.layoutComponents = {}
         self.childDrawingGroups = {}
+        self.childGeometryTargets = {}
 
         -- This indirectly triggers self.needsRedraw
         element.groupsNeedingPosition[self] = true
@@ -151,6 +153,8 @@ function framework:DrawingGroup(body, disableDrawList)
     function drawingGroup:Position(x, y)
         cachedX = x
         cachedY = y
+        absoluteX = x + parentX
+        absoluteY = y + parentY
 
         if element.groupsNeedingPosition[self] then
             self:UpdatePosition()
@@ -158,7 +162,11 @@ function framework:DrawingGroup(body, disableDrawList)
 
         local childDrawingGroups = self.childDrawingGroups
         for i = 1, #childDrawingGroups do
-            childDrawingGroups[i]:SetParentGroupPosition(x + parentX, y + parentY)
+            childDrawingGroups[i]:SetParentGroupPosition(absoluteX, absoluteY)
+        end
+        local childGeometryTargets = self.childGeometryTargets
+        for i = 1, #childGeometryTargets do
+            childGeometryTargets[i]:SetParentGroupPosition(absoluteX, absoluteY)
         end
 
         for _, event in pairs(events) do
@@ -172,16 +180,24 @@ function framework:DrawingGroup(body, disableDrawList)
     end
 
     function drawingGroup:SetParentGroupPosition(x, y)
+        if parentX == x and parentY == y then return end 
         parentX = x
         parentY = y
 
+        absoluteX = cachedX + x
+        absoluteY = cachedY + y
+
         local childDrawingGroups = self.childDrawingGroups
         for i = 1, #childDrawingGroups do
-            childDrawingGroups[i]:SetParentGroupPosition(cachedX + x, cachedY + y)
+            childDrawingGroups[i]:SetParentGroupPosition(absoluteX, absoluteY)
+        end
+        local childGeometryTargets = self.childGeometryTargets
+        for i = 1, #childGeometryTargets do
+            childGeometryTargets[i]:SetParentGroupPosition(absoluteX, absoluteY)
         end
     end
     function drawingGroup:AbsolutePosition()
-        return cachedX + parentX, cachedY + parentY
+        return absoluteX, absoluteY
     end
 
     local function _Draw(self)
@@ -196,9 +212,8 @@ function framework:DrawingGroup(body, disableDrawList)
         activeDrawingGroup = self
         self.pass = DRAWING_GROUP_PASS_DRAW
         
-        local x, y = self:AbsolutePosition()
-        if (x ~= 0) or (y ~= 0) then
-            gl_Translate(x, y, 0)
+        if (absoluteX ~= 0) or (absoluteY ~= 0) then
+            gl_Translate(absoluteX, absoluteY, 0)
         end
 
         if self.disableDrawList or next(self.continuouslyUpdatingDrawers) then
@@ -224,8 +239,8 @@ function framework:DrawingGroup(body, disableDrawList)
             gl_CallList(drawList)
             
         end
-        if (x ~= 0) or (y ~= 0) then
-            gl_Translate(-x, -y, 0)
+        if (absoluteX ~= 0) or (absoluteY ~= 0) then
+            gl_Translate(-absoluteX, -absoluteY, 0)
         end
         
         local childDrawingGroups = self.childDrawingGroups

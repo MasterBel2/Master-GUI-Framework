@@ -1,17 +1,25 @@
 -- An interface element that caches the size and position of its body, without impacting layout or drawing.
 function framework:GeometryTarget(body)
     local geometryTarget = {}
+    local localXOffset, localYOffset = 0, 0
+    local rectX, rectY, rectX2, rectY2 = 0, 0, 0, 0
     local width, height, cachedX, cachedY
     local drawingGroup
 
     function geometryTarget:Layout(...)
         drawingGroup = activeDrawingGroup
+        drawingGroup.childGeometryTargets[#drawingGroup.childGeometryTargets + 1] = self
         width, height = body:Layout(...)
         return width, height
     end
     function geometryTarget:Position(x, y)
         cachedX = x
         cachedY = y
+
+        rectX = cachedX + localXOffset
+        rectY = cachedY + localYOffset
+        rectX2 = rectX + width
+        rectY2 = rectY + height
         body:Position(x, y)
     end
 
@@ -37,8 +45,6 @@ function framework:GeometryTarget(body)
         or when dealing with the coordinates passed through the responder chain.
     ]]
     function geometryTarget:CachedPositionTranslatedToGlobalContext()
-        local localXOffset, localYOffset = drawingGroup:AbsolutePosition()
-
         return (cachedX or 0) + localXOffset, (cachedY or 0) + localYOffset
     end
 
@@ -77,9 +83,15 @@ function framework:GeometryTarget(body)
         to `AbsoluteOffsetFromTopLeft` to position an element's `PrimaryFrame` within 
         the global context.
     ]]
+    function geometryTarget:SetParentGroupPosition(x, y)
+        localXOffset, localYOffset = x, y
+        rectX = cachedX + localXOffset
+        rectY = cachedY + localYOffset
+        rectX2 = rectX + width
+        rectY2 = rectY + height
+    end
     function geometryTarget:ContainsAbsolutePoint(x, y)
-        local localXOffset, localYOffset = drawingGroup:AbsolutePosition()
-		return PointIsInRect(x, y, cachedX + localXOffset, cachedY + localYOffset, width, height)
+        return x >= rectX and y >= rectY and x <= rectX2 and y <= rectY2
     end
     
     --[[

@@ -4,35 +4,43 @@ local pcall = Include.pcall
 local pairs = Include.pairs
 local Spring_Echo = Include.Spring.Echo
 
-function HighestResponderAtPoint(x, y, event)
-	for j = 1, #Internal.elementOrder do
-		local element = Internal.elements[Internal.elementOrder[j]]
-		local responders = element.drawingGroup.responderCache[event].responders
-		
-		local currentMatchingResponder
-		
-		local i = 0
-		while i <= #responders - 1 do
-			local responder = responders[#responders - i]
-			local success, pointIsContained = pcall(responder.ContainsAbsolutePoint, responder, x, y)
-			if success then
-				if pointIsContained then
-					currentMatchingResponder = responder
-					responders = responder.responders
-					i = 0
-				else
-					i = i + 1
-				end
-			else
-				Error("HighestReceiverAtPoint", "Element: " .. element.key, "Responder:ContainsPoint", x, y, event, pointIsContained, responder._debugTypeIdentifier, responder._debugUniqueIdentifier)
-				framework:RemoveElement(element.key)
-				currentMatchingResponder = nil
-				break
-			end
-		end
+local elements = Internal.elements
+local elementOrder = Internal.elementOrder
 
-		if currentMatchingResponder then
-			return element, currentMatchingResponder
+local function ElementHighestResponderAtPoint(element, x, y, event)
+	local responders = element.drawingGroup.responderCache[event].responders
+		
+	local currentMatchingResponder
+	local responderCount = #responders
+
+	local i = responderCount
+	while i > 0 do
+		local responder = responders[i]
+		local pointIsContained = responder:ContainsAbsolutePoint(x, y)
+		if pointIsContained then
+			currentMatchingResponder = responder
+			responders = responder.responders
+			i = #responders
+		else
+			i = i - 1
+		end
+	end
+		
+	return currentMatchingResponder
+end
+
+function HighestResponderAtPoint(x, y, event)
+	for j = 1, #elementOrder do
+		local element = elements[elementOrder[j]]
+		local success, highestResponder = pcall(ElementHighestResponderAtPoint, element, x, y, event)
+		if success then 
+			if highestResponder then 
+				return element, highestResponder
+			end
+		else
+			Error("HighestReceiverAtPoint", "Element: " .. element.key, "ElementHighestResponderAtPoint", x, y, event, highestResponder)
+			framework:RemoveElement(element.key)
+			break
 		end
 	end
 end
