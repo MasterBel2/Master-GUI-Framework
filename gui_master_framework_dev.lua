@@ -19,11 +19,21 @@ function widget:GetInfo()
 	}
 end
 
-local pcall = function(func, ...)
-	local args = { ... }
-	return xpcall(function()
-		return func(unpack(args))
-	end, debug.traceback)
+local function GetDebugModes()
+	return false, false, false
+end
+
+local xpcall = xpcall
+local pcall = pcall
+if GetDebugModes() then
+	-- This has a MASSIVE performance impact, 
+	-- so we disable it unless debugging
+	pcall = function(func, ...)
+		local args = { ... }
+		return xpcall(function()
+			return func(unpack(args))
+		end, debug.traceback)
+	end
 end
 
 local remove = table.remove
@@ -138,7 +148,7 @@ function widget:Initialize()
 
 	frameworkInternal.updateScreenEnvironment(viewSizeX, viewSizeY, framework.relativeScaleFactor)
 
-	frameworkInternal.SetDebugMode(true, false, false)
+	frameworkInternal.SetDebugMode(GetDebugModes())
 	
 	if frameworkInternal.debugMode.general then
 	-- if true then
