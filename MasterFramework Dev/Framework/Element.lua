@@ -2,6 +2,7 @@ local error = Include.error
 local pairs = Include.pairs
 local ipairs = Include.ipairs
 local table = Include.table
+local table_shallowCopy = Include.table.shallowCopy
 local clear = Include.clear
 local pcall = Include.pcall
 local Internal = Internal
@@ -174,8 +175,9 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 
 		local groupsNeedingLayout = self.groupsNeedingLayout
 		if next(groupsNeedingLayout) then
-			self.groupsNeedingLayout = {}
+			self.groupsNeedingLayout = table_shallowCopy(groupsNeedingLayout)
 			for drawingGroup, _ in pairs(groupsNeedingLayout) do
+				self.groupsNeedingLayout[drawingGroup] = nil
 				local success, _error = pcall(drawingGroup.UpdateLayout, drawingGroup)
 				if not success then
 					Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:UpdateLayout", _error)
@@ -186,8 +188,9 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 
 		local groupsNeedingPosition = self.groupsNeedingPosition
 		if next(groupsNeedingPosition) then
-			self.groupsNeedingPosition = {}
+			self.groupsNeedingPosition = table_shallowCopy(groupsNeedingPosition)
 			for drawingGroup, _ in pairs(groupsNeedingPosition) do
+				self.groupsNeedingPosition[drawingGroup] = nil
 				local success, _error = pcall(drawingGroup.UpdatePosition, drawingGroup)
 				if not success then
 					Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:UpdatePosition", _error)
