@@ -182,6 +182,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 				if not success then
 					Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:UpdateLayout", _error)
 					framework:RemoveElement(self.key)
+					return
 				end
 			end
 		end
@@ -195,6 +196,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 				if not success then
 					Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:UpdatePosition", _error)
 					framework:RemoveElement(self.key)
+					return
 				end
 			end
 		end
@@ -203,6 +205,7 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		if not success then
 			Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Draw", _error)
 			framework:RemoveElement(self.key)
+			return
 		end
 	end
 
