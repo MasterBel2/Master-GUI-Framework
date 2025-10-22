@@ -1,6 +1,6 @@
 # Changelog
 
-## CV 43 (WIP): Limit unnecessary layout / position / draw passes
+## CV 43: Limit unnecessary layout / position / draw passes
 
 Agressive changes have been made to how updates are made to reduce the necessary fequency of calculations:
 - `Rasterizer` has been merged into `DrawingGroup`.
@@ -8,6 +8,9 @@ Agressive changes have been made to how updates are made to reduce the necessary
 - `Position` can now be expected to be called more than once for some `Layout` calls, where sizing hasn't changed but positioning has (e.g. )
 - Even if rasterization isn't involved, `Draw` can be called more than once per `Position`/`Layout` call.
 - To specifically request an update to any of `Layout`/`Position`/`Draw`, the corresponding property may be set on the relevant `DrawingGroup`. See `Drawer` and `Component` for more detail and example implementations.
+- DrawingGroup has a property `drawingGroup.pass` that indicates what stage of UI rendering is being performed. `Dimension`s in particular use this to know which stage to invalidate, as a `Dimension` used in the Layout phase will require all stages to be refreshed, while a `Dimension` used in the draw phase will only require a re-draw.
+- Components can indicate they require a re-drawing every frame, to avoid the overhead of an unhelpful draw list. Call `component:EnableContinuousDrawing` (see `Drawing/Decorations/Drawer.lua` for more details.)
+- 
 
 To facilitate this:
 - Most components that allow specifying a child no longer make their child editable; instead, when you wish to mutate a child view hierarchy, set the parent's initial child to `Box`, which allows its child to be changed (via `Box:SetChild(newChild)`).
@@ -31,6 +34,9 @@ Misc other changes:
 - `PrimaryFrame` no longer attempts recovery if `Layout` hasn't been called yet
 - `Element`s are removed if no `PrimaryFrame` is present in the view hierarchy
 - `HorizontalScrollContainer` and `VerticalScrollContainer` now use the customisable `framework.dimension.scrollMultiplier` to configure their scroll speed. This should provide the same scrolling experience on a 1080p display, and scale better to larger resolutions.
+
+Visual changes:
+- Squared-off corners at the edge of the screen have been disabled, due to drawing no longer knowing whether it's actually at the edge of the screen
 
 ## CV 42: Misc - kill funcs.lua, separate out constants, change WG access
 Extensions are now declared in `MasterFramework $VERSION/Utils`, and pre-loaded before the rest of the framework. These are provided the same global environment as the rest of the framework. `string` extensions now all have `_MasterFramework` at the end of their name, while the `table` extension overrides the `Include.table` table for the framework, and provides access to the customised version as `framework.table`. The definition of `Include.clear` has been moved to `Utils/table.lua`, and `table.joinStrings()` has been removed, since it was a slower reimplementation of `table.concat()`
