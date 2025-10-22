@@ -1,5 +1,43 @@
 # Changelog
 
+## WIP: Coordinate Update, Optimisation & Simplification
+
+`DrawingGroup` resets coordinates to avoid unnecessarily calling `Position` when portions of the UI move uniformly. To support this:
+- `DrawingGroup` provides `drawingGroup:AbsolutePosition()` to move local coordinates to a global context. E.g., comparing bounds v.s. interaction in `Responder`.
+ - (Internal detail: To performantly propagate changes to a `DrawingGroup`'s position, `DrawingGroup` will call `drawingGroup:SetParentGroupPosition(x, y)` on its children, to inform of the new result that would be returned by `drawingGroup:AbsolutePosition()`)
+ - (Internal detail: `GeometryTarget`s will now also register with their parent `DrawingGroup` (`drawingGroup.childGeometryTargets`) to receive `geometryTarget:SetParentGroupPosition(x, y)`, again as a performance optimisation)
+- `GeometryTarget` no longer provides `CachedPosition`. Instead, this functionality is split out into the following API:
+ - `geometryTarget:CachedPositionRemainingInLocalContext()`
+ - `geometryTarget:CachedPositionTranslatedToGlobalContext()`
+ - `geometryTarget:CachedPositionTranslatedToContext(callerDrawingGroup)`
+ - `geometryTarget:ContainsAbsolutePoint(x, y)`
+ - `geometryTarget:ContainsPoint(x, y, callerDrawingGroup)`
+(see `Layout/GeometryTarget.lua` for further details.)
+- `_debug_mouseOver` is now a separate event listed in `framework.events`.
+
+Other architectural changes:
+- `Responder`, `PrimaryFrame`, `WrappingText`, and `Background` now inherit from `GeometryTarget`. See `GeometryTarget` for expanded interface.
+- `Tooltip` now inherits from `Responder`, and `tooltip` is now listed in `framework.events`.
+- `Component` now has a single associated drawing group. Let me stress, then the importance of making sure reusable tools inherit from `Drawer`, not `Component`! (`Component` must necessarily be contained in one single drawing group for reasons I can't remember. Maybe convenience, then.)
+- `DrawingGroup` advertises `CachedSize` now to go with `AbsolutePosition` - but do not be fooled, this is NOT a full implementation of `GeometryTarget`.
+- Remove `framework.viewportDidChange`. It was unused, and other, more robust methods can be used to respond to updates (e.g. `AutoScalingDimension`).
+- `drawingGroup.needsRedraw` is not set in `drawingGroup:UpdateLayout(calledByParent)`, since it's already set in `drawingGroup:UpdatePosition()`
+- (Internal detail: `drawingGroup.groupsNeedingLayout` and `drawingGroup.groupsNeedingPosition` will not remove any groups until directly before `drawingGroup:UpdatePosition()` is called, to allow `drawingGroup:Position(x, y)` to trigger `drawingGroup:UpdatePosition()` if necessary.)
+
+Visual changes:
+- Squared-off corners at the edge of the screen have been disabled, due to drawing no longer knowing whether it's actually at the edge of the screen.
+
+Debug changes:
+- Remove redundant `Internal._debug_currentElementKey` in favour of `Internal.activeElement.key`.
+- Add argument & return value validation for `Position` & `Layout`.
+- Include stacktrace for framework error messages (debug mode must be enabled, because this comes with a significant performance cost).
+- Add some tests matched to some solved `dimension:Update(...)` bugs.
+- Inject some profiling only when debug mode is enabled. Other profiling has been removed.
+- Some error catching has been made less fine-grained for performance reasons. With stacktraces enabled, this should not tangibly hamper debugging.
+- Drawing will terminate completely after an error, rather than completing the other passes in the element's final frame.
+
+Also includes further non-breaking (hopefully) optimisations and fixes.
+
 ## CV 43: Limit unnecessary layout / position / draw passes
 
 Agressive changes have been made to how updates are made to reduce the necessary fequency of calculations:
@@ -10,7 +48,6 @@ Agressive changes have been made to how updates are made to reduce the necessary
 - To specifically request an update to any of `Layout`/`Position`/`Draw`, the corresponding property may be set on the relevant `DrawingGroup`. See `Drawer` and `Component` for more detail and example implementations.
 - DrawingGroup has a property `drawingGroup.pass` that indicates what stage of UI rendering is being performed. `Dimension`s in particular use this to know which stage to invalidate, as a `Dimension` used in the Layout phase will require all stages to be refreshed, while a `Dimension` used in the draw phase will only require a re-draw.
 - Components can indicate they require a re-drawing every frame, to avoid the overhead of an unhelpful draw list. Call `component:EnableContinuousDrawing` (see `Drawing/Decorations/Drawer.lua` for more details.)
-- 
 
 To facilitate this:
 - Most components that allow specifying a child no longer make their child editable; instead, when you wish to mutate a child view hierarchy, set the parent's initial child to `Box`, which allows its child to be changed (via `Box:SetChild(newChild)`).
@@ -34,9 +71,6 @@ Misc other changes:
 - `PrimaryFrame` no longer attempts recovery if `Layout` hasn't been called yet
 - `Element`s are removed if no `PrimaryFrame` is present in the view hierarchy
 - `HorizontalScrollContainer` and `VerticalScrollContainer` now use the customisable `framework.dimension.scrollMultiplier` to configure their scroll speed. This should provide the same scrolling experience on a 1080p display, and scale better to larger resolutions.
-
-Visual changes:
-- Squared-off corners at the edge of the screen have been disabled, due to drawing no longer knowing whether it's actually at the edge of the screen
 
 ## CV 42: Misc - kill funcs.lua, separate out constants, change WG access
 Extensions are now declared in `MasterFramework $VERSION/Utils`, and pre-loaded before the rest of the framework. These are provided the same global environment as the rest of the framework. `string` extensions now all have `_MasterFramework` at the end of their name, while the `table` extension overrides the `Include.table` table for the framework, and provides access to the customised version as `framework.table`. The definition of `Include.clear` has been moved to `Utils/table.lua`, and `table.joinStrings()` has been removed, since it was a slower reimplementation of `table.concat()`
