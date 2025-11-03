@@ -1,11 +1,13 @@
 local Internal = Internal
 local widgetHandler = Include.widgetHandler
+local Spring_SDLStartTextInput = Include.Spring.SDLStartTextInput
 
 function framework:TakeFocus(newFocusTarget)
 	if Internal.focusTarget then
 		focusTarget:ReleaseFocus()
 	end
 	if widgetHandler:OwnText() then
+		Spring_SDLStartTextInput()
 		Internal.focusTarget = newFocusTarget
 		Internal.focusTargetElementKey = Internal.activeElement.key
 		return true
