@@ -43,6 +43,8 @@ local DRAWING_GROUP_PASS_DRAW = DRAWING_GROUP_PASS.DRAW
                                         This table is keyed by the `Dimension`s, and the values are unused (other than ensuring the key remains valid).
      - `drawingGroup.childDrawingGroups`: An array of `DrawingGroup`s contained in the component hierarchy to be drawn after the end of the draw pass.
                                           These are drawn separately to avoid nesting draw lists.
+     - `drawingGroup.childGeometryTargets`: An array of `DrawingGroup`s contained in the component hierarchy that need to be instructed on their parent
+                                            drawing group's absolute position.    
      - `drawingGroup.drawTargets`: An array of components implementing `component:Draw()` to be drawn in the draw pass.
                                    Contents of this array are added by the descendent component tree during `drawingGroup:Position(x, y)`
 
@@ -58,6 +60,7 @@ function framework:DrawingGroup(body, disableDrawList)
     drawingGroup.drawers = {}
     drawingGroup.drawTargets = {}
     drawingGroup.childDrawingGroups = {}
+    drawingGroup.childGeometryTargets = {}
     drawingGroup.layoutComponents = {}
     drawingGroup.continuouslyUpdatingDrawers = {}
 
