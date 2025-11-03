@@ -19,7 +19,7 @@ local table_mergeInPlace = Include.table.mergeInPlace
      - `background:SetDecorations(newDecorations)`: copies the array contents of `newDecorations` to be the new set of decorations drawn.
 ]]
 function framework:Background(body, _decorations, cornerRadius)
-    local background = table.mergeInPlace(Drawer(), framework:GeometryTarget(body))
+    local background = table.mergeInPlace(Component(false, true), framework:GeometryTarget(body))
     background.cornerRadius = cornerRadius or framework:AutoScalingDimension(0)
     local decorations = {}
 
