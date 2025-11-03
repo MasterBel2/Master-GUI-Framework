@@ -164,7 +164,10 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		deselect = deselectAction or nullFunctionTrue,
 
 		groupsNeedingLayout = {},
-		groupsNeedingPosition = {}
+		groupsNeedingPosition = {},
+		-- A table keyed by redraw funcs of drawing groups that need to re-draw.
+		-- Values are unusd, so generally set to `true`
+		requestedRedraws = {}
 	}
 	local drawingGroup = framework:DrawingGroup(body)
 	element.drawingGroup = drawingGroup
@@ -199,6 +202,20 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 					return
 				end
 			end
+		end
+
+		local requestedRedraws = self.requestedRedraws
+		if next(requestedRedraws) then
+			self.requestedRedraws = table_shallowCopy(requestedRedraws)
+			for redrawFunc, _ in pairs(requestedRedraws) do
+				self.requestedRedraws[redrawFunc] = nil
+				local success, _error = pcall(redrawFunc)
+				if not success then
+					Error("widget:DrawScreen", "Element: " .. self.key, "drawingGroup:Redraw", _error)
+					framework:RemoveElement(self.key)
+					return
+				end
+			end 
 		end
 
 		local success, _error = pcall(drawingGroup.Draw, drawingGroup, 0, 0)

@@ -33,8 +33,6 @@ local DRAWING_GROUP_PASS_DRAW = DRAWING_GROUP_PASS.DRAW
      - `disableDrawList`: Disables drawList compilation, and instead performs a full draw every draw frame. 
 
     Properties:
-     - `drawingGroup.needsRedraw`: A boolean value indicating whether a new draw pass is needed; this may be set to true (but not false!) by a child.
-
      - `drawingGroup.disableDrawList`: A boolean (or nil) value indicating whether the `drawingGroup` should compile re-usable draw lists. 
                                        For components that update too frequently, this can be a performance cost rather than a performance gain.
      - `drawingGroup.drawers`: A table of `Drawer`s  that drew in the most recent draw pass. 
@@ -55,7 +53,6 @@ local DRAWING_GROUP_PASS_DRAW = DRAWING_GROUP_PASS.DRAW
 function framework:DrawingGroup(body, disableDrawList)
     local drawingGroup = {}
 
-    drawingGroup.needsRedraw = true
     drawingGroup.disableDrawList = disableDrawList or Internal.debugMode.disableDrawList
 
     drawingGroup.drawers = {}
@@ -79,6 +76,8 @@ function framework:DrawingGroup(body, disableDrawList)
 
     local textGroup = framework:TextGroup(body, name)
     local drawList
+    local redrawFunc
+    
     local cachedWidth, cachedHeight
     local cachedAvailableWidth, cachedAvailableHeight
     function drawingGroup:Layout(availableWidth, availableHeight)
@@ -105,7 +104,6 @@ function framework:DrawingGroup(body, disableDrawList)
         self.childDrawingGroups = {}
         self.childGeometryTargets = {}
 
-        -- This indirectly triggers self.needsRedraw
         element.groupsNeedingPosition[self] = true
 
         local previousDrawingGroup = activeDrawingGroup
@@ -127,7 +125,7 @@ function framework:DrawingGroup(body, disableDrawList)
     function drawingGroup:UpdatePosition()
         element.groupsNeedingPosition[self] = nil
 
-        self.needsRedraw = true
+        element.requestedRedraws[redrawFunc] = true
         self.drawTargets = {}
 
         local previousDrawingGroup = activeDrawingGroup
@@ -190,10 +188,21 @@ function framework:DrawingGroup(body, disableDrawList)
     end
 
     local function _Draw(self)
+        local previousDrawingGroup = activeDrawingGroup
+        activeDrawingGroup = self
+        self.drawers = {}
         local drawTargets = self.drawTargets
         for i = 1, #drawTargets do
             drawTargets[i]:Draw(self)
         end
+        activeDrawingGroup = previousDrawingGroup
+    end
+
+    redrawFunc = function()
+        gl_DeleteList(drawList)
+        self.pass = DRAWING_GROUP_PASS_DRAW
+        drawList = gl_CreateList(_Draw, drawingGroup)
+        self.pass = nil
     end
 
     function drawingGroup:Draw()
@@ -206,9 +215,6 @@ function framework:DrawingGroup(body, disableDrawList)
         end
 
         if self.disableDrawList or next(self.continuouslyUpdatingDrawers) then
-            self.drawers = {}
-            self.needsRedraw = false
-
             _Draw(self)
 
             for drawer, _ in pairs(self.continuouslyUpdatingDrawers) do
@@ -216,17 +222,8 @@ function framework:DrawingGroup(body, disableDrawList)
                     self.continuouslyUpdatingDrawers[drawer] = nil
                 end
             end
-        else 
-            if self.needsRedraw then
-                self.drawers = {}
-                self.needsRedraw = false
-
-                gl_DeleteList(drawList)
-                drawList = gl_CreateList(_Draw, self)
-            end
-
+        else
             gl_CallList(drawList)
-            
         end
         if (absoluteX ~= 0) or (absoluteY ~= 0) then
             gl_Translate(-absoluteX, -absoluteY, 0)
@@ -260,8 +257,8 @@ function framework:DrawingGroup(body, disableDrawList)
     end
 
     function drawingGroup:DrawerUpdated(drawer)
-        if self.drawers[drawer] then
-            self.needsRedraw = true
+        if self.drawers[drawer] and not (self.disableDrawList or next(self.continuouslyUpdatingDrawers)) then
+            element.requestedRedraws[redrawFunc] = true
             return true
         end
     end
@@ -284,6 +281,9 @@ function framework:DrawingGroup(body, disableDrawList)
     function drawingGroup:DrawerWillNotContinuouslyUpdate(drawer)
         if self.drawers[drawer] then
             self.continuouslyUpdatingDrawers[drawer] = nil
+            if not (self.disableDrawList or next(self.continuouslyUpdatingDrawers)) then
+                element.requestedRedraws[redrawFunc] = true
+            end
             return true
         end
     end
