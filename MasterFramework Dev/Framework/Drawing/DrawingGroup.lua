@@ -37,17 +37,12 @@ local DRAWING_GROUP_PASS_DRAW = DRAWING_GROUP_PASS.DRAW
 
      - `drawingGroup.disableDrawList`: A boolean (or nil) value indicating whether the `drawingGroup` should compile re-usable draw lists. 
                                        For components that update too frequently, this can be a performance cost rather than a performance gain.
-
-     - `drawingGroup.dimensions`: A table of `Dimension`s that were used in the most recent layout/position/draw passes.
-                                  When one of these updates, the drawing group will perform a new layout, position, and draw pass.
-                                  This table is keyed by the `Dimension`s, and the values are unused (other than ensuring the key remains valid). 
      - `drawingGroup.drawers`: A table of `Drawer`s  that drew in the most recent draw pass. 
                                When the drawing group is using draw lists and one of these updates, the drawing group will perform a new draw pass.
                                This table is keyed by the `Drawer`s, and the values are unused (other than ensuring the key remains valid).
      - `drawingGroup.layoutComponents`: A table of `Component`s that laid out in the most recent layout/position passses.
                                         When one of these updates, the drawing group will perform a new layout and/or position pass.
                                         This table is keyed by the `Dimension`s, and the values are unused (other than ensuring the key remains valid).
-
      - `drawingGroup.childDrawingGroups`: An array of `DrawingGroup`s contained in the component hierarchy to be drawn after the end of the draw pass.
                                           These are drawn separately to avoid nesting draw lists.
      - `drawingGroup.drawTargets`: An array of components implementing `component:Draw()` to be drawn in the draw pass.
@@ -63,7 +58,6 @@ function framework:DrawingGroup(body, disableDrawList)
     drawingGroup.needsRedraw = true
     drawingGroup.disableDrawList = disableDrawList or Internal.debugMode.disableDrawList
 
-    drawingGroup.dimensions = {}
     drawingGroup.drawers = {}
     drawingGroup.drawTargets = {}
     drawingGroup.childDrawingGroups = {}
@@ -85,10 +79,6 @@ function framework:DrawingGroup(body, disableDrawList)
 
     local textGroup = framework:TextGroup(body, name)
     local drawList
-
-    -- debug
-    local framesRedrawnInARow = 0
-
     local cachedWidth, cachedHeight
     local cachedAvailableWidth, cachedAvailableHeight
     function drawingGroup:Layout(availableWidth, availableHeight)
@@ -111,7 +101,6 @@ function framework:DrawingGroup(body, disableDrawList)
     function drawingGroup:UpdateLayout(calledByParent)
         element.groupsNeedingLayout[self] = nil
 
-        self.dimensions = {}
         self.layoutComponents = {}
         self.childDrawingGroups = {}
         self.childGeometryTargets = {}
