@@ -33,6 +33,7 @@ Text Highlight API:
 
 Visual changes:
 - Squared-off corners at the edge of the screen have been disabled, due to drawing no longer knowing whether it's actually at the edge of the screen.
+- Round fonts to the nearest pixel size (to prevent blurry text).
 
 Debug changes:
 - Remove redundant `Internal._debug_currentElementKey` in favour of `Internal.activeElement.key`.

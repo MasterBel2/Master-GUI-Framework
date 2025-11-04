@@ -2,6 +2,7 @@ local Internal = Internal
 Internal.fonts = {}
 
 local ceil = Include.math.ceil
+local round = Include.math.round
 local gl_LoadFont = Include.gl.LoadFont
 local gl_DeleteFont = Include.gl.DeleteFont
 
@@ -26,7 +27,7 @@ function framework:Font(fileName, size, outlineWidth, outlineWeight)
 		}
 
 		function font:ScaledSize()
-			return size * scale
+			return round(size * scale)
 		end
 
 		function font:Scale(newScale)
