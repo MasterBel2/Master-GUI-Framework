@@ -44,14 +44,14 @@ function framework:TextGroup(body, name)
 	function textGroup:Draw(...)
 		for _, textElements in pairs(elements) do
 			local textElement = textElements[1]
-			if not textElement then break end
-
-			local glFont = textElement._readOnly_font.glFont
-			glFont:Begin()
-			for index = 1, #textElements do
-				textElements[index]:DrawText(glFont)
+			if textElement then
+				local glFont = textElement._readOnly_font.glFont
+				glFont:Begin()
+				for index = 1, #textElements do
+					textElements[index]:DrawText(glFont)
+				end
+				glFont:End()
 			end
-			glFont:End()
 		end
 	end
 
