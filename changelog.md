@@ -1,6 +1,6 @@
 # Changelog
 
-## WIP: Coordinate Update, Optimisation & Simplification
+## WIP: Coordinate Update, Optimisation & Simplification; Text Highlight API
 
 `DrawingGroup` resets coordinates to avoid unnecessarily calling `Position` when portions of the UI move uniformly. To support this:
 - `DrawingGroup` provides `drawingGroup:AbsolutePosition()` to move local coordinates to a global context. E.g., comparing bounds v.s. interaction in `Responder`.
@@ -23,6 +23,13 @@ Other architectural changes:
 - Remove `framework.viewportDidChange`. It was unused, and other, more robust methods can be used to respond to updates (e.g. `AutoScalingDimension`).
 - `drawingGroup.needsRedraw` is not set in `drawingGroup:UpdateLayout(calledByParent)`, since it's already set in `drawingGroup:UpdatePosition()`
 - (Internal detail: `drawingGroup.groupsNeedingLayout` and `drawingGroup.groupsNeedingPosition` will not remove any groups until directly before `drawingGroup:UpdatePosition()` is called, to allow `drawingGroup:Position(x, y)` to trigger `drawingGroup:UpdatePosition()` if necessary.)
+
+Text Highlight API:
+- `WrappingText` now handles the selection highlight drawing for `TextEntry` with a public API! See documentation in `WrappingText.lua`:
+  - `wrappingText:HighlightRange(color, startIndex, endIndex, reuseLast)`
+  - `wrappingText:UpdateHighlight(id, color, startIndex, endIndex, reuseLast)`
+  - `wrappingText:RemoveHighlight(id)`
+- `TextGroup` now calls `wrappingText:DrawText(glFont)` rather than `wrappingText:Draw(glFont)` to avoid collision when `DrawingGroup` calls `wrappingText:Draw()`
 
 Visual changes:
 - Squared-off corners at the edge of the screen have been disabled, due to drawing no longer knowing whether it's actually at the edge of the screen.

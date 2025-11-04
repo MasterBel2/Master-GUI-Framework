@@ -3,6 +3,12 @@ local math_floor = Include.math.floor
 local math_huge = Include.math.huge
 local math_max = Include.math.max
 local math_min = Include.math.min
+
+local gl_Rect = Include.gl.Rect
+local gl_Translate = Include.gl.Translate
+
+local pairs = Include.pairs
+
 local table = Include.table
 local Internal = Internal
 
@@ -29,6 +35,10 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	local removedSpaces = wrappingText.removedSpaces
 
 	local stringChanged = true
+
+	local nextHighlightID = 0
+    local highlights = {}
+	local cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset
 
 	function wrappingText:SetBaseColor(newBaseColor)
 		if baseColor ~= newBaseColor then
@@ -239,6 +249,17 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 
 		-- We don't return here since we're only using this to coerce the `GeometryTarget` into caching width, height for us
 		_Layout(self, width, height)
+
+		local lastEndIndex = math_huge
+		for _, highlight in pairs(highlights) do
+			local displayStartIndex, displayEndIndex
+			local reuseLast = highlight.startIndex > lastEndIndex
+			lastEndIndex = highlight.endIndex
+			displayStartIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(highlight.startIndex, reuseLast and cachedAddedCharactersIndex, reuseLast and cachedRemovedSpacesIndex, reuseLast and cachedComputedOffset)
+			displayEndIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(highlight.endIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset)	
+			highlight.displayStartIndex = displayStartIndex
+			highlight.displayEndIndex = displayEndIndex
+		end
 		
 		return width, height
 	end
@@ -247,12 +268,13 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	function wrappingText:Position(x, y)
 		_Position(self, x, y)
 		Internal.activeTextGroup:AddElement(self)
+		activeDrawingGroup.drawTargets[#activeDrawingGroup.drawTargets + 1] = self
 	end
 
 	-- Draws the text on-screen, using the cached coordinates from `wrappingText:Position(x, y)`.
 	--
 	-- Called by the `framework:TextGroup` that `wrappingText:Position(x, y)` registered us with.
-	function wrappingText:Draw(glFont)
+	function wrappingText:DrawText(glFont)
 		glFont:SetTextColor(baseColor:GetRawValues())
 		baseColor:RegisterDrawingGroup()
 		self:RegisterDrawingGroup()
@@ -264,6 +286,99 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		-- I don't know what to do about text that's supposed to be centred vertically in a cell, because this method of drawing means the descender pushes the text up a bunch.
 		glFont:Print(wrappedText, cachedX, cachedY + cachedHeight - 1, font:ScaledSize(), "ao")
 	end
+
+	function wrappingText:Draw()
+		self:RegisterDrawingGroup()
+		local glFont = self._readOnly_font.glFont
+		local displayString = self:GetDisplayString()
+        local lineStarts, lineEnds = displayString:lines_MasterFramework()
+		local scaledSize = self._readOnly_font:ScaledSize()
+        local lineHeight = scaledSize * glFont.lineheight
+		local textWidth, textHeight = self:Size()
+
+		local x, y = self:CachedPositionRemainingInLocalContext()
+		gl_Translate(x, y, 0)
+
+		for _, highlight in pairs(highlights) do
+			highlight.color:Set()
+			for i = 1, #lineStarts do
+				local lineStart = lineStarts[i]
+				local lineEnd = lineEnds[i]
+
+				if highlight.displayStartIndex <= lineEnd + 1 and highlight.displayEndIndex >= lineStart then
+					local xStart = glFont:GetTextWidth(displayString:sub(lineStart, highlight.displayStartIndex - 1)) * scaledSize
+					if highlight.displayStartIndex == highlight.displayEndIndex then
+						gl_Rect(
+							xStart - 0.5,
+							textHeight - i * lineHeight,
+							xStart + 0.5,
+							textHeight - (i - 1) * lineHeight
+						)
+					else
+						local selectedText = displayString:sub(math_max(lineStart, highlight.displayStartIndex), math_min(highlight.displayEndIndex - 1, lineEnd))
+						gl_Rect(
+							xStart,
+							textHeight - i * lineHeight,
+							xStart + glFont:GetTextWidth(selectedText) * scaledSize,
+							textHeight - (i - 1) * lineHeight
+						)
+					end
+				end
+			end
+		end
+
+		gl_Translate(-x, -y, 0)
+	end
+
+	------------------
+	-- Highlighting --
+	------------------
+
+	--[[
+		Will under-lay a rect with the specified colour over the specified range.
+		Save the returned ID for updating and removing the highlight.
+
+		If argument `reuseLast` is true, it will begin its search from .
+		Use this iff you know that the new highlight ends after the previous highlight begins.
+	]]
+    function wrappingText:HighlightRange(color, startIndex, endIndex, reuseLast)
+		nextHighlightID = nextHighlightID + 1
+		self:NeedsRedraw()
+
+		local displayStartIndex, displayEndIndex
+		if coloredString then
+			displayStartIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(startIndex, reuseLast and cachedAddedCharactersIndex, reuseLast and cachedRemovedSpacesIndex, reuseLast and cachedComputedOffset)
+			displayEndIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(endIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset)
+		end
+        highlights[nextHighlightID] = { 
+			color = color, 
+			startIndex = startIndex, 
+			endIndex = endIndex, 
+			displayStartIndex = displayStartIndex, 
+			displayEndIndex = displayEndIndex
+		}
+
+		return nextHighlightID
+    end
+	--[[
+		Overwrites the data for a pre-existing highlight.
+		
+		This can be used to re-create a previously removed highlight, or simply change its appearance. 
+	]]
+	function wrappingText:UpdateHighlight(id, color, startIndex, endIndex, reuseLast)
+		local temp = nextHighlightID
+		nextHighlightID = id - 1
+		self:HighlightRange(color, startIndex, endIndex, reuseLast)
+		nextHighlightID = temp
+	end
+	--[[
+		Removes a highlight.
+		The id will not be recycled.
+	]]
+    function wrappingText:RemoveHighlight(id)
+		self:NeedsRedraw()
+		highlights[id] = nil
+    end
 
 	return wrappingText
 end

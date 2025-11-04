@@ -49,7 +49,7 @@ function framework:TextGroup(body, name)
 			local glFont = textElement._readOnly_font.glFont
 			glFont:Begin()
 			for index = 1, #textElements do
-				textElements[index]:Draw(glFont)
+				textElements[index]:DrawText(glFont)
 			end
 			glFont:End()
 		end

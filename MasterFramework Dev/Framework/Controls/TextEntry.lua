@@ -6,9 +6,6 @@ local os_clock = Include.os.clock
 
 local Spring_GetModKeyState = Include.Spring.GetModKeyState
 
-local gl = Include.gl
-local gl_Rect = gl.Rect
-
 local math_max = math.max
 local math_min = math.min
 local math_floor = math.floor
@@ -34,6 +31,14 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     entry.selectionEnd = string:len() + 1 -- index of character after selection end
     entry.canLoseFocus = false
     entry.undoSingleCharAppendable = false
+
+    -- Reserve the ID, but we'll drop it until we need it later
+    local selectionHighlightID = entry.text:HighlightRange(
+        framework.color.hoverColor,
+        entry.selectionBegin,
+        entry.selectionEnd
+    )
+    entry.text:RemoveHighlight(selectionHighlightID)
 
     local undoLog = {}
     local redoLog = {}
@@ -94,6 +99,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
                 selectFrom = nil
             end
         end
+        self.text:UpdateHighlight(selectionHighlightID, framework.color.hoverColor, self.selectionBegin, self.selectionEnd)
     end
 
     local textStack = framework:StackInPlace({ entry.text, entry.placeholder }, 0, 0)
@@ -489,6 +495,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
     function entry:TakeFocus()
         if framework:TakeFocus(self) then
             focused = true
+            self.text:UpdateHighlight(selectionHighlightID, framework.color.hoverColor, self.selectionBegin, self.selectionEnd)
             background:SetDecorations(textEntryStyles.selectedBackgroundDecorations)
             return true
         end
@@ -496,6 +503,9 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
     -- Releases text editing focus, if we have it.
     function entry:ReleaseFocus()
+        if self.selectionBegin == self.selectionEnd then
+            self.text:RemoveHighlight(selectionHighlightID)
+        end
         focused = false
         framework:ReleaseFocus(self)
         background:SetDecorations(textEntryStyles.defaultBackgroundDecorations)
@@ -510,79 +520,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
         return selectionDetector:Layout(...)
     end
 
-    local x, y
-    function entry:Position(_x, _y)
-        x = _x
-        y = _y
+    function entry:Position(x, y)
         selectionDetector:Position(x, y)
-        table_insert(activeDrawingGroup.drawTargets, self)
-    end
-
-    function entry:Draw()
-        self:RegisterDrawingGroup()
-        if (focused or selectFrom) and not self.hideSelection then
-            -- this will be drawn after the background but before text, because we don't have our own TextGroup
-
-            local font = self.text._readOnly_font
-            local textX, textY = self.text:CachedPositionTranslatedToContext(activeDrawingGroup)
-            local textWidth, textHeight = self.text:Size()
-
-            local trueLineHeight = font.glFont.lineheight * font:ScaledSize()
-
-            local displayString = self.text:GetDisplayString()
-            local lineStarts, lineEnds = displayString:lines_MasterFramework()
-            
-            local displayIndexOfCharacterAfterSelectionBegin, addedCharactersIndex, removedSpacesIndex, computedOffset, _ = self.text:RawIndexToDisplayIndex(self.selectionBegin)
-            local displayIndexOfCharacterAfterSelectionEnd = self.text:RawIndexToDisplayIndex(self.selectionEnd, addedCharactersIndex, removedSpacesIndex, computedOffset)
-            
-            local fontScaledSize = font:ScaledSize()
-
-            for i = 1, #lineStarts do
-                local lineStart = lineStarts[i]
-                local lineEnd = lineEnds[i]
-
-                if displayIndexOfCharacterAfterSelectionBegin <= lineEnd + 1 and displayIndexOfCharacterAfterSelectionEnd >= lineStart then
-                    local highlightYOffset = i * trueLineHeight
-                    -- clamp selection to line
-                    local highlightBeginIndex = math_max(displayIndexOfCharacterAfterSelectionBegin, lineStart)
-                    -- Allow an index that specifies the first character of the next line; 
-                    -- Selection end indices give the index of the first character excluded from the selection,
-                    -- So this correctly includes the newline in the drawn selection, without incorrectly measuring
-                    -- any characters from the next line.
-                    --
-                    -- highlightEndIndex is used for generating the substring, so we subtract one to specify the 
-                    -- character within the selection, rather than the character without the selection.
-                    local highlightEndIndex = math_min(displayIndexOfCharacterAfterSelectionEnd, lineEnd + 2) - 1
-
-                    local stringBeforeInsertion = displayString:sub(lineStart, highlightBeginIndex - 1)
-
-                    local highlightBeginXOffset = font.glFont:GetTextWidth(stringBeforeInsertion) * fontScaledSize
-
-                    local lineY = textY + textHeight - highlightYOffset
-
-                    framework.color.hoverColor:Set()
-
-                    if self.selectionBegin == self.selectionEnd then
-                        if math_floor(os_clock() - selectionChangedClock) % 2 == 0 then
-                            gl_Rect(textX + highlightBeginXOffset - 0.5, lineY, textX + highlightBeginXOffset + 0.5, lineY + trueLineHeight)
-                        end
-                        return
-                    else
-                        local highlightEndXOffset
-                        if highlightEndIndex == lineEnd + 1 then
-                            highlightEndXOffset = textWidth
-                        else
-                            local highlightedString = displayString:sub(highlightBeginIndex, highlightEndIndex)
-                            highlightEndXOffset = font.glFont:GetTextWidth(highlightedString) * fontScaledSize + highlightBeginXOffset
-                        end
-
-                        gl_Rect(textX + highlightBeginXOffset, lineY, textX + highlightEndXOffset, lineY + trueLineHeight)
-                    end
-                elseif displayIndexOfCharacterAfterSelectionEnd <= lineStart then
-                    break
-                end
-            end
-        end
     end
 
     return entry
