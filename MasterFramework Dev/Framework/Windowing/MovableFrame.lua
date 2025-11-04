@@ -52,8 +52,14 @@ function framework:MovableFrame(key, child, defaultX, defaultY)
         function(responder, x, y, dx, dy)
             frame:Move(dx, dy)
         end,
-        function()
-            handleDecorations[1] = framework.color.hoverColor
+        function(responder, x, y)
+            local handleX, handleY = handleHoverDetector:CachedPositionTranslatedToGlobalContext()
+            local handleWidth, handleHeight = handleHoverDetector:Size()
+            if PointIsInRect(x, y, handleX, handleY, handleWidth, handleHeight) then
+                handleDecorations[1] = framework.color.hoverColor
+            else
+                handleDecorations[1] = nil
+            end
             handle:SetDecorations(handleDecorations)
             selected = false
         end

@@ -43,6 +43,9 @@ Debug changes:
 - Some error catching has been made less fine-grained for performance reasons. With stacktraces enabled, this should not tangibly hamper debugging.
 - Drawing will terminate completely after an error, rather than completing the other passes in the element's final frame.
 
+Bug fixes:
+- Hide `MovableFrame` handle when releasing outside bounds)
+
 Also includes further non-breaking (hopefully) optimisations and fixes.
 
 ## CV 43: Limit unnecessary layout / position / draw passes
