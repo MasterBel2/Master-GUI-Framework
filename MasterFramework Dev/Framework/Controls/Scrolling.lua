@@ -242,7 +242,7 @@ function framework:OffsettedViewport(body, mode)
         end
         
         if clipWidth > 0 and clipHeight > 0 then
-            gl.Scissor(_x, clipY, clipWidth, clipHeight)
+            gl.Scissor(_x, clipY, clipWidth + 1, clipHeight)
             _Draw(self)
             gl.Scissor(false)
         end

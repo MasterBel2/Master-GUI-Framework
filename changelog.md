@@ -45,6 +45,7 @@ Debug changes:
 
 Bug fixes:
 - Hide `MovableFrame` handle when releasing outside bounds)
+- Fix over-cropping for `OffsettedViewport`. (I suspect this happens with height too, but so far I haven't been able to verify. There's chance the error's something else, idk.)
 
 Also includes further non-breaking (hopefully) optimisations and fixes.
 
