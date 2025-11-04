@@ -196,7 +196,7 @@ function framework:DrawingGroup(body, disableDrawList)
         self.drawers = {}
         local drawTargets = self.drawTargets
         for i = 1, #drawTargets do
-            drawTargets[i]:Draw(self)
+            drawTargets[i]:Draw()
         end
         activeDrawingGroup = previousDrawingGroup
     end
