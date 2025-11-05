@@ -186,7 +186,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local fontScaledSize = font:ScaledSize()
 		local glFont = font.glFont
 		if availableWidth == cachedAvailableWidth and availableHeight == cachedAvailableHeight and not stringChanged and fontScaledSize == cachedFontScaledSize and font.key == cachedFontKey then
-			return self:Size()
+			return _Layout(self, self:Size())
 		end
 
 		if stringChanged then
