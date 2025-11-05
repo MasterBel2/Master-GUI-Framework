@@ -4,7 +4,7 @@ local Spring_SDLStartTextInput = Include.Spring.SDLStartTextInput
 
 function framework:TakeFocus(newFocusTarget)
 	if Internal.focusTarget then
-		focusTarget:ReleaseFocus()
+		Internal.focusTarget:ReleaseFocus()
 	end
 	if widgetHandler:OwnText() then
 		Spring_SDLStartTextInput()
