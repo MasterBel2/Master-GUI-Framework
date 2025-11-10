@@ -7,8 +7,10 @@ function framework:GeometryTarget(body)
     local drawingGroup
 
     function geometryTarget:Layout(...)
-        drawingGroup = activeDrawingGroup
-        drawingGroup.childGeometryTargets[#drawingGroup.childGeometryTargets + 1] = self
+        if activeDrawingGroup then
+            drawingGroup = activeDrawingGroup
+            drawingGroup.childGeometryTargets[#drawingGroup.childGeometryTargets + 1] = self
+        end
         width, height = body:Layout(...)
         return width, height
     end
