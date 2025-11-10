@@ -21,6 +21,10 @@ local DRAWING_GROUP_PASS_LAYOUT = DRAWING_GROUP_PASS.LAYOUT
 local DRAWING_GROUP_PASS_POSITION = DRAWING_GROUP_PASS.POSITION
 local DRAWING_GROUP_PASS_DRAW = DRAWING_GROUP_PASS.DRAW
 
+local function DoRectsIntersect(x1, y1, width1, height1, x2, y2, width2, height2)
+    return not ((x1 > x2 + width2) or (x2 > x1 + width1) or (y1 > y2 + height2) or (y2 > y1 + height1))
+end
+
 --[[
     `DrawingGroup` is a component that collects any child component that wishes to draw, and instructs them when to perform their draw.
 
@@ -49,8 +53,20 @@ local DRAWING_GROUP_PASS_DRAW = DRAWING_GROUP_PASS.DRAW
                                    Contents of this array are added by the descendent component tree during `drawingGroup:Position(x, y)`
 
     Methods:
-     - `drawingGroup:NeedsLayoutUpdate()`: Returns whether the drawingGroup or its children require a new layout pass.
-      - `drawingGroup:NeedsPositionUpdate()`: Returns whether the drawingGroup or its children require a new positioning pass.
+     - (Internal) Processing updates:
+        - `drawingGroup:UpdateLayout()`: Performs a layout pass of all the `DrawingGroup`'s children. Triggers `drawingGroup:UpdatePosition()`
+        - `drawingGroup:UpdatePosition()`: Performs a position pass of all the `DrawingGroup`'s children. Triggers a redraw.
+        - `drawingGroup:SetDrawingConstraints()`: Informs all child `DrawingGroup`s and `GeometryTarget`s of an update to this `DrawingGroup`'s absolute position, or a modification performed to the viewport.
+        - `drawingGroup:Draw()`: Draws the children of the drawing group to the screen.
+     - Triggering Draw Updates:
+        - `drawingGroup:LayoutUpdated(layoutComponent)`: Requests a layout update to be performed on the next frame. Will only update for registered components. (See `component:RegisterDrawingGroup()` in `Framework/Drawing/Decorations/Drawer.lua`.)
+        - `drawingGroup:PositionUpdated(layoutComponent)`: Requests a position update to be performed on the next frame. Will only update for registered components. (See `component:RegisterDrawingGroup()` in `Framework/Drawing/Decorations/Drawer.lua`.)
+        - `drawingGroup:DrawerUpdated(drawer)`: Requests a redraw to be performed on the next frame.Will only update for registered components or drawers. (See `component:RegisterDrawingGroup()` and `drawer:RegisterDrawingGroup()` in `Framework/Drawing/Decorations/Drawer.lua`.)
+        - `drawingGroup:DrawerWillContinuouslyUpdate(drawer)`: Requests a redraw to be performed on every frame until the `DrawingGroup` is notified otherwise, or the drawing component is no longer registered to the `DrawingGroup`. This allows the `DrawingGroup` to perform significant optimisations. (See `component:EnableContinuousRedrawing()` in `Framework/Drawing/Decorations/Drawer.lua`.)
+        - `drawingGroup:DrawerWillNotContinuouslyUpdate(drawer)`: Indicates redrawing every frame is no longer required. This allows the `DrawingGroup` to perform significant optimisations. (See `component:DisableContinuousRedrawing()` in `Framework/Drawing/Decorations/Drawer.lua`.)
+     - Geometry:
+         - `drawingGroup:CachedSize()`: Returns the width, height computed in the last `drawingGroup:UpdateLayout()`
+         - `drawingGroup:AbsolutePosition()`: Returns the x, y coordinates the drawing group will use to draw on-screen
 ]]
 function framework:DrawingGroup(body, disableDrawList)
     local drawingGroup = {}
@@ -65,7 +81,10 @@ function framework:DrawingGroup(body, disableDrawList)
     drawingGroup.continuouslyUpdatingDrawers = {}
 
     local element
+    local viewportX, viewportY, viewportWidth, viewportHeight = 0, 0, framework.viewportWidth, framework.viewportHeight
+    local isWithinViewport
     local parentDrawingGroup
+    local moved
     local parentX, parentY = 0, 0
     local absoluteX, absoluteY = 0, 0
 
@@ -84,7 +103,10 @@ function framework:DrawingGroup(body, disableDrawList)
     local cachedWidth, cachedHeight
     local cachedAvailableWidth, cachedAvailableHeight
     function drawingGroup:Layout(availableWidth, availableHeight)
-        element = Internal.activeElement
+        if Internal.activeElement and element ~= Internal.activeElement then
+            element = Internal.activeElement
+            element.groupsNeedingPosition[self] = true
+        end
         parentDrawingGroup = activeDrawingGroup
         if parentDrawingGroup then
             parentDrawingGroup.childDrawingGroups[#parentDrawingGroup.childDrawingGroups + 1] = self
@@ -101,13 +123,15 @@ function framework:DrawingGroup(body, disableDrawList)
     end
 
     function drawingGroup:UpdateLayout(calledByParent)
-        element.groupsNeedingLayout[self] = nil
+        if element then
+            element.groupsNeedingLayout[self] = nil
+            element.groupsNeedingPosition[self] = true
+        end
 
         self.layoutComponents = {}
         self.childDrawingGroups = {}
         self.childGeometryTargets = {}
 
-        element.groupsNeedingPosition[self] = true
 
         local previousDrawingGroup = activeDrawingGroup
         activeDrawingGroup = self
@@ -141,23 +165,19 @@ function framework:DrawingGroup(body, disableDrawList)
     end
     
     function drawingGroup:Position(x, y)
-        cachedX = x
-        cachedY = y
-        absoluteX = x + parentX
-        absoluteY = y + parentY
+        if x ~= cachedX or y ~= cachedY then
+            cachedX = x
+            cachedY = y
+            absoluteX = x + parentX
+            absoluteY = y + parentY
+            moved = true
+        end
 
         if element.groupsNeedingPosition[self] then
             self:UpdatePosition()
         end
 
-        local childDrawingGroups = self.childDrawingGroups
-        for i = 1, #childDrawingGroups do
-            childDrawingGroups[i]:SetParentGroupPosition(absoluteX, absoluteY)
-        end
-        local childGeometryTargets = self.childGeometryTargets
-        for i = 1, #childGeometryTargets do
-            childGeometryTargets[i]:SetParentGroupPosition(absoluteX, absoluteY)
-        end
+        self:SetDrawingConstraints(parentX, parentY, viewportX, viewportY, viewportWidth, viewportHeight)
 
         for _, event in pairs(events) do
 			local parentResponder = Internal.activeResponders[event]
@@ -169,21 +189,34 @@ function framework:DrawingGroup(body, disableDrawList)
 		end
     end
 
-    function drawingGroup:SetParentGroupPosition(x, y)
-        if parentX == x and parentY == y then return end 
-        parentX = x
-        parentY = y
+    function drawingGroup:SetDrawingConstraints(newParentX, newParentY, newViewportX, newViewportY, newViewportWidth, newViewportHeight)
+        if moved
+        or parentX ~= xOffset
+        or parentY ~= yOffset
+        or viewportX ~= newViewportX
+        or viewportY ~= newViewportY
+        or viewportWidth ~= newViewportWidth
+        or viewportHeight ~= newViewportHeight then
+            parentX = newParentX
+            parentY = newParentY
+            absoluteX = cachedX + newParentX
+            absoluteY = cachedY + newParentY
 
-        absoluteX = cachedX + x
-        absoluteY = cachedY + y
+            local wasWithinViewport = isWithinViewport
+            isWithinViewport = DoRectsIntersect(viewportX, viewportY, viewportWidth, viewportHeight, absoluteX, absoluteY, cachedWidth, cachedHeight)
 
-        local childDrawingGroups = self.childDrawingGroups
-        for i = 1, #childDrawingGroups do
-            childDrawingGroups[i]:SetParentGroupPosition(absoluteX, absoluteY)
-        end
-        local childGeometryTargets = self.childGeometryTargets
-        for i = 1, #childGeometryTargets do
-            childGeometryTargets[i]:SetParentGroupPosition(absoluteX, absoluteY)
+            if isWithinViewport ~= wasWithinViewport then
+                element.requestedRedraws[redrawFunc] = true
+            end
+
+            local childDrawingGroups = self.childDrawingGroups
+            for i = 1, #childDrawingGroups do
+                childDrawingGroups[i]:SetDrawingConstraints(absoluteX, absoluteY, viewportX, viewportY, viewportWidth, viewportHeight)
+            end
+            local childGeometryTargets = self.childGeometryTargets
+            for i = 1, #childGeometryTargets do
+                childGeometryTargets[i]:SetParentGroupPosition(absoluteX, absoluteY)
+            end
         end
     end
     function drawingGroup:AbsolutePosition()
@@ -209,6 +242,7 @@ function framework:DrawingGroup(body, disableDrawList)
     end
 
     function drawingGroup:Draw()
+        if not isWithinViewport then return end
         local previousDrawingGroup = activeDrawingGroup
         activeDrawingGroup = self
         self.pass = DRAWING_GROUP_PASS_DRAW
@@ -253,14 +287,16 @@ function framework:DrawingGroup(body, disableDrawList)
     end
 
     function drawingGroup:PositionsUpdated(layoutComponent)
-        if self.layoutComponents[layoutComponent] then
+        if self.layoutComponents[layoutComponent] and isWithinViewport then
             element.groupsNeedingPosition[self] = true
             return true
         end
     end
 
     function drawingGroup:DrawerUpdated(drawer)
-        if self.drawers[drawer] and not (self.disableDrawList or next(self.continuouslyUpdatingDrawers)) then
+        if isWithinViewport 
+        and self.drawers[drawer]
+        and not (self.disableDrawList or next(self.continuouslyUpdatingDrawers)) then
             element.requestedRedraws[redrawFunc] = true
             return true
         end

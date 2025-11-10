@@ -62,8 +62,8 @@ function framework:OffsettedViewport(body, mode)
 
     local width = 0
     local height = 0
-    local _x = 0
-    local _y = 0
+    local scissorX = 0
+    local scissorY = 0
     local xOffset = 0
     local yOffset = 0
 
@@ -82,6 +82,12 @@ function framework:OffsettedViewport(body, mode)
             yOffset = _yOffset
             self:NeedsPosition()
         end
+    end
+
+
+    local _SetDrawingConstraints = viewport.SetDrawingConstraints
+    function viewport:SetDrawingConstraints(parentX, parentY, _, _, _, _)
+        _SetDrawingConstraints(self, parentX, parentY, scissorX, scissorY, width, height)
     end
 
     local draggingVertical = false
@@ -191,8 +197,8 @@ function framework:OffsettedViewport(body, mode)
     
     local _Position = viewport.Position
     function viewport:Position(x, y)
-        _x = x
-        _y = y
+        scissorX = x
+        scissorY = y
 
         self:SetYOffset(math.max(
             math.min(
@@ -231,7 +237,7 @@ function framework:OffsettedViewport(body, mode)
         local clipWidth = width
         local clipHeight = height
 
-        local clipY = _y
+        local clipY = scissorY
 
         if height < self.contentHeight then
             clipWidth = clipWidth - cachedScrollbarThickness
@@ -242,7 +248,7 @@ function framework:OffsettedViewport(body, mode)
         end
         
         if clipWidth > 0 and clipHeight > 0 then
-            gl.Scissor(_x, clipY, clipWidth + 1, clipHeight)
+            gl.Scissor(scissorX, clipY, clipWidth + 1, clipHeight)
             _Draw(self)
             gl.Scissor(false)
         end

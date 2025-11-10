@@ -9,7 +9,6 @@ function framework:TakeFocus(newFocusTarget)
 	if widgetHandler:OwnText() then
 		Spring_SDLStartTextInput()
 		Internal.focusTarget = newFocusTarget
-		Internal.focusTargetElementKey = Internal.activeElement.key
 		return true
 	end
 end
@@ -19,7 +18,6 @@ end
 function framework:ReleaseFocus(requestingFocusTarget)
 	if requestingFocusTarget == Internal.focusTarget then
 		Internal.focusTarget = nil
-		Internal.focusTargetElementKey = nil
 		return widgetHandler:DisownText()
 	end
 end

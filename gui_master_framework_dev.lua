@@ -284,7 +284,6 @@ function widget:MouseRelease(x, y, button)
 			framework.Error("widget:MouseRelease", "dragListener:MouseRelease", errorMessage)
 		end
 		frameworkInternal.dragListeners[button] = nil
-		frameworkInternal.dragListenerElementKeys[button] = nil
 	end
 	return false
 end
