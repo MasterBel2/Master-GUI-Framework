@@ -216,34 +216,44 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local width = math_min(glFont:GetTextWidth(wrappedText) * cachedFontScaledSize, availableWidth)
 		local height = math_min(maxHeight, lineCount * trueLineHeight)
 
-		local addedCharacterCount = 0
-		local removedSpacesCount = 0
 
 		local i = 1
 		local j = 1
-		local string_sub = string.sub
-		local rawCharacter = string_sub(string, i, i)
-		local displayCharacter = string_sub(wrappedText, j, j)
+		local string_byte = string.byte
+		local rawCharacter = string_byte(string, i)
+		local displayCharacter = string_byte(wrappedText, j)
 		local rawLength = string:len()
 		local displayLength = wrappedText:len()
+		
+		local addedCharacterCount = 0
+		local removedSpacesCount = 0
+
 		while i <= rawLength and j <= displayLength do
 			if rawCharacter ~= displayCharacter then
-				if rawCharacter == " " then
+				if rawCharacter == 32 then
 					removedSpacesCount = removedSpacesCount + 1
 					removedSpaces[removedSpacesCount] = i
 					i = i + 1
-					rawCharacter = string_sub(string, i, i)
+					rawCharacter = string_byte(string, i)
+				 elseif displayCharacter == 255 then
+					addedCharacterCount = addedCharacterCount + 4
+					addedCharacters[addedCharacterCount - 3] = j
+					addedCharacters[addedCharacterCount - 2] = j + 1
+					addedCharacters[addedCharacterCount - 1] = j + 2
+					addedCharacters[addedCharacterCount    ] = j + 3
+					j = j + 4
+				 	displayCharacter = string_byte(wrappedText, j)
 				else
 					addedCharacterCount = addedCharacterCount + 1
 					addedCharacters[addedCharacterCount] = j
 					j = j + 1
-					displayCharacter = string_sub(wrappedText, j, j)
+					displayCharacter = string_byte(wrappedText, j)
 				end
 			else
 				i = i + 1
-				rawCharacter = string_sub(string, i, i)
+				rawCharacter = string_byte(string, i)
 				j = j + 1
-				displayCharacter = string_sub(wrappedText, j, j)
+				displayCharacter = string_byte(wrappedText, j)
 			end
 		end
 
