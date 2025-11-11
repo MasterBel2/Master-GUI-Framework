@@ -218,7 +218,6 @@ function framework:OffsettedViewport(body, mode)
 
         _Position(self, x - xOffset, y + yOffset + height - self.contentHeight)
 
-
         if width < self.contentWidth then
             horizontalScrollbar:Position(x + width / viewport.contentWidth * xOffset, y)
         end

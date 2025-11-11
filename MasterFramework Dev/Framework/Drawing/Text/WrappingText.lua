@@ -333,7 +333,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			local reuseLast = highlight.startIndex > lastEndIndex
 			lastEndIndex = highlight.endIndex
 			displayStartIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(highlight.startIndex, reuseLast and cachedAddedCharactersIndex, reuseLast and cachedRemovedSpacesIndex, reuseLast and cachedComputedOffset)
-			displayEndIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(highlight.endIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset)	
+			displayEndIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(highlight.endIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset)
 			highlight.displayStartIndex = displayStartIndex
 			highlight.displayEndIndex = displayEndIndex
 		end
@@ -418,7 +418,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			displayStartIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(startIndex, reuseLast and cachedAddedCharactersIndex, reuseLast and cachedRemovedSpacesIndex, reuseLast and cachedComputedOffset)
 			displayEndIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(endIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset)
 		end
-        highlights[nextHighlightID] = { 
+        highlights[nextHighlightID] = {
 			color = color, 
 			startIndex = startIndex, 
 			endIndex = endIndex, 

@@ -140,7 +140,6 @@ function framework:DrawingGroup(body, disableDrawList)
         self.childDrawingGroups = {}
         self.childGeometryTargets = {}
 
-
         local previousDrawingGroup = activeDrawingGroup
         activeDrawingGroup = self
         self.pass = DRAWING_GROUP_PASS_LAYOUT

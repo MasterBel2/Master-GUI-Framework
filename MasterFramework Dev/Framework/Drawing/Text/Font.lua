@@ -36,7 +36,7 @@ function framework:Font(fileName, size, outlineWidth, outlineWeight)
 			scale = newScale
 		end
 		-- -- During framework initialisation, `combinedScaleFactor` might not be present. That's perfectly fine, we'll get a value before we need it.
-		if combinedScaleFactor then 
+		if combinedScaleFactor then
 			font:Scale(combinedScaleFactor)
 		end
 
