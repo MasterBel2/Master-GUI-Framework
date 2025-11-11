@@ -20,6 +20,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	maxLines = maxLines or math_huge
 	font = font or framework.defaultFont
 	baseColor = baseColor or framework.color.white
+	local textChunks = {}
 	local wrappingText = table.mergeInPlace(Component(true, true), framework:GeometryTarget({ Layout = function(_, ...) return ... end, Position = function() end }))
 
 	wrappingText._readOnly_font = font
@@ -43,6 +44,9 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	function wrappingText:SetBaseColor(newBaseColor)
 		if baseColor ~= newBaseColor then
 			baseColor = newBaseColor
+			for i = 1, #textChunks do
+				textChunks[i]:Update(nil, nil, nil, nil, newBaseColor)
+			end
 			self:NeedsRedraw()
 		end
 	end
@@ -186,6 +190,10 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local fontScaledSize = font:ScaledSize()
 		local glFont = font.glFont
 		if availableWidth == cachedAvailableWidth and availableHeight == cachedAvailableHeight and not stringChanged and fontScaledSize == cachedFontScaledSize and font.key == cachedFontKey then
+			for i = 1, #textChunks do
+				textChunks[i]:Layout(textChunks[i]:CachedSize())
+			end
+			
 			return _Layout(self, self:Size())
 		end
 
@@ -247,6 +255,75 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			removedSpaces[i] = nil
 		end
 
+
+		local lineStarts, lineEnds = string:lines_MasterFramework()
+		-- Seems to be the sweet spot through experimental testing
+		-- I imagine this could change depending on the nature of the text
+		local linesPerChunk = 10
+		local desiredChunkCount = math.ceil(#lineStarts / linesPerChunk)
+		do
+			local addedCharactersIndex, removedSpacesIndex, computedOffset
+			for i = #textChunks + 1, desiredChunkCount do
+				local displayStartIndex, displayEndIndex
+				displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(lineStarts[(i - 1) * linesPerChunk + 1] - 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
+				displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(lineEnds[i * linesPerChunk] and (lineEnds[i * linesPerChunk] + 1) or string:len(), addedCharactersIndex, removedSpacesIndex, computedOffset)
+				
+				local displayString = wrappedText:sub(displayStartIndex + 1, displayEndIndex - 1)
+
+				-- Current implementation assumes that any coloredString will work regardless where a split occurs.
+				-- This is not the case!
+				-- The following code also doesn't work but could serve as a starting point.
+
+				-- if textChunks[i - 1] then
+				-- 	local previousDisplayString = wrappedText:sub(1, displayStartIndex - 1)
+				-- 	local colorCodeIndex, _, colorCode = previousDisplayString:find("(\255...).-$")
+				-- 	local colorCancelIndex = previousDisplayString:find("\b")
+				-- 	if colorCodeIndex then
+				-- 		if colorCancelIndex then
+				-- 			if colorCancelIndex < colorCodeIndex then
+				-- 				displayString = colorCode .. displayString
+				-- 			end
+				-- 		end
+				-- 		displayString = colorCode .. displayString
+				-- 	end
+				-- end
+
+				textChunks[i] = Internal.TextChunk()
+				textChunks[i]:Update(displayString, font, baseColor)
+			end
+		end
+		for i = desiredChunkCount + 1, #textChunks do
+			textChunks[i] = nil
+		end
+		local addedCharactersIndex, removedSpacesIndex, computedOffset
+		for i = 1, desiredChunkCount do
+			local displayStartIndex, displayEndIndex
+			displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(lineStarts[(i - 1) * linesPerChunk + 1] - 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
+			displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(lineEnds[i * linesPerChunk] and (lineEnds[i * linesPerChunk] + 1) or string:len() + 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
+		
+			local displayString = wrappedText:sub(displayStartIndex + 1, displayEndIndex - 1)
+
+			-- Current implementation assumes that any coloredString will work regardless where a split occurs.
+			-- This is not the case!
+			-- The following code also doesn't work but could serve as a starting point.
+
+			-- if textChunks[i - 1] then
+			-- 	local previousDisplayString = wrappedText:sub(1, displayStartIndex - 1)
+			-- 	local colorCodeIndex, _, colorCode = previousDisplayString:find("(\255...).-$")
+			-- 	local colorCancelIndex = previousDisplayString:find("\b")
+			-- 	if colorCodeIndex then
+			-- 		if colorCancelIndex then
+			-- 			if colorCancelIndex < colorCodeIndex then
+			-- 				displayString = colorCode .. displayString
+			-- 			end
+			-- 		end
+			-- 		displayString = colorCode .. displayString
+			-- 	end
+			-- end
+
+			textChunks[i]:Update(displayString, font, baseColor)
+		end
+
 		-- We don't return here since we're only using this to coerce the `GeometryTarget` into caching width, height for us
 		_Layout(self, width, height)
 
@@ -267,24 +344,15 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	local _Position = wrappingText.Position
 	function wrappingText:Position(x, y)
 		_Position(self, x, y)
-		Internal.activeTextGroup:AddElement(self)
+		local chunkYOffset = 0
+		for i = 1, #textChunks do
+			local _, height = self:Size()
+			local _, chunkHeight = textChunks[i]:CachedSize()
+			chunkYOffset = chunkYOffset + chunkHeight
+			textChunks[i]:Position(x, y + height - chunkYOffset)
+		end
+
 		activeDrawingGroup.drawTargets[#activeDrawingGroup.drawTargets + 1] = self
-	end
-
-	-- Draws the text on-screen, using the cached coordinates from `wrappingText:Position(x, y)`.
-	--
-	-- Called by the `framework:TextGroup` that `wrappingText:Position(x, y)` registered us with.
-	function wrappingText:DrawText(glFont)
-		glFont:SetTextColor(baseColor:GetRawValues())
-		baseColor:RegisterDrawingGroup()
-		self:RegisterDrawingGroup()
-
-		local cachedX, cachedY = self:CachedPositionRemainingInLocalContext()
-		local cachedWidth, cachedHeight = self:Size()
-
-		-- height - 1 is because it appeared to be drawing 1 pixel too high - for the default font, at least. I haven't checked with any other font size yet.
-		-- I don't know what to do about text that's supposed to be centred vertically in a cell, because this method of drawing means the descender pushes the text up a bunch.
-		glFont:Print(wrappedText, cachedX, cachedY + cachedHeight - 1, font:ScaledSize(), "ao")
 	end
 
 	function wrappingText:Draw()

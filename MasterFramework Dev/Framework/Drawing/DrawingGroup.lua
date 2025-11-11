@@ -82,7 +82,7 @@ function framework:DrawingGroup(body, disableDrawList)
 
     local element
     local viewportX, viewportY, viewportWidth, viewportHeight = 0, 0, framework.viewportWidth, framework.viewportHeight
-    local isWithinViewport
+    local isWithinViewport = true
     local parentDrawingGroup
     local moved
     local parentX, parentY = 0, 0
@@ -102,15 +102,23 @@ function framework:DrawingGroup(body, disableDrawList)
     
     local cachedWidth, cachedHeight
     local cachedAvailableWidth, cachedAvailableHeight
+    local registeredChildGroupIndex
     function drawingGroup:Layout(availableWidth, availableHeight)
+        -- `drawingGroup:Layout()` can be triggered outside of drawing, when `Internal.activeElement` is `nil`. 
+        -- In this case, we need to not update `element`.
+        -- Since now we'll have a bunch of registered components that can call other funcs,
+        -- we'll then have to check for whether `element` is set throughout `DrawingGroup`'s various methods.
         if Internal.activeElement and element ~= Internal.activeElement then
             element = Internal.activeElement
+            self.element = element
             element.groupsNeedingPosition[self] = true
         end
         parentDrawingGroup = activeDrawingGroup
-        if parentDrawingGroup then
-            parentDrawingGroup.childDrawingGroups[#parentDrawingGroup.childDrawingGroups + 1] = self
-        end
+        -- `drawingGroup:Layout()` can be triggered multiple times
+        if parentDrawingGroup and parentDrawingGroup.childDrawingGroups[registeredChildGroupIndex] ~= self then
+            registeredChildGroupIndex = #parentDrawingGroup.childDrawingGroups + 1
+            parentDrawingGroup.childDrawingGroups[registeredChildGroupIndex] = self
+        end 
 
         if availableWidth ~= cachedAvailableWidth or availableHeight ~= cachedAvailableHeight then
             cachedAvailableWidth = availableWidth
@@ -150,9 +158,12 @@ function framework:DrawingGroup(body, disableDrawList)
 
     local cachedX, cachedY
     function drawingGroup:UpdatePosition()
-        element.groupsNeedingPosition[self] = nil
+        if element then
+            element.groupsNeedingPosition[self] = nil
 
-        element.requestedRedraws[redrawFunc] = true
+            element.requestedRedraws[redrawFunc] = true
+        end
+    
         self.drawTargets = {}
 
         local previousDrawingGroup = activeDrawingGroup
@@ -165,6 +176,7 @@ function framework:DrawingGroup(body, disableDrawList)
     end
     
     function drawingGroup:Position(x, y)
+        if not element then return end
         if x ~= cachedX or y ~= cachedY then
             cachedX = x
             cachedY = y
@@ -205,7 +217,7 @@ function framework:DrawingGroup(body, disableDrawList)
             local wasWithinViewport = isWithinViewport
             isWithinViewport = DoRectsIntersect(viewportX, viewportY, viewportWidth, viewportHeight, absoluteX, absoluteY, cachedWidth, cachedHeight)
 
-            if isWithinViewport ~= wasWithinViewport then
+            if element and (isWithinViewport ~= wasWithinViewport) then
                 element.requestedRedraws[redrawFunc] = true
             end
 
@@ -280,21 +292,22 @@ function framework:DrawingGroup(body, disableDrawList)
     end
 
     function drawingGroup:LayoutUpdated(layoutComponent)
-        if self.layoutComponents[layoutComponent] then
+        if element and self.layoutComponents[layoutComponent] then
             element.groupsNeedingLayout[self] = true
             return true
         end
     end
 
     function drawingGroup:PositionsUpdated(layoutComponent)
-        if self.layoutComponents[layoutComponent] and isWithinViewport then
+        if element and self.layoutComponents[layoutComponent] and isWithinViewport then
             element.groupsNeedingPosition[self] = true
             return true
         end
     end
 
     function drawingGroup:DrawerUpdated(drawer)
-        if isWithinViewport 
+        if element 
+        and isWithinViewport 
         and self.drawers[drawer]
         and not (self.disableDrawList or next(self.continuouslyUpdatingDrawers)) then
             element.requestedRedraws[redrawFunc] = true
