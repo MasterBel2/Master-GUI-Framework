@@ -4,6 +4,8 @@ local math_huge = Include.math.huge
 local math_max = Include.math.max
 local math_min = Include.math.min
 
+local next = Include.next
+
 local gl_Rect = Include.gl.Rect
 local gl_Translate = Include.gl.Translate
 
@@ -357,6 +359,8 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 
 	function wrappingText:Draw()
 		self:RegisterDrawingGroup()
+		if not next(highlights) then return end
+
 		local glFont = self._readOnly_font.glFont
 		local displayString = self:GetDisplayString()
         local lineStarts, lineEnds = displayString:lines_MasterFramework()
