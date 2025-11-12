@@ -31,8 +31,10 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	wrappingText.addedCharacters = {}
 	wrappingText.removedSpaces = {}
 
+	local rawLineStarts, rawLineEnds, rawLineCount; function wrappingText:GetRawLines() return rawLineStarts, rawLineEnds, rawLineCount end
 	local coloredString
-	local wrappedText, lineCount
+	local wrappedText, lineCount, wrappedLineStarts, wrappedLineEnds; function wrappingText:GetDisplayLines() return wrappedLineStarts, wrappedLineEnds, lineCount end
+	local width, height
 	local cachedAvailableWidth, cachedAvailableHeight, cachedFontKey, cachedFontScaledSize, cachedFontScaledSize
 	local addedCharacters = wrappingText.addedCharacters
 	local removedSpaces = wrappingText.removedSpaces
@@ -142,14 +144,12 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local glFont = font.glFont
 		local scaledFontSize = font:ScaledSize()
 
-		local lineStarts, lineEnds = wrappedText:lines_MasterFramework()
-
-		local lineIndex = math_min(#lineStarts, math_max(1, #lineStarts - math_floor(yOffset / (glFont.lineheight * scaledFontSize))))
+		local lineIndex = math_min(lineCount, math_max(1, lineCount - math_floor(yOffset / (glFont.lineheight * scaledFontSize))))
 		
 		if lineIndex == 0 then return 1 end
 
-		local lineStart = lineStarts[lineIndex]
-		local lineEnd = lineEnds[lineIndex]
+		local lineStart = wrappedLineStarts[lineIndex]
+		local lineEnd = wrappedLineEnds[lineIndex]
 
 		local elapsedWidth = 0
 
@@ -213,8 +213,9 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local maxHeight = math_min(availableHeight, maxLines * trueLineHeight)
 
 		wrappedText, lineCount = glFont:WrapText(coloredString, availableWidth + 0.1, maxHeight, cachedFontScaledSize) -- Apparently this adds an extra character ("\r") even when line breaks already
-		local width = math_min(glFont:GetTextWidth(wrappedText) * cachedFontScaledSize, availableWidth)
-		local height = math_min(maxHeight, lineCount * trueLineHeight)
+		wrappedLineStarts, wrappedLineEnds = wrappedText:lines_MasterFramework()
+		width = math_min(glFont:GetTextWidth(wrappedText) * cachedFontScaledSize, availableWidth)
+		height = math_min(maxHeight, lineCount * trueLineHeight)
 
 
 		local i = 1
@@ -268,17 +269,18 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		end
 
 
-		local lineStarts, lineEnds = string:lines_MasterFramework()
+		rawLineStarts, rawLineEnds = string:lines_MasterFramework()
+		rawLineCount = #rawLineStarts
 		-- Seems to be the sweet spot through experimental testing
 		-- I imagine this could change depending on the nature of the text
 		local linesPerChunk = 10
-		local desiredChunkCount = math.ceil(#lineStarts / linesPerChunk)
+		local desiredChunkCount = math.ceil(rawLineCount / linesPerChunk)
 		do
 			local addedCharactersIndex, removedSpacesIndex, computedOffset
 			for i = #textChunks + 1, desiredChunkCount do
 				local displayStartIndex, displayEndIndex
-				displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(lineStarts[(i - 1) * linesPerChunk + 1] - 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
-				displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(lineEnds[i * linesPerChunk] and (lineEnds[i * linesPerChunk] + 1) or string:len(), addedCharactersIndex, removedSpacesIndex, computedOffset)
+				displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineStarts[(i - 1) * linesPerChunk + 1] - 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
+				displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineEnds[i * linesPerChunk] and (rawLineEnds[i * linesPerChunk] + 1) or string:len(), addedCharactersIndex, removedSpacesIndex, computedOffset)
 				
 				local displayString = wrappedText:sub(displayStartIndex + 1, displayEndIndex - 1)
 
@@ -310,8 +312,8 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local addedCharactersIndex, removedSpacesIndex, computedOffset
 		for i = 1, desiredChunkCount do
 			local displayStartIndex, displayEndIndex
-			displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(lineStarts[(i - 1) * linesPerChunk + 1] - 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
-			displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(lineEnds[i * linesPerChunk] and (lineEnds[i * linesPerChunk] + 1) or string:len() + 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
+			displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineStarts[(i - 1) * linesPerChunk + 1] - 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
+			displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineEnds[i * linesPerChunk] and (rawLineEnds[i * linesPerChunk] + 1) or string:len() + 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
 		
 			local displayString = wrappedText:sub(displayStartIndex + 1, displayEndIndex - 1)
 
@@ -340,14 +342,11 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		_Layout(self, width, height)
 
 		local lastEndIndex = math_huge
-		for _, highlight in pairs(highlights) do
-			local displayStartIndex, displayEndIndex
+		for id, highlight in pairs(highlights) do
 			local reuseLast = highlight.startIndex > lastEndIndex
 			lastEndIndex = highlight.endIndex
-			displayStartIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(highlight.startIndex, reuseLast and cachedAddedCharactersIndex, reuseLast and cachedRemovedSpacesIndex, reuseLast and cachedComputedOffset)
-			displayEndIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(highlight.endIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset)
-			highlight.displayStartIndex = displayStartIndex
-			highlight.displayEndIndex = displayEndIndex
+
+			self:UpdateHighlight(id, highlight.color, highlight.startIndex, highlight.endIndex, reuseLast)
 		end
 		
 		return width, height
@@ -372,8 +371,6 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		if not next(highlights) then return end
 
 		local glFont = self._readOnly_font.glFont
-		local displayString = self:GetDisplayString()
-        local lineStarts, lineEnds = displayString:lines_MasterFramework()
 		local scaledSize = self._readOnly_font:ScaledSize()
         local lineHeight = scaledSize * glFont.lineheight
 		local textWidth, textHeight = self:Size()
@@ -383,29 +380,13 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 
 		for _, highlight in pairs(highlights) do
 			highlight.color:Set()
-			for i = 1, #lineStarts do
-				local lineStart = lineStarts[i]
-				local lineEnd = lineEnds[i]
-
-				if highlight.displayStartIndex <= lineEnd + 1 and highlight.displayEndIndex >= lineStart then
-					local xStart = glFont:GetTextWidth(displayString:sub(lineStart, highlight.displayStartIndex - 1)) * scaledSize
-					if highlight.displayStartIndex == highlight.displayEndIndex then
-						gl_Rect(
-							xStart - 0.5,
-							textHeight - i * lineHeight,
-							xStart + 0.5,
-							textHeight - (i - 1) * lineHeight
-						)
-					else
-						local selectedText = displayString:sub(math_max(lineStart, highlight.displayStartIndex), math_min(highlight.displayEndIndex - 1, lineEnd))
-						gl_Rect(
-							xStart,
-							textHeight - i * lineHeight,
-							xStart + glFont:GetTextWidth(selectedText) * scaledSize,
-							textHeight - (i - 1) * lineHeight
-						)
-					end
-				end
+			for lineOffset, line in pairs(highlight.lines) do
+				gl_Rect(
+					line.xEnd and line.xStart or line.xStart - 0.5,
+					textHeight - lineOffset * lineHeight,
+					line.xEnd and line.xEnd or line.xStart + 0.5,
+					textHeight - (lineOffset - 1) * lineHeight
+				)
 			end
 		end
 
@@ -428,17 +409,57 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		self:NeedsRedraw()
 
 		local displayStartIndex, displayEndIndex
-		if coloredString then
+		if wrappedText then
 			displayStartIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(startIndex, reuseLast and cachedAddedCharactersIndex, reuseLast and cachedRemovedSpacesIndex, reuseLast and cachedComputedOffset)
 			displayEndIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset = self:RawIndexToDisplayIndex(endIndex, cachedAddedCharactersIndex, cachedRemovedSpacesIndex, cachedComputedOffset)
+			if not displayStartIndex then error("oh no") end
 		end
-        highlights[nextHighlightID] = {
-			color = color, 
-			startIndex = startIndex, 
-			endIndex = endIndex, 
-			displayStartIndex = displayStartIndex, 
-			displayEndIndex = displayEndIndex
-		}
+
+		local highlight = highlights[nextHighlightID]
+		if highlight then
+			highlight.color = color; highlight.startIndex = startIndex; highlight.endIndex = endIndex; highlight.displayStartIndex = displayStartIndex; highlight.endIndex = endIndex 
+		else
+			highlight = {
+				color = color, 
+				startIndex = startIndex, 
+				endIndex = endIndex, 
+				displayStartIndex = displayStartIndex, 
+				displayEndIndex = displayEndIndex,
+				lines = {}
+			}
+		end
+
+		local highlightedLines = highlight.lines
+
+		if wrappedText then
+			for i = 1, lineCount do
+				local lineStart = wrappedLineStarts[i]
+				local lineEnd = wrappedLineEnds[i]
+
+				if displayStartIndex <= lineEnd + 1 and displayEndIndex >= lineStart then
+					local highlightedLine = highlightedLines[i] or {}
+
+					local lineHighlightStartIndex = math_max(lineStart, displayStartIndex)
+					if displayStartIndex > lineStart then
+						highlightedLine.xStart = (lineHighlightStartIndex == highlightedLine.startIndex) and highlightedLine.xStart or font.glFont:GetTextWidth(wrappedText:sub(lineStart, displayStartIndex - 1)) * font:ScaledSize()
+					else
+						highlightedLine.xStart = 0
+					end
+					highlightedLine.startIndex = lineHighlightStartIndex
+					if displayStartIndex ~= displayEndIndex then
+						local lineHighlightEndIndex = math_min(displayEndIndex - 1, lineEnd)
+						highlightedLine.xEnd = (lineHighlightEndIndex == highlightedLine.endIndex) and highlightedLine.xEnd or font.glFont:GetTextWidth(wrappedText:sub(lineStart, lineHighlightEndIndex)) * font:ScaledSize()
+					else
+						highlightedLine.xEnd = nil
+					end
+					highlightedLines[i] = highlightedLine
+				else
+					highlightedLines[i] = nil
+				end
+			end
+		end
+
+		highlights[nextHighlightID] = highlight
 
 		return nextHighlightID
     end
