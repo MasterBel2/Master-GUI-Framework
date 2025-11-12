@@ -23,6 +23,7 @@ function Internal.TextChunk()
 	end
 
 	function textChunk:DrawText(glFont)
+		self:RegisterDrawingGroup()
 		color:RegisterDrawingGroup()
 		glFont:SetTextColor(color:GetRawValues())
 

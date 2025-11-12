@@ -47,7 +47,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		if baseColor ~= newBaseColor then
 			baseColor = newBaseColor
 			for i = 1, #textChunks do
-				textChunks[i]:Update(nil, nil, nil, nil, newBaseColor)
+				textChunks[i]:Update(nil, nil, newBaseColor)
 			end
 			self:NeedsRedraw()
 		end
