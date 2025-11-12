@@ -122,7 +122,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local removedSpace = removedSpaces[1]
 
 		-- Interesting to note, checking spaces is consistently (marginally) faster
-		while math_min(addedCharacter, removedSpace) <= displayIndex do
+		while removedSpace <= displayIndex or addedCharacter <= displayIndex do
 			if addedCharacter < removedSpace then
 				computedOffset = computedOffset - 1
 				addedCharactersIndex = addedCharactersIndex + 1
