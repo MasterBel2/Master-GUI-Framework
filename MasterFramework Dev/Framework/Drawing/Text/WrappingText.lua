@@ -118,17 +118,26 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 
 		local computedOffset = 0
 
-		while math_min(addedCharacters[addedCharactersIndex], removedSpaces[removedSpacesIndex] - computedOffset) <= displayIndex do
-			if addedCharacters[addedCharactersIndex] < removedSpaces[removedSpacesIndex] - computedOffset then
+		local addedCharacter = addedCharacters[1]
+		local removedSpace = removedSpaces[1]
+
+		-- Interesting to note, checking spaces is consistently (marginally) faster
+		while math_min(addedCharacter, removedSpace) <= displayIndex do
+			if addedCharacter < removedSpace then
 				computedOffset = computedOffset - 1
 				addedCharactersIndex = addedCharactersIndex + 1
-			elseif addedCharacters[addedCharactersIndex] == removedSpaces[removedSpacesIndex] - computedOffset then
+				addedCharacter = addedCharacters[addedCharactersIndex]
+				removedSpace = removedSpaces[removedSpacesIndex] - computedOffset
+			elseif addedCharacter == removedSpace then
 				-- count them as swapped, no change to offset
 				addedCharactersIndex = addedCharactersIndex + 1
 				removedSpacesIndex = removedSpacesIndex + 1
-			elseif addedCharacters[addedCharactersIndex] > removedSpaces[removedSpacesIndex] - computedOffset then
+				addedCharacter = addedCharacters[addedCharactersIndex]
+				removedSpace = removedSpaces[removedSpacesIndex] - computedOffset
+			elseif addedCharacter > removedSpace then
 				computedOffset = computedOffset + 1
 				removedSpacesIndex = removedSpacesIndex + 1
+				removedSpace = removedSpaces[removedSpacesIndex] - computedOffset
 			end
 		end
 
