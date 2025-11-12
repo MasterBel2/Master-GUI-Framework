@@ -120,24 +120,32 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 
 		local addedCharacter = addedCharacters[1]
 		local removedSpace = removedSpaces[1]
+		-- while addedCharacters stores display indices, removedSpaces stores raw indices. 
+		-- So, we need to convert between them.
+		local removedSpaceDisplayIndex = removedSpace
 
 		-- Interesting to note, checking spaces is consistently (marginally) faster
-		while removedSpace <= displayIndex or addedCharacter <= displayIndex do
+		while removedSpaceDisplayIndex <= displayIndex or addedCharacter <= displayIndex do
 			if addedCharacter < removedSpace then
 				computedOffset = computedOffset - 1
 				addedCharactersIndex = addedCharactersIndex + 1
+
 				addedCharacter = addedCharacters[addedCharactersIndex]
-				removedSpace = removedSpaces[removedSpacesIndex] - computedOffset
+				removedSpaceDisplayIndex = removedSpace - computedOffset
 			elseif addedCharacter == removedSpace then
 				-- count them as swapped, no change to offset
 				addedCharactersIndex = addedCharactersIndex + 1
 				removedSpacesIndex = removedSpacesIndex + 1
+
 				addedCharacter = addedCharacters[addedCharactersIndex]
-				removedSpace = removedSpaces[removedSpacesIndex] - computedOffset
+				removedSpace = removedSpaces[removedSpacesIndex]
+				removedSpaceDisplayIndex = removedSpace - computedOffset
 			elseif addedCharacter > removedSpace then
 				computedOffset = computedOffset + 1
 				removedSpacesIndex = removedSpacesIndex + 1
-				removedSpace = removedSpaces[removedSpacesIndex] - computedOffset
+
+				removedSpace = removedSpaces[removedSpacesIndex]
+				removedSpaceDisplayIndex = removedSpace - computedOffset
 			end
 		end
 
