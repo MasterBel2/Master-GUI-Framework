@@ -83,6 +83,10 @@ local framework = {
 local isAbove
 local isAboveChecked = false
 
+local dxBuffered = 0
+local dyBuffered = 0
+local mouseMovedThisFrame
+
 function widget:SetConfigData(data)
 	frameworkInternal.ConfigData = data or {}
 end
@@ -248,6 +252,8 @@ function widget:KeyRelease(key, mods, label, utf32char, scanCode, actionList)
 end
 
 function widget:MousePress(x, y, button)
+	dxBuffered = 0
+	dyBuffered = 0
 	if frameworkInternal.focusTarget then
 		frameworkInternal.focusTarget:ReleaseFocus()
 		frameworkInternal.focusTarget = nil
@@ -269,9 +275,17 @@ end
 function widget:MouseMove(x, y, dx, dy, button)
 	local dragListener = frameworkInternal.dragListeners[button]
 	if dragListener ~= nil then
-		local success, errorMessage = pcall(dragListener.MouseMove, dragListener, x, y, dx, dy, button)
-		if not success then
-			framework.Error("widget:MouseMove", "dragListener:MouseMove", errorMessage)
+		if not mouseMovedThisFrame or dragListener.doNotBufferMouseMove then
+			mouseMovedThisFrame = true
+			local success, errorMessage = pcall(dragListener.MouseMove, dragListener, x, y, dx + dxBuffered, dy + dyBuffered, button)
+			if not success then
+				framework.Error("widget:MouseMove", "dragListener:MouseMove", errorMessage)
+			end
+			dxBuffered = 0
+			dyBuffered = 0
+		else
+			dxBuffered = dxBuffered + dx
+			dyBuffered = dyBuffered + dy
 		end
 	end
 end
@@ -370,6 +384,7 @@ function widget:Update()
 	-- widget:IsAbove seems to be called multiple times a frame. To mitigate this, we'll call it once per function we *know* is called once per frame - in this case, Update().
 	-- (It might be slightly more optimal (re performance) to call it in DrawScreen, but putting it in Update allows us to keep it right here where it's easy to read.)
 	isAboveChecked = false
+	mouseMovedThisFrame = false
 end
 
 function widget:DrawScreen()

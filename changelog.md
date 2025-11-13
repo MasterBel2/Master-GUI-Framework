@@ -31,6 +31,9 @@ Text Highlight API:
   - `wrappingText:RemoveHighlight(id)`
 - `TextGroup` now calls `wrappingText:DrawText(glFont)` rather than `wrappingText:Draw(glFont)` to avoid collision when `DrawingGroup` calls `wrappingText:Draw()`
 
+UI:
+- `MouseMove` is now buffered to receive only one call per draw frame. If you need more frequent updates, set `dragListener.doNotBufferMouseMove` to true.
+
 Visual changes:
 - Squared-off corners at the edge of the screen have been disabled, due to drawing no longer knowing whether it's actually at the edge of the screen.
 - Round fonts to the nearest pixel size (to prevent blurry text).
