@@ -32,6 +32,7 @@ Other architectural changes:
   - `TextGroup` now calls `wrappingText:DrawText(glFont)` rather than `wrappingText:Draw(glFont)` to avoid collision when `DrawingGroup` calls `wrappingText:Draw()`
 - Optimisations:
   - `wrappingText:DisplayIndexToRawIndex(displayIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)` makes use of an index cache, when a partial result isn't returned. Even when not using the cache, other optimisations have sped it up around 3x.
+  - `wrappingText:RawIndexToDisplayIndex(rawIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)` makes use of an index cache generated for trivial cost during `wrappingText:Layout`, when a partial result isn't returned. Likely, even for small intervals (above 4), this caching is faster than the existing partial-result mechanism in place. In the committed test, this speeds up from 0.11s @ 100 executions, to 0.061s @ 100000 executions. That's 1800x faster!
 
 
 UI:

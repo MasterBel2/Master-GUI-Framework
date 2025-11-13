@@ -30,6 +30,23 @@ return {
             testText:DisplayIndexToRawIndex(testText:GetDisplayString():len())
         end
     end,
+    test_rawIndexToDisplayIndex = function(widget)
+        widget.Spring.GetViewGeometry = function() return 500, 10000 end
+
+        widget:Initialize()
+        local framework = widget.WG["MasterFramework Dev"]
+        
+        local testText = framework:WrappingText(VFS.LoadFile("LuaUI/MasterFramework Dev/Tests/TestResources/code_example.lua"))
+        function testText:ColoredString()
+            return VFS.LoadFile("LuaUI/MasterFramework Dev/Tests/TestResources/code_example_colored.lua")
+        end
+
+        local key, element = framework:InsertElement(framework:PrimaryFrame(testText))
+
+        for i = 1, 100000 do
+            testText:RawIndexToDisplayIndex(testText:GetRawString():len())
+        end
+    end,
     test_layout = function(widget)
         local width = 500
         widget.Spring.GetViewGeometry = function() return width, 10000 end

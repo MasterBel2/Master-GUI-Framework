@@ -100,14 +100,22 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		return wrappedText
 	end
 
+	local rawIndexAddedCharactersIndex = { 1 }
+	local rawIndexRemovedSpacesIndex = { 1 }
+	local function CachedRawIndexToDisplayIndexSearchProgress(rawIndex)
+		local index = math_ceil(rawIndex / indexConversionCacheInterval)
+		local addedCharactersIndex = rawIndexAddedCharactersIndex[index]
+		local removedSpacesIndex = rawIndexRemovedSpacesIndex[index]
+		return addedCharactersIndex, removedSpacesIndex, addedCharactersIndex - removedSpacesIndex
+	end
+
 	-- Returns the index of the matching character in the display string.
-	-- If we were provided the index of a removed space, we'll return a second result - `true` - to indicate as such.
+	-- If we were provided the index of a removed space, we'll return an extra result - `true` - to indicate as such.
 	-- Reminder, some characters might be changed (e.g. " " to "\n") and they won't be flagged.
 	function wrappingText:RawIndexToDisplayIndex(rawIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
-		local addedCharactersIndex = addedCharactersIndex or 1
-		local removedSpacesIndex = removedSpacesIndex or 1
-
-		local computedOffset = computedOffset or 0
+		if not addedCharactersIndex then
+			addedCharactersIndex, removedSpacesIndex, computedOffset = CachedRawIndexToDisplayIndexSearchProgress(rawIndex)
+		end
 
 		while (addedCharacters[addedCharactersIndex] <= rawIndex + computedOffset) or (removedSpaces[removedSpacesIndex] <= rawIndex) do
 			if addedCharacters[addedCharactersIndex] - computedOffset < removedSpaces[removedSpacesIndex] then
@@ -274,15 +282,24 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local removedSpacesCount = 0
 
 		local displayCacheEntries = 1
+		local rawCacheEntries = 1
 
 		while i <= rawLength and j <= displayLength do
 			if j >= displayCacheEntries * indexConversionCacheInterval then
-				-- even though this won't line up perfectly with the display index we're associating it with,
+				-- even though this won't line up perfectly with the raw index we're associating it with,
 				-- it's good enough for its current purpose of conversion to raw index, as extra added characters
 				-- will be adjusted for.
 				displayCacheEntries = displayCacheEntries + 1
 				displayIndexAddedCharactersIndex[displayCacheEntries] = addedCharacterCount + 1
 				displayIndexRemovedSpacesIndex[displayCacheEntries] = removedSpacesCount + 1
+			end
+			if i >= rawCacheEntries * indexConversionCacheInterval then
+				-- even though this won't line up perfectly with the display index we're associating it with,
+				-- it's good enough for its current purpose of conversion to display index, as extra added characters
+				-- will be adjusted for.
+				rawCacheEntries = rawCacheEntries + 1
+				rawIndexAddedCharactersIndex[rawCacheEntries] = addedCharacterCount + 1
+				rawIndexRemovedSpacesIndex[rawCacheEntries] = removedSpacesCount + 1
 			end
 
 			if rawCharacter ~= displayCharacter then
@@ -317,6 +334,10 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			displayIndexAddedCharactersIndex[i] = nil
 			displayIndexRemovedSpacesIndex[i] = nil
 		end
+		for i = rawCacheEntries + 1, math_ceil(rawLength / indexConversionCacheInterval) do
+			rawIndexAddedCharactersIndex[i] = nil
+			rawIndexRemovedSpacesIndex[i] = nil
+		end
 
 		addedCharacters[addedCharacterCount + 1] = math_huge -- for iteration purposes
 		removedSpaces[removedSpacesCount + 1] = math_huge -- for iteration purposes
@@ -339,10 +360,12 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			local addedCharactersIndex, removedSpacesIndex, computedOffset
 			for i = #textChunks + 1, desiredChunkCount do
 				local displayStartIndex, displayEndIndex
-				displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineStarts[(i - 1) * linesPerChunk + 1] - 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
+				local rawStartIndex = rawLineStarts[(i - 1) * linesPerChunk + 1] - 1
+				rawStartIndex = (rawStartIndex == 0) and 1 or rawStartIndex
+				displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
 				displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineEnds[i * linesPerChunk] and (rawLineEnds[i * linesPerChunk] + 1) or string:len(), addedCharactersIndex, removedSpacesIndex, computedOffset)
 				
-				local displayString = wrappedText:sub(displayStartIndex + 1, displayEndIndex - 1)
+				local displayString = wrappedText:sub(rawStartIndex == 1 and 1 or displayStartIndex + 1, displayEndIndex - 1)
 
 				-- Current implementation assumes that any coloredString will work regardless where a split occurs.
 				-- This is not the case!
@@ -372,10 +395,12 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local addedCharactersIndex, removedSpacesIndex, computedOffset
 		for i = 1, desiredChunkCount do
 			local displayStartIndex, displayEndIndex
-			displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineStarts[(i - 1) * linesPerChunk + 1] - 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
+			local rawStartIndex = rawLineStarts[(i - 1) * linesPerChunk + 1] - 1
+			rawStartIndex = (rawStartIndex == 0) and 1 or rawStartIndex
+			displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
 			displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineEnds[i * linesPerChunk] and (rawLineEnds[i * linesPerChunk] + 1) or string:len() + 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
 		
-			local displayString = wrappedText:sub(displayStartIndex + 1, displayEndIndex - 1)
+			local displayString = wrappedText:sub(rawStartIndex == 1 and 1 or displayStartIndex + 1, displayEndIndex - 1)
 
 			-- Current implementation assumes that any coloredString will work regardless where a split occurs.
 			-- This is not the case!
@@ -394,7 +419,6 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			-- 		displayString = colorCode .. displayString
 			-- 	end
 			-- end
-
 			textChunks[i]:Update(displayString, font, baseColor)
 		end
 
