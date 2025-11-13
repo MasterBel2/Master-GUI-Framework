@@ -1,5 +1,6 @@
 local math = Include.math
 local math_floor = Include.math.floor
+local math_ceil = Include.math.ceil
 local math_huge = Include.math.huge
 local math_max = Include.math.max
 local math_min = Include.math.min
@@ -13,6 +14,24 @@ local pairs = Include.pairs
 
 local table = Include.table
 local Internal = Internal
+
+-- 13/11/2025
+-- There are multiple perf cliffs here, when testing with Tests/Framework/test_WrappingTest:test_displayIndexToRawIndex
+--       Interval: ditri
+--   (iterations):    10k
+--           8192: 3.2  s
+--     256 - 4096: 0.29 s
+--            128: 0.15 s
+--             64: 0.088s
+--             32: 0.092s
+--             16: 0.075s 
+--              8: 0.072s
+--              4: 0.064s
+--              2: 0.059s
+--              1: Crash
+-- This was tested with code, I imagine we could use larger intervals when fewer insertions have been made.
+-- I noticed no appreciable perf impact to Layout().
+local indexConversionCacheInterval = 4
 
 -- Automatically wrapping text. 
 -- Set `maxLines = 1` to disable wrapping. (`framework:Text()` is an alias for `framework:WrappingText` that sets `maxLines = 1`.)
@@ -107,22 +126,30 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		return rawIndex + computedOffset, addedCharactersIndex, removedSpacesIndex, computedOffset, rawIndex == removedSpaces[removedSpacesIndex - 1]
 	end
 
+	local displayIndexAddedCharactersIndex = { 1 }
+	local displayIndexRemovedSpacesIndex = { 1 }
+	local function CachedDisplayIndexToRawIndexSearchProgress(displayIndex)
+		local index = math_ceil(displayIndex / indexConversionCacheInterval)
+		local addedCharactersIndex = displayIndexAddedCharactersIndex[index]
+		local removedSpacesIndex = displayIndexRemovedSpacesIndex[index]
+		return addedCharactersIndex, removedSpacesIndex, removedSpacesIndex - addedCharactersIndex
+	end
+
 	-- Returns the index of the matching character in the raw string. 
 	-- 
 	-- If the detected character was added, we'll just return the next character that wasn't added.
 	-- If we were provided provide the index of an added character, we'll return a second result - `true` - to indicate as such.
 	-- Reminder, some characters might be changed (e.g. " " to "\n") and they won't be flagged.
-	function wrappingText:DisplayIndexToRawIndex(displayIndex)
-		local addedCharactersIndex = 1
-		local removedSpacesIndex = 1
+	function wrappingText:DisplayIndexToRawIndex(displayIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
+		if not addedCharactersIndex then
+			addedCharactersIndex, removedSpacesIndex, computedOffset = CachedDisplayIndexToRawIndexSearchProgress(displayIndex)
+		end
 
-		local computedOffset = 0
-
-		local addedCharacter = addedCharacters[1]
-		local removedSpace = removedSpaces[1]
+		local addedCharacter = addedCharacters[addedCharactersIndex]
+		local removedSpace = removedSpaces[removedSpacesIndex]
 		-- while addedCharacters stores display indices, removedSpaces stores raw indices. 
 		-- So, we need to convert between them.
-		local removedSpaceDisplayIndex = removedSpace
+		local removedSpaceDisplayIndex = removedSpace - computedOffset
 
 		-- Interesting to note, checking spaces is consistently (marginally) faster
 		while removedSpaceDisplayIndex <= displayIndex or addedCharacter <= displayIndex do
@@ -149,7 +176,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			end
 		end
 
-		return displayIndex + computedOffset, addedCharacters[addedCharactersIndex - 1] == displayIndex
+		return displayIndex + computedOffset, addedCharactersIndex, removedSpacesIndex, computedOffset, addedCharacters[addedCharactersIndex - 1] == displayIndex
 	end
 
 	-- Converts a screen coordinate to an index in the display string. 
@@ -246,7 +273,18 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local addedCharacterCount = 0
 		local removedSpacesCount = 0
 
+		local displayCacheEntries = 1
+
 		while i <= rawLength and j <= displayLength do
+			if j >= displayCacheEntries * indexConversionCacheInterval then
+				-- even though this won't line up perfectly with the display index we're associating it with,
+				-- it's good enough for its current purpose of conversion to raw index, as extra added characters
+				-- will be adjusted for.
+				displayCacheEntries = displayCacheEntries + 1
+				displayIndexAddedCharactersIndex[displayCacheEntries] = addedCharacterCount + 1
+				displayIndexRemovedSpacesIndex[displayCacheEntries] = removedSpacesCount + 1
+			end
+
 			if rawCharacter ~= displayCharacter then
 				if rawCharacter == 32 then
 					removedSpacesCount = removedSpacesCount + 1
@@ -273,6 +311,11 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 				j = j + 1
 				displayCharacter = string_byte(wrappedText, j)
 			end
+		end
+
+		for i = displayCacheEntries + 1, math_ceil(displayLength / indexConversionCacheInterval) do
+			displayIndexAddedCharactersIndex[i] = nil
+			displayIndexRemovedSpacesIndex[i] = nil
 		end
 
 		addedCharacters[addedCharacterCount + 1] = math_huge -- for iteration purposes

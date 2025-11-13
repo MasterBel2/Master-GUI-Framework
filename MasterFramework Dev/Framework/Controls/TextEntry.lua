@@ -289,8 +289,8 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
 
         local accumulatedWidth = 0
 
-        local rangeBeginRawIndex = self.text:DisplayIndexToRawIndex(rangeBeginDisplayIndex) + 1
-        local rangeEndRawIndex = self.text:DisplayIndexToRawIndex(rangeEndDisplayIndex) - 1
+        local rangeBeginRawIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self.text:DisplayIndexToRawIndex(rangeBeginDisplayIndex) + 1
+        local rangeEndRawIndex = self.text:DisplayIndexToRawIndex(rangeEndDisplayIndex, addedCharactersIndex, removedSpacesIndex, computedOffset) - 1
 
         for i = rangeBeginRawIndex, rangeEndRawIndex do
             if xOffset <= accumulatedWidth then

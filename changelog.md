@@ -24,12 +24,15 @@ Other architectural changes:
 - `drawingGroup.needsRedraw` is not set in `drawingGroup:UpdateLayout(calledByParent)`, since it's already set in `drawingGroup:UpdatePosition()`
 - (Internal detail: `drawingGroup.groupsNeedingLayout` and `drawingGroup.groupsNeedingPosition` will not remove any groups until directly before `drawingGroup:UpdatePosition()` is called, to allow `drawingGroup:Position(x, y)` to trigger `drawingGroup:UpdatePosition()` if necessary.)
 
-Text Highlight API:
+`WrappingText`: Highlight API, Optimisations
 - `WrappingText` now handles the selection highlight drawing for `TextEntry` with a public API! See documentation in `WrappingText.lua`:
   - `wrappingText:HighlightRange(color, startIndex, endIndex, reuseLast)`
   - `wrappingText:UpdateHighlight(id, color, startIndex, endIndex, reuseLast)`
   - `wrappingText:RemoveHighlight(id)`
-- `TextGroup` now calls `wrappingText:DrawText(glFont)` rather than `wrappingText:Draw(glFont)` to avoid collision when `DrawingGroup` calls `wrappingText:Draw()`
+  - `TextGroup` now calls `wrappingText:DrawText(glFont)` rather than `wrappingText:Draw(glFont)` to avoid collision when `DrawingGroup` calls `wrappingText:Draw()`
+- Optimisations:
+  - `wrappingText:DisplayIndexToRawIndex(displayIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)` makes use of an index cache, when a partial result isn't returned. Even when not using the cache, other optimisations have sped it up around 3x.
+
 
 UI:
 - `MouseMove` is now buffered to receive only one call per draw frame. If you need more frequent updates, set `dragListener.doNotBufferMouseMove` to true.
