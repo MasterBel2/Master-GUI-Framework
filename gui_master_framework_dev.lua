@@ -83,6 +83,10 @@ local framework = {
 local isAbove
 local isAboveChecked = false
 
+local dxBuffered = 0
+local dyBuffered = 0
+local mouseMovedThisFrame
+
 function widget:SetConfigData(data)
 	frameworkInternal.ConfigData = data or {}
 end
@@ -248,6 +252,8 @@ function widget:KeyRelease(key, mods, label, utf32char, scanCode, actionList)
 end
 
 function widget:MousePress(x, y, button)
+	dxBuffered = 0
+	dyBuffered = 0
 	if frameworkInternal.focusTarget then
 		frameworkInternal.focusTarget:ReleaseFocus()
 		frameworkInternal.focusTarget = nil
@@ -269,9 +275,17 @@ end
 function widget:MouseMove(x, y, dx, dy, button)
 	local dragListener = frameworkInternal.dragListeners[button]
 	if dragListener ~= nil then
-		local success, errorMessage = pcall(dragListener.MouseMove, dragListener, x, y, dx, dy, button)
-		if not success then
-			framework.Error("widget:MouseMove", "dragListener:MouseMove", errorMessage)
+		if not mouseMovedThisFrame or dragListener.doNotBufferMouseMove then
+			mouseMovedThisFrame = true
+			local success, errorMessage = pcall(dragListener.MouseMove, dragListener, x, y, dx + dxBuffered, dy + dyBuffered, button)
+			if not success then
+				framework.Error("widget:MouseMove", "dragListener:MouseMove", errorMessage)
+			end
+			dxBuffered = 0
+			dyBuffered = 0
+		else
+			dxBuffered = dxBuffered + dx
+			dyBuffered = dyBuffered + dy
 		end
 	end
 end
@@ -375,6 +389,7 @@ end
 
 function widget:DrawScreen()
 	isAboveChecked = false
+	mouseMovedThisFrame = false
 	local index = #frameworkInternal.elementOrder
 	while 0 < index do
 		local key = frameworkInternal.elementOrder[index]
