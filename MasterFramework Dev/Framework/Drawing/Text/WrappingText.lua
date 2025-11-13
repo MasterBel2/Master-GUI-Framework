@@ -367,44 +367,9 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		-- I imagine this could change depending on the nature of the text
 		local linesPerChunk = 10
 		local desiredChunkCount = math.ceil(rawLineCount / linesPerChunk)
-		do
-			local addedCharactersIndex, removedSpacesIndex, computedOffset
-			for i = #textChunks + 1, desiredChunkCount do
-				local displayStartIndex, displayEndIndex
-				local rawStartIndex = rawLineStarts[(i - 1) * linesPerChunk + 1] - 1
-				rawStartIndex = (rawStartIndex == 0) and 1 or rawStartIndex
-				displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
-				displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineEnds[i * linesPerChunk] and (rawLineEnds[i * linesPerChunk] + 1) or string:len(), addedCharactersIndex, removedSpacesIndex, computedOffset)
-				
-				local displayString = wrappedText:sub(rawStartIndex == 1 and 1 or displayStartIndex + 1, displayEndIndex - 1)
 
-				-- Current implementation assumes that any coloredString will work regardless where a split occurs.
-				-- This is not the case!
-				-- The following code also doesn't work but could serve as a starting point.
-
-				-- if textChunks[i - 1] then
-				-- 	local previousDisplayString = wrappedText:sub(1, displayStartIndex - 1)
-				-- 	local colorCodeIndex, _, colorCode = previousDisplayString:find("(\255...).-$")
-				-- 	local colorCancelIndex = previousDisplayString:find("\b")
-				-- 	if colorCodeIndex then
-				-- 		if colorCancelIndex then
-				-- 			if colorCancelIndex < colorCodeIndex then
-				-- 				displayString = colorCode .. displayString
-				-- 			end
-				-- 		end
-				-- 		displayString = colorCode .. displayString
-				-- 	end
-				-- end
-
-				textChunks[i] = Internal.TextChunk()
-				textChunks[i]:Update(displayString, font, baseColor)
-			end
-		end
-		for i = desiredChunkCount + 1, #textChunks do
-			textChunks[i] = nil
-		end
 		local addedCharactersIndex, removedSpacesIndex, computedOffset
-		for i = 1, desiredChunkCount do
+		for i = 1, #textChunks do
 			local displayStartIndex, displayEndIndex
 			local rawStartIndex = rawLineStarts[(i - 1) * linesPerChunk + 1] - 1
 			rawStartIndex = (rawStartIndex == 0) and 1 or rawStartIndex
@@ -431,6 +396,39 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			-- 	end
 			-- end
 			textChunks[i]:Update(displayString, font, baseColor)
+		end
+		for i = #textChunks + 1, desiredChunkCount do
+			local displayStartIndex, displayEndIndex
+			local rawStartIndex = rawLineStarts[(i - 1) * linesPerChunk + 1] - 1
+			rawStartIndex = (rawStartIndex == 0) and 1 or rawStartIndex
+			displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
+			displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineEnds[i * linesPerChunk] and (rawLineEnds[i * linesPerChunk] + 1) or string:len() + 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
+			
+			local displayString = wrappedText:sub(rawStartIndex == 1 and 1 or displayStartIndex + 1, displayEndIndex - 1)
+
+			-- Current implementation assumes that any coloredString will work regardless where a split occurs.
+			-- This is not the case!
+			-- The following code also doesn't work but could serve as a starting point.
+
+			-- if textChunks[i - 1] then
+			-- 	local previousDisplayString = wrappedText:sub(1, displayStartIndex - 1)
+			-- 	local colorCodeIndex, _, colorCode = previousDisplayString:find("(\255...).-$")
+			-- 	local colorCancelIndex = previousDisplayString:find("\b")
+			-- 	if colorCodeIndex then
+			-- 		if colorCancelIndex then
+			-- 			if colorCancelIndex < colorCodeIndex then
+			-- 				displayString = colorCode .. displayString
+			-- 			end
+			-- 		end
+			-- 		displayString = colorCode .. displayString
+			-- 	end
+			-- end
+
+			textChunks[i] = Internal.TextChunk()
+			textChunks[i]:Update(displayString, font, baseColor)
+		end
+		for i = desiredChunkCount + 1, #textChunks do
+			textChunks[i] = nil
 		end
 
 		-- We don't return here since we're only using this to coerce the `GeometryTarget` into caching width, height for us
