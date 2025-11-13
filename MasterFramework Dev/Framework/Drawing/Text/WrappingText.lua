@@ -117,17 +117,28 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			addedCharactersIndex, removedSpacesIndex, computedOffset = CachedRawIndexToDisplayIndexSearchProgress(rawIndex)
 		end
 
-		while (addedCharacters[addedCharactersIndex] <= rawIndex + computedOffset) or (removedSpaces[removedSpacesIndex] <= rawIndex) do
-			if addedCharacters[addedCharactersIndex] - computedOffset < removedSpaces[removedSpacesIndex] then
+		local addedCharacter = addedCharacters[addedCharactersIndex]
+		local addedCharacterRawIndex = addedCharacter - computedOffset
+		local removedSpace = removedSpaces[removedSpacesIndex]
+
+		while addedCharacterRawIndex <= rawIndex or removedSpace <= rawIndex do
+			if addedCharacterRawIndex < removedSpace then
 				computedOffset = computedOffset + 1
 				addedCharactersIndex = addedCharactersIndex + 1
-			elseif addedCharacters[addedCharactersIndex] - computedOffset == removedSpaces[removedSpacesIndex] then
+				addedCharacter = addedCharacters[addedCharactersIndex]
+				addedCharacterRawIndex = addedCharacter - computedOffset
+			elseif addedCharacterRawIndex == removedSpace then
 				-- count them as swapped, no change to offset
 				addedCharactersIndex = addedCharactersIndex + 1
+				addedCharacter = addedCharacters[addedCharactersIndex]
+				addedCharacterRawIndex = addedCharacter - computedOffset
 				removedSpacesIndex = removedSpacesIndex + 1
-			elseif addedCharacters[addedCharactersIndex] - computedOffset > removedSpaces[removedSpacesIndex] then
+				removedSpace = removedSpaces[removedSpacesIndex]
+			elseif addedCharacterRawIndex > removedSpace then
 				computedOffset = computedOffset - 1
+				addedCharacterRawIndex = addedCharacter - computedOffset
 				removedSpacesIndex = removedSpacesIndex + 1
+				removedSpace = removedSpaces[removedSpacesIndex]
 			end
 		end
 
