@@ -43,6 +43,7 @@ Visual changes:
 - Round fonts to the nearest pixel size (to prevent blurry text).
 
 Debug changes:
+- Add `component._debugIdentifier` for easier logging
 - Remove redundant `Internal._debug_currentElementKey` in favour of `Internal.activeElement.key`.
 - Add argument & return value validation for `Position` & `Layout`.
 - Include stacktrace for framework error messages (debug mode must be enabled, because this comes with a significant performance cost).

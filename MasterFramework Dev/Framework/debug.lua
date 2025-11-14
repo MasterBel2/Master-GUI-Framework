@@ -162,6 +162,7 @@ function EnableDebugMode(target)
 
 					temp[1]._debugTypeIdentifier = key
 					temp[1]._debugUniqueIdentifier = nextUniqueIdentifier
+					temp[1]._debugIdentifier = key .. " " .. nextUniqueIdentifier
 					nextUniqueIdentifier = nextUniqueIdentifier + 1
 
 					if draw then
