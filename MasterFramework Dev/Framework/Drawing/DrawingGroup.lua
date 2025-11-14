@@ -68,10 +68,8 @@ end
          - `drawingGroup:CachedSize()`: Returns the width, height computed in the last `drawingGroup:UpdateLayout()`
          - `drawingGroup:AbsolutePosition()`: Returns the x, y coordinates the drawing group will use to draw on-screen
 ]]
-function framework:DrawingGroup(body, disableDrawList)
+function framework:DrawingGroup(body)
     local drawingGroup = {}
-
-    drawingGroup.disableDrawList = disableDrawList or Internal.debugMode.disableDrawList
 
     drawingGroup.drawers = {}
     drawingGroup.drawTargets = {}
@@ -263,7 +261,7 @@ function framework:DrawingGroup(body, disableDrawList)
             gl_Translate(absoluteX, absoluteY, 0)
         end
 
-        if self.disableDrawList or next(self.continuouslyUpdatingDrawers) then
+        if Internal.debugMode.disableDrawList or next(self.continuouslyUpdatingDrawers) then
             _Draw(self)
 
             for drawer, _ in pairs(self.continuouslyUpdatingDrawers) do
@@ -309,7 +307,7 @@ function framework:DrawingGroup(body, disableDrawList)
         if element 
         and isWithinViewport 
         and self.drawers[drawer] then
-            if not (self.disableDrawList or next(self.continuouslyUpdatingDrawers)) then
+            if not (Internal.debugMode.disableDrawList or next(self.continuouslyUpdatingDrawers)) then
                 element.requestedRedraws[redrawFunc] = true
             end
             return true
@@ -334,7 +332,7 @@ function framework:DrawingGroup(body, disableDrawList)
     function drawingGroup:DrawerWillNotContinuouslyUpdate(drawer)
         if self.drawers[drawer] then
             self.continuouslyUpdatingDrawers[drawer] = nil
-            if not (self.disableDrawList or next(self.continuouslyUpdatingDrawers)) then
+            if not (Internal.debugMode.disableDrawList or next(self.continuouslyUpdatingDrawers)) then
                 element.requestedRedraws[redrawFunc] = true
             end
             return true

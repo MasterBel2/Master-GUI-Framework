@@ -97,7 +97,7 @@ function Component(hasLayout, draws)
 
 	if draws then
 		function component:NeedsRedraw()
-			if drawingGroup and not drawingGroup:DrawerUpdated(self) then
+			if drawingGroup and not continuouslyUpdating and not drawingGroup:DrawerUpdated(self) then
 				drawingGroup = nil
 			end
 		end
