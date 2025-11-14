@@ -370,6 +370,9 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local linesPerChunk = 10
 		local desiredChunkCount = math.ceil(rawLineCount / linesPerChunk)
 
+		for i = desiredChunkCount + 1, #textChunks do
+			textChunks[i] = nil
+		end
 		local addedCharactersIndex, removedSpacesIndex, computedOffset
 		for i = 1, #textChunks do
 			local displayStartIndex, displayEndIndex
@@ -428,9 +431,6 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 
 			textChunks[i] = Internal.TextChunk()
 			textChunks[i]:Update(displayString, font, baseColor)
-		end
-		for i = desiredChunkCount + 1, #textChunks do
-			textChunks[i] = nil
 		end
 
 		-- We don't return here since we're only using this to coerce the `GeometryTarget` into caching width, height for us
