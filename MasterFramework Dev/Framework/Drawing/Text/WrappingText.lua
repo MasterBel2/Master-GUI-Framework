@@ -113,6 +113,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	-- If we were provided the index of a removed space, we'll return an extra result - `true` - to indicate as such.
 	-- Reminder, some characters might be changed (e.g. " " to "\n") and they won't be flagged.
 	function wrappingText:RawIndexToDisplayIndex(rawIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
+		if rawIndex > string:len() then return wrappedText:len(), #addedCharacters, #removedSpaces, #addedCharacters - #removedSpaces end
 		if not addedCharactersIndex then
 			addedCharactersIndex, removedSpacesIndex, computedOffset = CachedRawIndexToDisplayIndexSearchProgress(rawIndex)
 		end
@@ -160,6 +161,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	-- If we were provided provide the index of an added character, we'll return a second result - `true` - to indicate as such.
 	-- Reminder, some characters might be changed (e.g. " " to "\n") and they won't be flagged.
 	function wrappingText:DisplayIndexToRawIndex(displayIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
+		if displayIndex > wrappedText:len() then return string:len(), #addedCharacters, #removedSpaces, #removedSpaces - #addedCharacters end
 		if not addedCharactersIndex then
 			addedCharactersIndex, removedSpacesIndex, computedOffset = CachedDisplayIndexToRawIndexSearchProgress(displayIndex)
 		end
