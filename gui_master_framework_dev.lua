@@ -322,7 +322,7 @@ function widget:IsAbove(x, y)
 
 	frameworkInternal.DebugInfo.responderUnderMouse = responder and responder._debugUniqueIdentifier
 
-	if responder ~= frameworkInternal.mouseOverResponder then
+	if element and responder ~= frameworkInternal.mouseOverResponder then
 		local previousResponder = frameworkInternal.mouseOverResponder
 		frameworkInternal.mouseOverResponder = responder
 		local highestCommonResponder
@@ -340,7 +340,7 @@ function widget:IsAbove(x, y)
 					if not success then
 						framework.Error("IsAbove", "responder:MouseEnter", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
 						framework:RemoveElement(element.key)
-						break
+						return true
 					end
 				end
 				_responder = responder.parent
@@ -356,7 +356,7 @@ function widget:IsAbove(x, y)
 				if not success then
 					framework.Error("IsAbove", "responder:MouseLeave", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
 					framework:RemoveElement(element.key)
-					break
+					return true
 				end
 			end
 			_responder = _responder.parent
@@ -372,7 +372,7 @@ function widget:IsAbove(x, y)
 		else
 			framework.Error("IsAbove", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
 			framework:RemoveElement(element.key)
-			break
+			return true
 		end
 	end
 
