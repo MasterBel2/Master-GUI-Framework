@@ -346,7 +346,7 @@ function widget:IsAbove(x, y)
 				if not success then
 					framework.Error("IsAbove", "responder:MouseLeave", maybeError, "Element Key: " .. previousElement.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
 					framework:RemoveElement(previousElement.key)
-					break
+					return true
 				end
 			end
 			_responder = _responder.parent
@@ -362,7 +362,7 @@ function widget:IsAbove(x, y)
 				if not success then
 					framework.Error("IsAbove", "responder:MouseEnter", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
 					framework:RemoveElement(element.key)
-					break
+					return true
 				end
 			end
 			_responder = _responder.parent
@@ -378,7 +378,7 @@ function widget:IsAbove(x, y)
 		else
 			framework.Error("IsAbove", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
 			framework:RemoveElement(element.key)
-			break
+			return true
 		end
 	end
 
