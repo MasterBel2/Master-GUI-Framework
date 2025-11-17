@@ -113,7 +113,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	-- If we were provided the index of a removed space, we'll return an extra result - `true` - to indicate as such.
 	-- Reminder, some characters might be changed (e.g. " " to "\n") and they won't be flagged.
 	function wrappingText:RawIndexToDisplayIndex(rawIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
-		if rawIndex > string:len() then return wrappedText:len(), #addedCharacters, #removedSpaces, #addedCharacters - #removedSpaces end
+		if rawIndex > string:len() then return wrappedText:len() + 1, #addedCharacters, #removedSpaces, #addedCharacters - #removedSpaces end
 		if not addedCharactersIndex then
 			addedCharactersIndex, removedSpacesIndex, computedOffset = CachedRawIndexToDisplayIndexSearchProgress(rawIndex)
 		end
@@ -161,7 +161,7 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 	-- If we were provided provide the index of an added character, we'll return a second result - `true` - to indicate as such.
 	-- Reminder, some characters might be changed (e.g. " " to "\n") and they won't be flagged.
 	function wrappingText:DisplayIndexToRawIndex(displayIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
-		if displayIndex > wrappedText:len() then return string:len(), #addedCharacters, #removedSpaces, #removedSpaces - #addedCharacters end
+		if displayIndex > wrappedText:len() then return string:len() + 1, #addedCharacters, #removedSpaces, #removedSpaces - #addedCharacters end
 		if not addedCharactersIndex then
 			addedCharactersIndex, removedSpacesIndex, computedOffset = CachedDisplayIndexToRawIndexSearchProgress(displayIndex)
 		end
@@ -379,9 +379,9 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			local rawStartIndex = rawLineStarts[(i - 1) * linesPerChunk + 1] - 1
 			rawStartIndex = (rawStartIndex == 0) and 1 or rawStartIndex
 			displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
-			displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineEnds[i * linesPerChunk] and (rawLineEnds[i * linesPerChunk] + 1) or string:len() + 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
+			displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineEnds[i * linesPerChunk] and (rawLineEnds[i * linesPerChunk] + 1) or string:len(), addedCharactersIndex, removedSpacesIndex, computedOffset)
 		
-			local displayString = wrappedText:sub(rawStartIndex == 1 and 1 or displayStartIndex + 1, displayEndIndex - 1)
+			local displayString = wrappedText:sub(rawStartIndex == 1 and 1 or displayStartIndex + 1, displayEndIndex == wrappedText:len() and displayEndIndex or (displayEndIndex - 1))
 
 			-- Current implementation assumes that any coloredString will work regardless where a split occurs.
 			-- This is not the case!
@@ -407,9 +407,9 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			local rawStartIndex = rawLineStarts[(i - 1) * linesPerChunk + 1] - 1
 			rawStartIndex = (rawStartIndex == 0) and 1 or rawStartIndex
 			displayStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawStartIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)
-			displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineEnds[i * linesPerChunk] and (rawLineEnds[i * linesPerChunk] + 1) or string:len() + 1, addedCharactersIndex, removedSpacesIndex, computedOffset)
+			displayEndIndex, addedCharactersIndex, removedSpacesIndex, computedOffset = self:RawIndexToDisplayIndex(rawLineEnds[i * linesPerChunk] and (rawLineEnds[i * linesPerChunk] + 1) or string:len(), addedCharactersIndex, removedSpacesIndex, computedOffset)
 			
-			local displayString = wrappedText:sub(rawStartIndex == 1 and 1 or displayStartIndex + 1, displayEndIndex - 1)
+			local displayString = wrappedText:sub(rawStartIndex == 1 and 1 or displayStartIndex + 1, displayEndIndex == wrappedText:len() and displayEndIndex or (displayEndIndex - 1))
 
 			-- Current implementation assumes that any coloredString will work regardless where a split occurs.
 			-- This is not the case!
