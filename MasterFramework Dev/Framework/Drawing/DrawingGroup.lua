@@ -308,9 +308,10 @@ function framework:DrawingGroup(body, disableDrawList)
     function drawingGroup:DrawerUpdated(drawer)
         if element 
         and isWithinViewport 
-        and self.drawers[drawer]
-        and not (self.disableDrawList or next(self.continuouslyUpdatingDrawers)) then
-            element.requestedRedraws[redrawFunc] = true
+        and self.drawers[drawer] then
+            if not (self.disableDrawList or next(self.continuouslyUpdatingDrawers)) then
+                element.requestedRedraws[redrawFunc] = true
+            end
             return true
         end
     end
