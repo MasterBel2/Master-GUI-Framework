@@ -6,9 +6,9 @@ local gl_Blending = Include.gl.Blending
 
 function framework:Blending(srcMode, dstMode, _decorations)
 	local blending = Drawer()
-	local decorations
+	local decorations = {}
 
-	function background:SetDecorations(newDecorations)
+	function blending:SetDecorations(newDecorations)
         self:NeedsRedraw()
         for i = #newDecorations + 1, #decorations do
             decorations[i] = nil
@@ -17,7 +17,7 @@ function framework:Blending(srcMode, dstMode, _decorations)
             decorations[i] = newDecorations[i]
         end
     end
-    background:SetDecorations(_decorations)
+    blending:SetDecorations(_decorations)
 
 	function blending:Draw(...)
 		self:RegisterDrawingGroup()
