@@ -366,15 +366,9 @@ function widget:IsAbove(x, y)
 
 	return element ~= nil
 end
-function widget:Update()
-	-- widget:IsAbove seems to be called multiple times a frame. To mitigate this, we'll call it once per function we *know* is called once per frame - in this case, Update().
-	-- (It might be slightly more optimal (re performance) to call it in DrawScreen, but putting it in Update allows us to keep it right here where it's easy to read.)
-	isAboveChecked = false
-end
 
 function widget:DrawScreen()
-	frameworkInternal.hasCheckedElementBelowMouse = false
-	frameworkInternal.elementBelowMouse = nil
+	isAboveChecked = false
 	local index = #frameworkInternal.elementOrder
 	while 0 < index do
 		local key = frameworkInternal.elementOrder[index]
