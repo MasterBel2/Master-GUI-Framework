@@ -302,6 +302,7 @@ function widget:IsAbove(x, y)
 	-- BAR's widget handler calls this a second time because we have a tooltip.
 	-- That messes with profiling!
 	if isAboveChecked then return frameworkInternal.elementBelowMouse ~= nil end
+	local previousElement = frameworkInternal.elementBelowMouse
 
 	local element, responder = framework.HighestResponderAtPoint(x, y, framework.events.mouseOver)
 	frameworkInternal.elementBelowMouse = element
@@ -340,8 +341,8 @@ function widget:IsAbove(x, y)
 			if _responder.MouseLeave then
 				local success, maybeError = pcall(_responder.MouseLeave, _responder)
 				if not success then
-					framework.Error("IsAbove", "responder:MouseLeave", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
-					framework:RemoveElement(element.key)
+					framework.Error("IsAbove", "responder:MouseLeave", maybeError, "Element Key: " .. previousElement.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+					framework:RemoveElement(previousElement.key)
 					break
 				end
 			end
