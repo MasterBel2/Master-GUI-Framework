@@ -235,21 +235,22 @@ function framework:DrawingGroup(body, disableDrawList)
     end
 
     local function _Draw(self)
-        local previousDrawingGroup = activeDrawingGroup
-        activeDrawingGroup = self
+        if self.drawers == nil then error() end
         self.drawers = {}
         local drawTargets = self.drawTargets
         for i = 1, #drawTargets do
             drawTargets[i]:Draw()
         end
-        activeDrawingGroup = previousDrawingGroup
     end
 
     redrawFunc = function()
+        local previousDrawingGroup = activeDrawingGroup
+        activeDrawingGroup = drawingGroup
         gl_DeleteList(drawList)
         self.pass = DRAWING_GROUP_PASS_DRAW
         drawList = gl_CreateList(_Draw, drawingGroup)
         self.pass = nil
+        activeDrawingGroup = previousDrawingGroup
     end
 
     function drawingGroup:Draw()
