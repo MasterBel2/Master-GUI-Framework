@@ -12,6 +12,21 @@
 function framework:Button(visual, action)
     local button = { visual = visual, action = action }
     local background = framework:Background(visual, buttonStyles.defaultBackgroundDecorations, framework:AutoScalingDimension(3))
+    local selected = false
+
+    function button:GetSelected()
+        return selected
+    end
+    function button:SetSelected(newSelected)
+        Log("newSelected: " .. (newSelected and "true" or "false"))
+        Log("selected: " .. (selected and "true" or "false"))
+        if selected ~= newSelected then
+            selected = newSelected
+            Log("selected 2: " .. (selected and "true" or "false"))
+
+            background:SetDecorations(selected and buttonStyles.selectedBackgroundDecorations or buttonStyles.defaultBackgroundDecorations)
+        end
+    end
 
     local responder = framework:MouseOverChangeResponder(
         framework:MousePressResponder(
@@ -19,17 +34,17 @@ function framework:Button(visual, action)
             function(self, x, y, button)
                 if button ~= 1 then return false end
                 if self:ContainsAbsolutePoint(x, y) then
-                    background:SetDecorations(buttonStyles.selectedBackgroundDecorations)
+                    background:SetDecorations(buttonStyles.pressedBackgroundDecorations)
                 else
-                    background:SetDecorations(buttonStyles.defaultBackgroundDecorations)
+                    background:SetDecorations(selected and buttonStyles.selectedBackgroundDecorations or buttonStyles.defaultBackgroundDecorations)
                 end
                 return true
             end,
             function(self, x, y, dx, dy)
                 if self:ContainsAbsolutePoint(x, y) then
-                    background:SetDecorations(buttonStyles.selectedBackgroundDecorations)
+                    background:SetDecorations(buttonStyles.pressedBackgroundDecorations)
                 else
-                    background:SetDecorations(buttonStyles.defaultBackgroundDecorations)
+                    background:SetDecorations(selected and buttonStyles.selectedBackgroundDecorations or buttonStyles.defaultBackgroundDecorations)
                 end
             end, 
             function(self, x, y)
@@ -37,12 +52,12 @@ function framework:Button(visual, action)
                     background:SetDecorations(buttonStyles.hoverBackgroundDecorations)
                     button.action(button)
                 else
-                    background:SetDecorations(buttonStyles.defaultBackgroundDecorations)
+                    background:SetDecorations(selected and buttonStyles.selectedBackgroundDecorations or buttonStyles.defaultBackgroundDecorations)
                 end
             end
         ),
         function(isInside)
-            background:SetDecorations((isInside and buttonStyles.hoverBackgroundDecorations) or buttonStyles.defaultBackgroundDecorations)
+            background:SetDecorations((isInside and buttonStyles.hoverBackgroundDecorations) or (selected and buttonStyles.selectedBackgroundDecorations or buttonStyles.defaultBackgroundDecorations))
         end
     )
 
