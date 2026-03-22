@@ -307,34 +307,23 @@ function widget:IsAbove(x, y)
 	local element, responder = framework.HighestResponderAtPoint(x, y, framework.events.mouseOver)
 	frameworkInternal.elementBelowMouse = element
 
-	frameworkInternal.DebugInfo.responderUnderMouse = responder and responder._debugUniqueIdentifier
-
 	if responder ~= frameworkInternal.mouseOverResponder then
 		local previousResponder = frameworkInternal.mouseOverResponder
 		frameworkInternal.mouseOverResponder = responder
 		local highestCommonResponder
 
-		-- 
+		-- Identify highest common responder separately from propagating MouseEnter, 
+		-- to preserve "Leave before enter" consistency
 		local _responder = responder
 		while _responder do
 			if _responder.mouseIsOver then
 				highestCommonResponder = _responder
 				break
-			else
-				_responder.mouseIsOver = true
-				if _responder.MouseEnter then
-					local success, maybeError = pcall(_responder.MouseEnter, _responder)
-					if not success then
-						framework.Error("IsAbove", "responder:MouseEnter", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
-						framework:RemoveElement(element.key)
-						break
-					end
-				end
-				_responder = responder.parent
 			end
+			_responder = _responder.parent
 		end
 		
-		-- Remove isOver status from previous responders
+		-- Remove isOver status and call MouseLeave
 		_responder = previousResponder
 		while _responder and _responder ~= highestCommonResponder do
 			_responder.mouseIsOver = false
@@ -343,6 +332,22 @@ function widget:IsAbove(x, y)
 				if not success then
 					framework.Error("IsAbove", "responder:MouseLeave", maybeError, "Element Key: " .. previousElement.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
 					framework:RemoveElement(previousElement.key)
+					break
+				end
+			end
+			_responder = _responder.parent
+		end
+
+		-- Apply isOver status to new responders and call MouseEnter
+		-- We do this as a second loop to preserve "Leave before enter" consistency
+		_responder = responder
+		while _responder and _responder ~= highestCommonResponder do
+			_responder.mouseIsOver = true
+			if _responder.MouseEnter then
+				local success, maybeError = pcall(_responder.MouseEnter, _responder)
+				if not success then
+					framework.Error("IsAbove", "responder:MouseEnter", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+					framework:RemoveElement(element.key)
 					break
 				end
 			end
