@@ -110,6 +110,17 @@ end
 -- A unique identifier used by `EnableDebugMode`. Always increment this after assigning the value to something, and do not reset it.
 local nextUniqueIdentifier = 1
 
+local function profileMethod(table, tableName, methodName)
+	local temp = table[methodName]
+	table[methodName] = function(...)
+		startProfile(tableName .. ":" .. methodName)
+		local result = { temp(...) }
+		endProfile(tableName .. ":" .. methodName)
+		return unpack(result)
+	end
+end
+
+
 -- Wraps draw & layout functions with debug helpers, depending what debug modes the framework has enabled.
 -- 
 -- This includes: 
@@ -127,23 +138,23 @@ function EnableDebugMode(target)
 	if not general then return end
 
 	local _InsertElement = framework.InsertElement
-	framework.InsertElement = function(...)
-		local key, element = _InsertElement(...)
-		local _Draw = element.Draw
+	framework.InsertElement = function(self, body, preferredKey, ...)
+		local _DrawingGroup = framework.DrawingGroup
+		local key, element
+
+		framework.DrawingGroup = function(...)
+			local drawingGroup = _DrawingGroup(...)
+			profileMethod(drawingGroup, (key or preferredKey) .. ".drawingGroup", "Draw")
+			profileMethod(drawingGroup, (key or preferredKey) .. ".drawingGroup", "Layout")
+			profileMethod(drawingGroup, (key or preferredKey) .. ".drawingGroup", "Position")
 		
-		element.Draw = function(...)
-			startProfile(key)
-			_Draw(...)
-			endProfile(key)
+			return drawingGroup
 		end
-		
-		local drawProfileKey = key .. ":Draw()"
-		local _drawingGroup_Draw = element.drawingGroup.Draw
-		element.drawingGroup.Draw = function(...)
-			startProfile(drawProfileKey)
-			_drawingGroup_Draw(...)
-			endProfile(drawProfileKey)
-		end
+
+		key, element = _InsertElement(self, body, preferredKey, ...)
+		if not element then return end
+		profileMethod(element, key, "Draw")
+		framework.DrawingGroup = _DrawingGroup
 
 		return key, element
 	end
