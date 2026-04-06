@@ -31,9 +31,14 @@ Text Highlight API:
   - `wrappingText:RemoveHighlight(id)`
 - `TextGroup` now calls `wrappingText:DrawText(glFont)` rather than `wrappingText:Draw(glFont)` to avoid collision when `DrawingGroup` calls `wrappingText:Draw()`
 
+Additions:
+- `Dialog` and `ConfirmationDialog`
+- Selected mode for `Button`. See `button:SetSelected(newSelected)`, `button:GetSelected()`
+
 Visual changes:
 - Squared-off corners at the edge of the screen have been disabled, due to drawing no longer knowing whether it's actually at the edge of the screen.
 - Round fonts to the nearest pixel size (to prevent blurry text).
+- Swap `color.selectedColor` and `color.pressColor`
 
 Debug changes:
 - Remove redundant `Internal._debug_currentElementKey` in favour of `Internal.activeElement.key`.
@@ -48,6 +53,15 @@ Bug fixes:
 - Hide `MovableFrame` handle when releasing outside bounds)
 - Fix over-cropping for `OffsettedViewport`. (I suspect this happens with height too, but so far I haven't been able to verify. There's chance the error's something else, idk.)
 - Fix bug where, when a font stopped being used in a `TextGroup`, it would cancel drawing for all following fonts.
+- Fixed invalid declaration of `Blending`
+
+Performance improvements:
+- `DrawingGroup` cancels drawing when it knows it will not be visible (e.g. outside of current viewport or scissor).
+- Improved caching for `wrappingText:CoordinateToCharacterDisplayIndex(x, y)`
+- Significantly optimised `wrappingText:DisplayIndexToRawIndex(displayIndex)`. On an example file (1229 lines of code), test execution improved from 1.5s to 0.65s - a 65% reduction (including test overhead).
+
+Tests:
+- Introduced a test for benchmarking `WrappingText` methods.
 
 Also includes further non-breaking (hopefully) optimisations and fixes.
 
