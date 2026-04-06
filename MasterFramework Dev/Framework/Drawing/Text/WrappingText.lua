@@ -119,25 +119,33 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		local computedOffset = 0
 
 		local addedCharacter = addedCharacters[1]
-		local removedSpace = removedSpaces[1]
+		local removedSpaceRawIndex = removedSpaces[1]
+		-- while addedCharacters stores display indices, removedSpaces stores raw indices. 
+		-- So, we need to convert between them.
+		local removedSpaceDisplayIndex = removedSpaceRawIndex
 
 		-- Interesting to note, checking spaces is consistently (marginally) faster
-		while removedSpace <= displayIndex or addedCharacter <= displayIndex do
-			if addedCharacter < removedSpace then
-				computedOffset = computedOffset - 1
+		while removedSpaceDisplayIndex <= displayIndex or addedCharacter <= displayIndex do
+			if addedCharacter < removedSpaceDisplayIndex then
 				addedCharactersIndex = addedCharactersIndex + 1
 				addedCharacter = addedCharacters[addedCharactersIndex]
-				removedSpace = removedSpaces[removedSpacesIndex] - computedOffset
-			elseif addedCharacter == removedSpace then
+
+				computedOffset = computedOffset - 1
+				removedSpaceDisplayIndex = removedSpaceRawIndex - computedOffset
+			elseif addedCharacter == removedSpaceDisplayIndex then
 				-- count them as swapped, no change to offset
 				addedCharactersIndex = addedCharactersIndex + 1
-				removedSpacesIndex = removedSpacesIndex + 1
 				addedCharacter = addedCharacters[addedCharactersIndex]
-				removedSpace = removedSpaces[removedSpacesIndex] - computedOffset
-			elseif addedCharacter > removedSpace then
-				computedOffset = computedOffset + 1
+
 				removedSpacesIndex = removedSpacesIndex + 1
-				removedSpace = removedSpaces[removedSpacesIndex] - computedOffset
+				removedSpaceRawIndex = removedSpaces[removedSpacesIndex]
+				removedSpaceDisplayIndex = removedSpaceRawIndex - computedOffset
+			elseif addedCharacter > removedSpaceDisplayIndex then
+				computedOffset = computedOffset + 1
+
+				removedSpacesIndex = removedSpacesIndex + 1
+				removedSpaceRawIndex = removedSpaces[removedSpacesIndex]
+				removedSpaceDisplayIndex = removedSpaceRawIndex - computedOffset
 			end
 		end
 
