@@ -316,9 +316,8 @@ function widget:IsAbove(x, y)
 	-- BAR's widget handler calls this a second time because we have a tooltip.
 	-- That messes with profiling!
 	if isAboveChecked then return frameworkInternal.elementBelowMouse ~= nil end
-	local previousElement = frameworkInternal.elementBelowMouse
 
-	local element, responder = framework.HighestResponderAtPoint(x, y, framework.events.mouseOver)
+	local _, responder = framework.HighestResponderAtPoint(x, y, framework.events.mouseOver)
 	frameworkInternal.elementBelowMouse = element
 
 	if responder ~= frameworkInternal.mouseOverResponder then
@@ -344,8 +343,8 @@ function widget:IsAbove(x, y)
 			if _responder.MouseLeave then
 				local success, maybeError = pcall(_responder.MouseLeave, _responder)
 				if not success then
-					framework.Error("IsAbove", "responder:MouseLeave", maybeError, "Element Key: " .. previousElement.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
-					framework:RemoveElement(previousElement.key)
+					framework.Error("IsAbove", "responder:MouseLeave", maybeError, "Element Key: " .. _responder._element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+					framework:RemoveElement(_responder._element.key)
 					return true
 				end
 			end
@@ -360,8 +359,8 @@ function widget:IsAbove(x, y)
 			if _responder.MouseEnter then
 				local success, maybeError = pcall(_responder.MouseEnter, _responder)
 				if not success then
-					framework.Error("IsAbove", "responder:MouseEnter", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
-					framework:RemoveElement(element.key)
+					framework.Error("IsAbove", "responder:MouseEnter", maybeError, "Element Key: " .. _responder._element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+					framework:RemoveElement(_responder._element.key)
 					return true
 				end
 			end
@@ -376,15 +375,15 @@ function widget:IsAbove(x, y)
 		if success then
 			_responder = _responder.parent
 		else
-			framework.Error("IsAbove", maybeError, "Element Key: " .. element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
-			framework:RemoveElement(element.key)
+			framework.Error("IsAbove", maybeError, "Element Key: " .. _responder._element.key, _responder._debugTypeIdentifier, _responder._debugUniqueIdentifier)
+			framework:RemoveElement(_responder._element.key)
 			return true
 		end
 	end
 
 	isAboveChecked = true
 
-	return element ~= nil
+	return responder ~= nil
 end
 
 function widget:DrawScreen()
