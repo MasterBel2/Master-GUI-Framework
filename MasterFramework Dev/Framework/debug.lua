@@ -160,9 +160,15 @@ function EnableDebugMode(target)
 
 				if temp[1] and type(temp[1]) == "table" then
 
+					if temp[1]._debug_verboseTypeIdentifier then
+						temp[1]._debug_verboseTypeIdentifier = temp[1]._debug_verboseTypeIdentifier .. "/" .. key
+					else 
+						temp[1]._debug_verboseTypeIdentifier = key
+					end
+
 					temp[1]._debugTypeIdentifier = key
 					temp[1]._debugUniqueIdentifier = nextUniqueIdentifier
-					temp[1]._debugIdentifier = key .. " " .. nextUniqueIdentifier
+					temp[1]._debugIdentifier = temp[1]._debug_verboseTypeIdentifier .. " " .. nextUniqueIdentifier
 					nextUniqueIdentifier = nextUniqueIdentifier + 1
 
 					if draw then
