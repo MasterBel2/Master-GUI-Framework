@@ -58,7 +58,7 @@ Bug fixes:
 Performance improvements:
 - `DrawingGroup` cancels drawing when it knows it will not be visible (e.g. outside of current viewport or scissor).
 - Improved caching for `wrappingText:CoordinateToCharacterDisplayIndex(x, y)`
-- Significantly optimised `wrappingText:DisplayIndexToRawIndex(displayIndex)`. On an example file (1229 lines of code), test execution improved from 1.5s to 0.65s - a 65% reduction (including test overhead).
+- `wrappingText:DisplayIndexToRawIndex(displayIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)` makes use of an index cache, when a partial result isn't returned. Even when not using the cache, other optimisations have sped it up around 3x.
 - `MouseMove` is now buffered to receive only one call per draw frame. If you need more frequent updates, set `dragListener.doNotBufferMouseMove` to true.
 
 Tests:
