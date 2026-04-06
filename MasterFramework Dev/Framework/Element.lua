@@ -118,12 +118,13 @@ end
 -- Add/Remove Elements
 ------------------------------------------------------------------------------------------------------------
 
-local function UniqueKey(preferredKey)
-	if Internal.elements[preferredKey] == nil then
+function UniqueKey(preferredKey)
+	if not conflicts[preferredKey] then
+		conflicts[preferredKey] = 0
 		Log("Creating element with preferred key: \"" .. preferredKey .. "\"")
 		return preferredKey
 	else
-		conflicts[preferredKey] = (conflicts[preferredKey] or 0) + 1
+		conflicts[preferredKey] = conflicts[preferredKey] + 1
 		local key = UniqueKey(preferredKey .. "_" .. conflicts[preferredKey])
 		Log("Key " .. preferredKey .. " has already been taken! Assigning key " .. key .. " instead.")
 		return key
@@ -152,12 +153,14 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	-- Create element
 
 	preferredKey = preferredKey or "Unknown"
+	local key = UniqueKey(preferredKey)
 
 	if not body then
 		error("[framework:InsertElement] No body provided for element \"" .. preferredKey .. "\"")
 	end
 
 	local element = {
+		key = key,
 		body = body,
 		primaryFrame = nil,
 		tooltips = {},
@@ -236,10 +239,6 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 	element.drawingGroup.responderCache[events.mouseOver].MouseEnter = nullFunction
 	element.drawingGroup.responderCache[events.mouseOver].MouseLeave = nullFunction
 
-	-- Create key
-
-	local key = UniqueKey(preferredKey)
-
 	if Internal.debugMode.draw then
 		element.activeDebugResponder = {
 			_debugTypeIdentifier = "Base Debug Responder",
@@ -261,7 +260,6 @@ function framework:InsertElement(body, preferredKey, layerRequest, deselectActio
 		}
 	end
 
-	element.key = key
 	Internal.elements[key] = element
 
 	local wantedLayer = WantedLayer(layerRequest or self.layerRequest.anywhere())
