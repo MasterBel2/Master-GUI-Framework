@@ -5,7 +5,6 @@ local pairs = Include.pairs
 local Spring_Echo = Include.Spring.Echo
 
 local elements = Internal.elements
-local elementOrder = Internal.elementOrder
 
 local function ElementHighestResponderAtPoint(element, x, y, event)
 	local responders = element.drawingGroup.responderCache[event].responders
@@ -30,6 +29,7 @@ local function ElementHighestResponderAtPoint(element, x, y, event)
 end
 
 function HighestResponderAtPoint(x, y, event)
+	local elementOrder = Internal.elementOrder
 	for j = 1, #elementOrder do
 		local element = elements[elementOrder[j]]
 		local success, highestResponder = pcall(ElementHighestResponderAtPoint, element, x, y, event)
@@ -47,6 +47,7 @@ end
 
 -- Finds the topmost element whose PrimaryFrame contains the given point.
 function Internal.CheckElementUnderMouse(x, y)
+	local elementOrder = Internal.elementOrder
 	if not Internal.hasCheckedElementBelowMouse then
 		for index = 1, #Internal.elementOrder do
 			local element = Internal.elements[Internal.elementOrder[index]]
