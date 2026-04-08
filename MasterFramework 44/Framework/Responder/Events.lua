@@ -4,8 +4,6 @@ local pcall = Include.pcall
 local pairs = Include.pairs
 local Spring_Echo = Include.Spring.Echo
 
-local elements = Internal.elements
-
 local function ElementHighestResponderAtPoint(element, x, y, event)
 	local responders = element.drawingGroup.responderCache[event].responders
 		
@@ -31,7 +29,7 @@ end
 function HighestResponderAtPoint(x, y, event)
 	local elementOrder = Internal.elementOrder
 	for j = 1, #elementOrder do
-		local element = elements[elementOrder[j]]
+		local element = Internal.elements[elementOrder[j]]
 		local success, highestResponder = pcall(ElementHighestResponderAtPoint, element, x, y, event)
 		if success then 
 			if highestResponder then 
