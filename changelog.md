@@ -1,6 +1,6 @@
 # Changelog
 
-## WIP: Coordinate Update, Optimisation & Simplification; Text Highlight API
+## CV 44: Coordinate Update, Optimisation & Simplification; Text Highlight API
 
 `DrawingGroup` resets coordinates to avoid unnecessarily calling `Position` when portions of the UI move uniformly. To support this:
 - `DrawingGroup` provides `drawingGroup:AbsolutePosition()` to move local coordinates to a global context. E.g., comparing bounds v.s. interaction in `Responder`.
