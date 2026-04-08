@@ -1,6 +1,6 @@
 local math = Include.math
-local math_floor = Include.math.floor
 local math_ceil = Include.math.ceil
+local math_floor = Include.math.floor
 local math_huge = Include.math.huge
 local math_max = Include.math.max
 local math_min = Include.math.min
@@ -167,33 +167,33 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		end
 
 		local addedCharacter = addedCharacters[addedCharactersIndex]
-		local removedSpace = removedSpaces[removedSpacesIndex]
+		local removedSpaceRawIndex = removedSpaces[removedSpacesIndex]
 		-- while addedCharacters stores display indices, removedSpaces stores raw indices. 
 		-- So, we need to convert between them.
-		local removedSpaceDisplayIndex = removedSpace - computedOffset
+		local removedSpaceDisplayIndex = removedSpaceRawIndex - computedOffset
 
 		-- Interesting to note, checking spaces is consistently (marginally) faster
 		while removedSpaceDisplayIndex <= displayIndex or addedCharacter <= displayIndex do
-			if addedCharacter < removedSpace then
-				computedOffset = computedOffset - 1
+			if addedCharacter < removedSpaceDisplayIndex then
 				addedCharactersIndex = addedCharactersIndex + 1
-
 				addedCharacter = addedCharacters[addedCharactersIndex]
-				removedSpaceDisplayIndex = removedSpace - computedOffset
-			elseif addedCharacter == removedSpace then
+
+				computedOffset = computedOffset - 1
+				removedSpaceDisplayIndex = removedSpaceRawIndex - computedOffset
+			elseif addedCharacter == removedSpaceDisplayIndex then
 				-- count them as swapped, no change to offset
 				addedCharactersIndex = addedCharactersIndex + 1
-				removedSpacesIndex = removedSpacesIndex + 1
-
 				addedCharacter = addedCharacters[addedCharactersIndex]
-				removedSpace = removedSpaces[removedSpacesIndex]
-				removedSpaceDisplayIndex = removedSpace - computedOffset
-			elseif addedCharacter > removedSpace then
-				computedOffset = computedOffset + 1
-				removedSpacesIndex = removedSpacesIndex + 1
 
-				removedSpace = removedSpaces[removedSpacesIndex]
-				removedSpaceDisplayIndex = removedSpace - computedOffset
+				removedSpacesIndex = removedSpacesIndex + 1
+				removedSpaceRawIndex = removedSpaces[removedSpacesIndex]
+				removedSpaceDisplayIndex = removedSpaceRawIndex - computedOffset
+			elseif addedCharacter > removedSpaceDisplayIndex then
+				computedOffset = computedOffset + 1
+
+				removedSpacesIndex = removedSpacesIndex + 1
+				removedSpaceRawIndex = removedSpaces[removedSpacesIndex]
+				removedSpaceDisplayIndex = removedSpaceRawIndex - computedOffset
 			end
 		end
 

@@ -24,23 +24,21 @@ Other architectural changes:
 - `drawingGroup.needsRedraw` is not set in `drawingGroup:UpdateLayout(calledByParent)`, since it's already set in `drawingGroup:UpdatePosition()`
 - (Internal detail: `drawingGroup.groupsNeedingLayout` and `drawingGroup.groupsNeedingPosition` will not remove any groups until directly before `drawingGroup:UpdatePosition()` is called, to allow `drawingGroup:Position(x, y)` to trigger `drawingGroup:UpdatePosition()` if necessary.)
 
-`WrappingText`: Highlight API, Optimisations
+Text Highlight API:
 - `WrappingText` now handles the selection highlight drawing for `TextEntry` with a public API! See documentation in `WrappingText.lua`:
   - `wrappingText:HighlightRange(color, startIndex, endIndex, reuseLast)`
   - `wrappingText:UpdateHighlight(id, color, startIndex, endIndex, reuseLast)`
   - `wrappingText:RemoveHighlight(id)`
-  - `TextGroup` now calls `wrappingText:DrawText(glFont)` rather than `wrappingText:Draw(glFont)` to avoid collision when `DrawingGroup` calls `wrappingText:Draw()`
-- Optimisations:
-  - `wrappingText:DisplayIndexToRawIndex(displayIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)` makes use of an index cache, when a partial result isn't returned. Even when not using the cache, other optimisations have sped it up around 3x.
-  - `wrappingText:RawIndexToDisplayIndex(rawIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)` makes use of an index cache generated for trivial cost during `wrappingText:Layout`, when a partial result isn't returned. Likely, even for small intervals (above 4), this caching is faster than the existing partial-result mechanism in place. In the committed test, this speeds up from 0.11s @ 100 executions, to 0.061s @ 100000 executions. That's 1800x faster!
+- `TextGroup` now calls `wrappingText:DrawText(glFont)` rather than `wrappingText:Draw(glFont)` to avoid collision when `DrawingGroup` calls `wrappingText:Draw()`
 
-
-UI:
-- `MouseMove` is now buffered to receive only one call per draw frame. If you need more frequent updates, set `dragListener.doNotBufferMouseMove` to true.
+Additions:
+- `Dialog` and `ConfirmationDialog`
+- Selected mode for `Button`. See `button:SetSelected(newSelected)`, `button:GetSelected()`
 
 Visual changes:
 - Squared-off corners at the edge of the screen have been disabled, due to drawing no longer knowing whether it's actually at the edge of the screen.
 - Round fonts to the nearest pixel size (to prevent blurry text).
+- Swap `color.selectedColor` and `color.pressColor`
 
 Debug changes:
 - Add `component._debugIdentifier` for easier logging
@@ -57,6 +55,18 @@ Bug fixes:
 - Fix over-cropping for `OffsettedViewport`. (I suspect this happens with height too, but so far I haven't been able to verify. There's chance the error's something else, idk.)
 - Fix bug where, when a font stopped being used in a `TextGroup`, it would cancel drawing for all following fonts.
 - Fix continuous updating being incompatible with calling `drawingGroup:DrawerUpdated(drawer)`
+- Fixed invalid declaration of `Blending`
+
+Performance improvements:
+- `DrawingGroup` cancels drawing when it knows it will not be visible (e.g. outside of current viewport or scissor).
+- Improved caching for `wrappingText:CoordinateToCharacterDisplayIndex(x, y)`
+- `wrappingText:DisplayIndexToRawIndex(displayIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)` makes use of an index cache, when a partial result isn't returned. Even when not using the cache, other optimisations have sped it up around 3x.
+- `wrappingText:RawIndexToDisplayIndex(rawIndex, addedCharactersIndex, removedSpacesIndex, computedOffset)` makes use of an index cache generated for trivial cost during `wrappingText:Layout`, when a partial result isn't returned. Likely, even for small intervals (above 4), this caching is faster than the existing partial-result mechanism in place. In the committed test, this speeds up from 0.11s @ 100 executions, to 0.061s @ 100000 executions. That's 1800x faster!
+
+- `MouseMove` is now buffered to receive only one call per draw frame. If you need more frequent updates, set `dragListener.doNotBufferMouseMove` to true.
+
+Tests:
+- Introduced a test for benchmarking `WrappingText` methods.
 
 Also includes further non-breaking (hopefully) optimisations and fixes.
 
