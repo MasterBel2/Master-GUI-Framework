@@ -18,11 +18,8 @@ function framework:Button(visual, action)
         return selected
     end
     function button:SetSelected(newSelected)
-        Log("newSelected: " .. (newSelected and "true" or "false"))
-        Log("selected: " .. (selected and "true" or "false"))
         if selected ~= newSelected then
             selected = newSelected
-            Log("selected 2: " .. (selected and "true" or "false"))
 
             background:SetDecorations(selected and buttonStyles.selectedBackgroundDecorations or buttonStyles.defaultBackgroundDecorations)
         end
