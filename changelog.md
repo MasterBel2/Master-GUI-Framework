@@ -1,5 +1,6 @@
 # Changelog
 
+## CV 44-rev1: File structure update, widget file name fix, log spam fix
 - No longer log on `button:SetSelected()`
 - Rename `gui_master_framework_dev.lua` to `gui_master_framework_44.lua` 
 - Load framework from `LuaUI/Widgets/MasterBel2's GUI Framework (44)` rather than `LuaUI/MasterFramework 44`, to simplify installation. This takes advantage of changes to Beyond All Reason's modified widget loading, and may not work for other games.

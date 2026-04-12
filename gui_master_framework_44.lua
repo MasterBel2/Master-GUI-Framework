@@ -13,6 +13,7 @@ function widget:GetInfo()
 		desc = "A GUI framework for the SpringRTS Engine",
 		author = "MasterBel2",
 		date = "October 2020",
+		version = "44-rev1"
 		license = "GNU GPL, v2 or later",
 		layer = -2,
 		enabled = true,
