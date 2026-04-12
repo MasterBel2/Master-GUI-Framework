@@ -96,7 +96,7 @@ function widget:GetConfigData()
 end
 
 function widget:Initialize()
-    local DIR = LUAUI_DIRNAME .. "MasterFramework " .. compatabilityVersion .. "/"
+    local DIR = LUAUI_DIRNAME .. "Widgets/MasterBel2's GUI Framework (" .. compatabilityVersion .. ")/"
 
 	framework.DIR = DIR
 

@@ -15,19 +15,23 @@ A GUI framework for the Spring Engine. For support, MasterBel2 can be contacted 
 
 ### Installation
 
-Copy/symlink `gui_master_framework_44.lua` to your Spring installation's `LuaUI/Widgets/` folder, and the `MasterFramework 44` folder to your `LuaUI/` folder, forming the path `LuaUI/MasterFramework 44/`.
+Copy/symlink the GUI Framework's enclosing folder to your Spring installation's `LuaUI/Widgets/` folder, forming the path `LuaUI/Widgets/MasterBel2's GUI Framework (44)/`. When loading, the widget looks for this specific folder name, so ensure you use it.
 
 As a result, your LuaUI directory should look like this:
 ```
 LuaUI/
-    MasterFramework 44/
     Widgets/
-        gui_master_framework_44.lua
+        MasterBel2's GUI Framework (44)/
+            gui_master_framework_44.lua
+            Constants/...
+            Framework/...
+            Tests/...
+            Utils/...
         ...
     ...
 ```
 
-Once installed, make sure you enable `MasterBel2's GUI Framework (44)` in Widget Selector. See [below](#Using-MasterFramework-to-build-your-UI) for how to use MasterFramework in your project.
+Once installed, enable `MasterBel2's GUI Framework (44)` in Widget Selector. See [below](#Using-MasterFramework-to-build-your-UI) for how to use MasterFramework in your project.
 
 ### Importing MasterFramework
 
