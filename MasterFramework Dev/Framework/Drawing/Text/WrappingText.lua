@@ -100,6 +100,11 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		return wrappedText
 	end
 
+	-- These contain a meta-index: "addedCharacter" and "removedSpace" are actually 
+	-- the index of said added character in the list of added characters.
+	-- That makes addedCharacterIndex and removedSpaceIndex indices into the list of indices - 
+	-- i.e. pointing towards the next index of an added character / removed space above the 
+	-- index we're currently looking at.
 	local rawIndexAddedCharactersIndex = { 1 }
 	local rawIndexRemovedSpacesIndex = { 1 }
 	local function CachedRawIndexToDisplayIndexSearchProgress(rawIndex)
@@ -146,6 +151,11 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 		return rawIndex + computedOffset, addedCharactersIndex, removedSpacesIndex, computedOffset, rawIndex == removedSpaces[removedSpacesIndex - 1]
 	end
 
+	-- These contain a meta-index: "addedCharacter" and "removedSpace" are actually 
+	-- the index of said added character in the list of added characters.
+	-- That makes addedCharacterIndex and removedSpaceIndex indices into the list of indices - 
+	-- i.e. pointing towards the next index of an added character / removed space above the 
+	-- index we're currently looking at.
 	local displayIndexAddedCharactersIndex = { 1 }
 	local displayIndexRemovedSpacesIndex = { 1 }
 	local function CachedDisplayIndexToRawIndexSearchProgress(displayIndex)
