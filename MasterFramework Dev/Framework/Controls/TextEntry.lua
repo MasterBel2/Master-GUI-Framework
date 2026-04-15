@@ -320,7 +320,7 @@ function framework:TextEntry(string, placeholderString, color, font, maxLines)
                 local previousNewlineIndex = substring:find(previousNewlinePattern)
                 
                 if previousNewlineIndex then
-                    local previousLineStart = (substring:sub(1, previousNewlineIndex - 1):find(previousNewlinePattern) or 0)
+                    local previousLineStart = (substring:sub(1, previousNewlineIndex - 1):find(previousNewlinePattern))
                     if previousLineStart then
                         local targetWidth = self.text._readOnly_font.glFont:GetTextWidth(substring:sub(previousNewlineIndex + 1, displayIndex - 1)) * self.text._readOnly_font:ScaledSize()
                         destinationIndex = self:IndexAtXOffsetBetweenDisplayNewlineIndices(previousLineStart, previousNewlineIndex, targetWidth)
