@@ -10,8 +10,8 @@ local math_max = math.max
 local math_min = math.min
 local math_floor = math.floor
 
-local forwardCtrlSkipPattern = "[%s\n]*[^%s\n]+[%s\n]"
-local reverseCtrlSkipPattern = "[%s\n][^%s\n]+[%s\n]*$"
+local forwardCtrlSkipPattern = "[^%w]*[%w]+[^%w]"
+local reverseCtrlSkipPattern = "[^%w][%w]+[^%w]*$"
 
 local nextNewlinePattern = ".[^\n]*[\n]"
 local previousNewlinePattern = "[\n][^\n]*$"
