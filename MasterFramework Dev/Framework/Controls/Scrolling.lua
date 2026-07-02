@@ -4,6 +4,8 @@ local math = Include.math
 local error = Include.error
 local pairs = Include.pairs
 
+local Spring_GetModKeyState = Include.Spring.GetModKeyState
+
 framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL_VERTICAL = 0
 framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL = 1
 framework.OFFSETED_VIEWPORT_MODE_VERTICAL = 2
@@ -290,11 +292,12 @@ end
 function framework:VerticalScrollContainer(body)
     local viewport = self:OffsettedViewport(body, framework.OFFSETED_VIEWPORT_MODE_VERTICAL)
     local container =  framework:Responder(framework:ResponderScopeWrap(viewport), framework.events.mouseWheel, function(responder, x, y, up, value)
+        local _, _, _, shift = Spring_GetModKeyState()
         local _, responderHeight = responder:Size()
         local _, yOffset = viewport:GetOffsets()
         viewport:SetYOffset(math.max(
             math.min(
-                yOffset - value * framework.dimension.scrollMultiplier(),
+                yOffset - value * (shift and framework.dimension.fastScrollMultiplier() or framework.dimension.scrollMultiplier()),
                 viewport.contentHeight - responderHeight -- Must not leave any unneccessary blank space at the bottom of the scroll box
             ),
             0  -- Must not leave any unneccessary blank space at the top of the scroll box
@@ -322,11 +325,12 @@ function framework:HorizontalScrollContainer(body)
     local viewport = self:OffsettedViewport(body, framework.OFFSETED_VIEWPORT_MODE_HORIZONTAL)
 
     local container = framework:Responder(framework:ResponderScopeWrap(viewport), framework.events.mouseWheel, function(responder, x, y, up, value)
+        local _, _, _, shift = Spring_GetModKeyState()
         local responderWidth, _ = responder:Size()
         local xOffset, _ = viewport:GetOffsets()
         viewport:SetXOffset(math.max(
             math.min(
-                xOffset - value * framework.dimension.scrollMultiplier(),
+                xOffset - value * (shift and framework.dimension.fastScrollMultiplier() or framework.dimension.scrollMultiplier()),
                 viewport.contentWidth - responderWidth -- Must not leave any unneccessary blank space at the bottom of the scroll box
             ),
             0  -- Must not leave any unneccessary blank space at the top of the scroll box

@@ -6,4 +6,6 @@ framework.dimension = {
     groupSpacing = framework:AutoScalingDimension(5),
 
     scrollMultiplier = framework:AutoScalingDimension(20),
+    fastScrollMultiplier = framework:AutoScalingDimension(60),
+    
 }
