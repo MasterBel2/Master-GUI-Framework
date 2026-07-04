@@ -38,7 +38,9 @@ function framework:TextGroup(body, name)
 		body:Position(...)
 		Internal.activeTextGroup = previousTextGroup
 		
-		insert(activeDrawingGroup.drawTargets, self)
+		if activeDrawingGroup then
+			insert(activeDrawingGroup.drawTargets, self)
+		end
 	end
 
 	function textGroup:Draw(...)

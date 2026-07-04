@@ -467,8 +467,9 @@ function framework:WrappingText(string, baseColor, font, maxLines)
 			chunkYOffset = chunkYOffset + chunkHeight
 			textChunks[i]:Position(x, y + height - chunkYOffset)
 		end
-
-		activeDrawingGroup.drawTargets[#activeDrawingGroup.drawTargets + 1] = self
+		if activeDrawingGroup then
+			activeDrawingGroup.drawTargets[#activeDrawingGroup.drawTargets + 1] = self
+		end
 	end
 
 	function wrappingText:Draw()
